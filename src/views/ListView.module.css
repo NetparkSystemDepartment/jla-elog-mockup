@@ -1,0 +1,143 @@
+.container {
+   max-width: 480px;
+   margin: 0 auto;
+   width: 100%;
+   min-Height: 100vh;
+   position: relative;
+   background-Color: #f1f5f9;
+}
+
+.headerStyle {
+   background-Color: #44445A;
+   width: 100%;
+   position: sticky;
+   top: 0;
+   z-Index: 100;
+}
+
+.headerTopStyle {
+   display: flex;
+   justify-Content: space-between;
+   align-Items: center;
+   padding: 10px 16px;
+}
+
+.monthTextStyle {
+   font-Weight: bold;
+   font-Size: 15px;
+   color: #fff;
+   min-Width: 95px;
+   text-Align: center;
+}
+
+.dateRowStyle {
+   display: flex;
+   overflow-X: auto;
+   gap: 8px;
+   padding: 0 16px 12px;
+   justify-content: space-evenly;
+}
+
+.dateBtnBaseStyle {
+   flex: 0 0 42px;
+   height: 42px;
+   border-Radius: 10px;
+   border: none;
+   display: flex;
+   flex-Direction: column;
+   align-Items: center;
+   justify-Content: center;
+}
+
+.cardStyle {
+   background-Color: #fff;
+   padding: 12px;
+   border-Radius: 12px;
+   height: 58px;
+}
+
+.infoRowStyle {
+   display: flex;
+   align-Items: center;
+   gap: 4px;
+}
+
+.beachListStyle {
+   margin-Top: 10px;
+   display: flex;
+   flex-Direction: column;
+   gap: 6px;
+   border-Top: 1px solid #f1f5f9;
+   padding-Top: 10px;
+}
+
+.coastNameTextStyle {
+   font-Size: 13px;
+   font-Weight: bold;
+   color: #1e293b;
+   flex: 1;
+}
+ 
+
+.compactSelectBtnStyle {
+   padding: 4px 8px;
+   background-Color: #0284c7;
+   color: #fff;
+   border: none;
+   border-Radius: 4px;
+   font-Size: 10px;
+}
+
+.iconBtnStyle {
+   background: none;
+   border: none;
+   color: #fff;
+}
+
+.allSendBtnStyle {
+   padding: 4px 8px;
+   background-Color: #797a7a;
+   color: #fff;
+   border: none;
+   border-Radius: 4px;
+   font-Size: 12px;
+ 
+}
+
+.sendBtnStyle {
+   padding: 4px 8px;
+   background-Color: #777777;
+   color: #fff;
+   border: none;
+   border-Radius: 8px;
+   font-Size: 12px;
+   /*width: 80px;*/
+   height: 30px;
+   /*margin-right: 8px;*/
+}
+
+.bottomNavStyle {
+    position: fixed;
+    bottom: 0;
+    height: 65px;
+    background-Color: #44445A;
+    display: flex;
+    justify-Content: space-around;
+    align-Items: center;
+    color: #94a3b8;
+    font-Size: 9px;
+    max-Width: inherit;
+    width: 100%;
+}
+
+.navItemStyle {
+   display: flex;
+   flex-Direction: column;
+   align-Items: center;
+   gap: 4px;
+}
+
+.navTextStyle {
+   font-Size: 10px;
+   font-Weight: 500;
+}

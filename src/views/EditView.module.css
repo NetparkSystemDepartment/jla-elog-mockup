@@ -1,0 +1,128 @@
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  min-Height: 100vh;
+  position: relative;
+  background-Color: #f1f5f9;
+}
+
+.headerTopStyle {
+  display: flex;
+  align-Items: center;
+  justify-content: space-between;
+  height: 30px;
+  margin: 0px 8px 0px 8px;
+}
+.headerMiddleStyle {
+  display: flex;
+  align-Items: center;
+  height: 20px;
+  margin: 0px 8px 0px 8px;
+}
+.headerBottomStyle {
+  display: flex;
+  align-Items: center;
+  justify-content: space-between;
+  height: 30px;
+  margin: 0px 8px 0px 8px;
+}
+
+.saveBtnStyle {
+  margin-top: 8px;
+   padding: 4px 8px;
+   background-Color: #0284c7;
+   color: #fff;
+   border: none;
+   border-Radius: 8px;
+   font-Size: 10px;
+   height: 26px;
+}
+
+.dummyStyle {
+  width: 60px;
+  visibility: hidden;
+}
+
+.tileStyle {
+  background-Color: '#fff';
+  padding: '8px';
+  border-Radius: '10px';
+  border: '1px solid #e2e8f0';
+  display: 'flex';
+  flex-Direction: 'column';
+  gap: '4px';
+ }
+
+.inputStyle {
+   width: 100%;
+   padding: 4px;
+   border-Radius: 4px;
+   border: 1px solid #e2e8f0;
+   font-Size: 12px;
+   height: 24px;
+   background-Color: #fcfcfc;
+}
+
+.inputNarrowStyle {
+   width: 100%;
+   padding: 4px;
+   border-Radius: 4px;
+   border: 1px solid #e2e8f0;
+   font-Size: 12px;
+   background-Color: #fcfcfc;
+}
+
+.inputNoteStyle {
+   padding: 4px;
+   border-Radius: 4px;
+   border: 1px solid #e2e8f0;
+   font-Size: 12px;
+   height: 24px;
+   background-Color: #fcfcfc;
+   resize: none;
+}
+
+.labelLeftyStyle {
+  font-Size: 10px;
+  font-Weight: bold;
+  color: #64748b;
+  text-align: left;
+  width: 50%;
+}
+
+.deleteBtnStyle {
+   padding: 4px 8px;
+   background-Color: #cccccc;
+   color: #1a1a1a;
+   border: none;
+   border-Radius: 8px;
+   font-Size: 14px;
+   width: 160px;
+   height: 30px;
+   margin-left: 8px;
+}
+
+.sendBtnStyle {
+   padding: 4px 8px;
+   background-Color: #777777;
+   color: #fff;
+   border: none;
+   border-Radius: 8px;
+   font-Size: 14px;
+   width: 80px;
+   height: 30px;
+   margin-right: 8px;
+}
+
+.circleBtnStyle {
+  width:30px;
+  height: 30px;
+  border-Radius: 50%;
+  background-Color: #fff;
+  display: flex;
+  align-Items: center;
+  justify-Content: center;
+  border: none;
+  transition: background-color 0.2s
+}
