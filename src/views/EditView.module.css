@@ -126,3 +126,14 @@
   border: none;
   transition: background-color 0.2s
 }
+
+.memberBtnStyle {
+   padding: 2px 8px;
+   background-Color: #fcfcfc;
+   color: #64748b;
+   border: none;
+   border-Radius: 4px;
+   font-Size: 8px;
+   width: 100px;
+   font-weight: bold;
+}

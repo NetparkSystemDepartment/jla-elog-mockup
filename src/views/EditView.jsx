@@ -15,6 +15,8 @@ const TIDE_OPTIONS = ['大潮', '中潮', '小潮', '長潮', '若潮'];
 const CURRENT_OPTIONS = ['下げ潮', '上げ潮'];
 const WAVE_OPTIONS = ['0～0.5m', '0.6～1m', '1.1～1.5m', '1.6m～'];
 const DIRECTIONS = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+const WARNIBG_OPTIONS = ['なし', '大雨', '洪水', '強風', '風雪', '波浪', '高潮', '雷', '濃霧'];
+const ALERT_OPTIONS = ['なし', '大雨', '洪水', '暴風', '暴風雪', '波浪', '高潮'];
 
 const initialFormData = {
   startTime: '', member: '', weather: '', windSpeed: '', tide: '', 
@@ -61,6 +63,8 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
         
           <InputTile label="パトロールメンバー" icon={User}>
             <select className={styles.inputStyle} value={formData.member} onChange={e => setFormData({...formData, member: e.target.value})}><option value="">- 選択 -</option><option>担当A</option><option>担当B</option><option>担当C</option></select>
+            <button className={styles.memberBtnStyle} 
+              onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {icon: <Construction size={18} />})}>メンバーを追加</button>
           </InputTile>
 
           <InputTile label="天候" icon={Cloud}>
@@ -121,8 +125,8 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
               <label className={styles.labelLeftyStyle}>警報</label>
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
-              <select className={styles.inputStyle} value={formData.warn} onChange={e => setFormData({...formData, warn: e.target.value})}><option>なし</option><option>大雨</option><option>強風</option><option>波浪</option></select>
-              <select className={styles.inputStyle} value={formData.alert} onChange={e => setFormData({...formData, alert: e.target.value})}><option>なし</option><option>大雨</option><option>暴風</option><option>波浪</option></select>
+              <select className={styles.inputStyle} value={formData.warn} onChange={e => setFormData({...formData, warn: e.target.value})}><option value="">- 選択 -</option>{WARNIBG_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
+              <select className={styles.inputStyle} value={formData.alert} onChange={e => setFormData({...formData, alert: e.target.value})}><option value="">- 選択 -</option>{ALERT_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
             </div>
           </InputTile>
 
