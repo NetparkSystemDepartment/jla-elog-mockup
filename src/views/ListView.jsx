@@ -36,6 +36,9 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
     <button onClick={onClick} ref={ref} className={styles.iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
 
+//                  <span style={{ fontSize: '11px' }}>{format(d, 'E', { locale: ja })}</span>
+//              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', color: isSel ? '#0f172a' : '#fff' }}>
+
   return (
     <div className={styles.container}>
       <header className={styles.headerStyle}>
@@ -51,10 +54,12 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
         <div className={styles.dateRowStyle}>
           {Array.from({ length: 7 }, (_, i) => subDays(baseDate, i)).filter(d => !isAfter(d, baseDate)).reverse().map((d) => {
             const isSel = format(d, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+            const dayName = format(d, 'E', { locale: ja });
             return (
-              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.05)', color: isSel ? '#0f172a' : '#94a3b8' }}>
+              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', 
+               color: isSel ? '#0f172a' : (dayName === '日' ? '#CC2222' : (dayName === '土' ? '#2222CC' : '#fff')),}}>
                 <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{format(d, 'd')}</span>
-                <span style={{ fontSize: '9px' }}>{format(d, 'E', { locale: ja })}</span>
+                <span style={{ fontSize: '11px' }}>{dayName}</span>
               </button>
             );
           })}
