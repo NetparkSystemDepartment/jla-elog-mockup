@@ -44,9 +44,13 @@ function App() {
   };
 
   // ビーチ選択時の処理
+  const targetBeaches = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ'];
+
   const handleSelectBeach = (beachName) => {
-    setSelectedBeach(beachName);
-    setView('edit');
+    if (targetBeaches.includes(beachName)) {
+      setSelectedBeach(beachName);
+      setView('edit');
+    }
   };
 
   return (
