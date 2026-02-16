@@ -38,6 +38,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
 
 //                  <span style={{ fontSize: '11px' }}>{format(d, 'E', { locale: ja })}</span>
 //              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', color: isSel ? '#0f172a' : '#fff' }}>
+//              <button onClick={() => !isAfter(addDays(baseDate, 1), today) && setBaseDate(addDays(baseDate, 7))} className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
 
   return (
     <div className={styles.container}>
@@ -47,7 +48,10 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
               <Menu color="#38bdf8" size={20} />
               <button onClick={() => setBaseDate(subDays(baseDate, 7))} className={styles.iconBtnStyle}><ChevronLeft size={20} /></button>
               <span className={styles.monthTextStyle}>{format(baseDate, 'yyyy年 M月', { locale: ja })}</span>
-              <button onClick={() => !isAfter(addDays(baseDate, 1), today) && setBaseDate(addDays(baseDate, 7))} className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
+              <button onClick={() => {
+                const nextDate = addDays(baseDate, 7);
+                setBaseDate(isAfter(nextDate, today) ? today : nextDate); } }
+              className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
               <DatePicker selected={selectedDate} onChange={(d) => { setBaseDate(d); setSelectedDate(d); }} maxDate={today} locale="ja" customInput={<CustomInput />} withPortal />
         </div>
 
