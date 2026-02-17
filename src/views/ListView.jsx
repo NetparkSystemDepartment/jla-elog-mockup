@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Menu, ChevronLeft, ChevronRight, Users, 
   Calendar as CalendarIcon,
   AlertCircle, CheckCircle2, ChevronUp, ChevronDown, PlusCircle, 
-  Home, Printer, ClipboardList, Bell } from 'lucide-react';
+  Home, Printer, ClipboardList, Bell, Construction } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, addDays, subDays, isAfter, startOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import '../Overwrite.css';
 import styles from './ListView.module.css';
+import { toast, Toaster } from 'sonner';
 
 const COAST_DATA = [
   { id: 1, name: '本島北部(西)' }, { id: 2, name: '本島北部(東)' },
@@ -35,10 +36,6 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
   const CustomInput = React.forwardRef(({ onClick }, ref) => (
     <button onClick={onClick} ref={ref} className={styles.iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
-
-//                  <span style={{ fontSize: '11px' }}>{format(d, 'E', { locale: ja })}</span>
-//              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', color: isSel ? '#0f172a' : '#fff' }}>
-//              <button onClick={() => !isAfter(addDays(baseDate, 1), today) && setBaseDate(addDays(baseDate, 7))} className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
 
   return (
     <div className={styles.container}>
@@ -105,7 +102,9 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             )
           })}
           <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', padding: '12px', height: '58px' }}>
-            <button className={styles.sendBtnStyle}>一括送信する</button>
+          <Toaster />
+            <button onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {
+              icon: <Construction size={18} />})}className={styles.sendBtnStyle}>一括送信する</button>
           </div>
         </div>
       </main>
