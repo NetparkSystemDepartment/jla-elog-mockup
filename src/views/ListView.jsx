@@ -92,7 +92,11 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                       return (
                         <button key={beach} onClick={() => onSelectBeach(beach)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
                           <span style={{flex:1, textAlign:'left'}}>{beach}</span>
-                          {isDone && <CheckCircle2 size={12} color="#10b981" />}
+                          {isDone && (
+  <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={doneTextStyle}>送信済み</span>
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -126,5 +130,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
 const infoTextStyle = { fontSize: '10px', color: '#64748b', marginTop: '4px' };
 const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 const beachOptionStyle = { width: '100%', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' };
+const doneTextStyle = { backgroundColor: '#d1fae5', color: '#065f46', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center' };
+//                          {isDone && <CheckCircle2 size={12} color="#10b981" />}<span>送信済み</span>
 
 export default ListView;
