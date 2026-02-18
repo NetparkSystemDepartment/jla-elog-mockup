@@ -20,8 +20,8 @@ const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビー�
 
 const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, onSelectBeach, onSelectCoast }) => {
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
-  const totalVisitors = 10; 
-  const unregisteredCount = 0; 
+  const totalVisitors = 0; 
+  const UNREGISTEREDBEACH = 3; 
   const today = startOfDay(new Date());
 
   const handleSelect = (coast) => {
@@ -75,6 +75,8 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             const isOnna = coast.name === '恩納村';
             const isExpanded = isOnna && isEnrolledExpanded;
 
+            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
+
             return (
               <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px;' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -82,7 +84,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                   <button onClick={() => handleSelect(coast)}  className={styles.compactSelectBtnStyle}>ビーチを選択</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div className={styles.infoRowStyle}><Users size={12} color="#64748b" /><span style={infoTextStyle}>現在の来訪者数: {totalVisitors}人</span></div>
+                  <div className={styles.infoRowStyle}><Users size={12} color="#64748b" /><span style={infoTextStyle} translate="no">現在の来訪者数: {totalVisitors}人</span></div>
                   <div className={styles.infoRowStyle}><AlertCircle size={12} color={unregisteredCount > 0 ? "#f87171" : "#10b981"} /><span style={{...infoTextStyle, color: unregisteredCount > 0 ? "#ef4444" : "#10b981"}}>本日未登録箇所: {unregisteredCount}箇所</span></div>
                 </div>
                 {isExpanded && (
