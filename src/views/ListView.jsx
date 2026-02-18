@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Menu, ChevronLeft, ChevronRight, Users, 
   Calendar as CalendarIcon,
   AlertCircle, CheckCircle2, ChevronUp, ChevronDown, PlusCircle, 
-  Home, Printer, ClipboardList, Bell } from 'lucide-react';
+  Home, Printer, ClipboardList, Bell, Construction } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, addDays, subDays, isAfter, startOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import '../Overwrite.css';
 import styles from './ListView.module.css';
+import { toast, Toaster } from 'sonner';
 
 const COAST_DATA = [
   { id: 1, name: '本島北部(西)' }, { id: 2, name: '本島北部(東)' },
@@ -19,8 +20,8 @@ const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビー�
 
 const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, onSelectBeach, onSelectCoast }) => {
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
-  const totalVisitors = 10; 
-  const unregisteredCount = 0; 
+  const totalVisitors = 0; 
+  const UNREGISTEREDBEACH = 3; 
   const today = startOfDay(new Date());
 
   const handleSelect = (coast) => {
@@ -35,10 +36,6 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
   const CustomInput = React.forwardRef(({ onClick }, ref) => (
     <button onClick={onClick} ref={ref} className={styles.iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
-
-//                  <span style={{ fontSize: '11px' }}>{format(d, 'E', { locale: ja })}</span>
-//              <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', color: isSel ? '#0f172a' : '#fff' }}>
-//              <button onClick={() => !isAfter(addDays(baseDate, 1), today) && setBaseDate(addDays(baseDate, 7))} className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
 
   return (
     <div className={styles.container}>
@@ -78,6 +75,8 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             const isOnna = coast.name === '恩納村';
             const isExpanded = isOnna && isEnrolledExpanded;
 
+            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
+
             return (
               <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px;' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -85,7 +84,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                   <button onClick={() => handleSelect(coast)}  className={styles.compactSelectBtnStyle}>ビーチを選択</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div className={styles.infoRowStyle}><Users size={12} color="#64748b" /><span style={infoTextStyle}>現在の来訪者数: {totalVisitors}人</span></div>
+                  <div className={styles.infoRowStyle}><Users size={12} color="#64748b" /><span style={infoTextStyle} translate="no">現在の来訪者数: {totalVisitors}人</span></div>
                   <div className={styles.infoRowStyle}><AlertCircle size={12} color={unregisteredCount > 0 ? "#f87171" : "#10b981"} /><span style={{...infoTextStyle, color: unregisteredCount > 0 ? "#ef4444" : "#10b981"}}>本日未登録箇所: {unregisteredCount}箇所</span></div>
                 </div>
                 {isExpanded && (
@@ -95,7 +94,11 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                       return (
                         <button key={beach} onClick={() => onSelectBeach(beach)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
                           <span style={{flex:1, textAlign:'left'}}>{beach}</span>
-                          {isDone && <CheckCircle2 size={12} color="#10b981" />}
+                          {isDone && (
+  <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={doneTextStyle}>送信済み</span>
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -105,7 +108,9 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             )
           })}
           <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', padding: '12px', height: '58px' }}>
-            <button className={styles.sendBtnStyle}>一括送信する</button>
+          <Toaster />
+            <button onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {
+              icon: <Construction size={18} />})}className={styles.sendBtnStyle}>一括送信する</button>
           </div>
         </div>
       </main>
@@ -127,5 +132,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
 const infoTextStyle = { fontSize: '10px', color: '#64748b', marginTop: '4px' };
 const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 const beachOptionStyle = { width: '100%', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' };
+const doneTextStyle = { backgroundColor: '#d1fae5', color: '#065f46', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center' };
+//                          {isDone && <CheckCircle2 size={12} color="#10b981" />}<span>送信済み</span>
 
 export default ListView;

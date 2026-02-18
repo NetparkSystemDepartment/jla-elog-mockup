@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ListView from './views/ListView';
 import EditView from './views/EditView';
-import { getAllRecords, saveRecord } from './db';
+import { getAllRecords, saveRecord, getRecordsByDate} from './db';
 import { startOfDay, format } from 'date-fns';
 
 function App() {
@@ -18,13 +18,18 @@ function App() {
     loadRecords();
   }, [selectedDate]);
 
-  const loadRecords = async () => {
+  const loadRecordswithFilter = async () => {
     const allData = await getAllRecords();
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     setSavedRecords(allData.filter(r => r.date === dateStr));
   };
 
-  
+  const loadRecords = async () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const filteredData = await getRecordsByDate(dateStr);
+    setSavedRecords(filteredData);
+  };
+
   // 保存処理（子から呼ばれる）
   const handleSave = async (formData) => {
     const record = { 
