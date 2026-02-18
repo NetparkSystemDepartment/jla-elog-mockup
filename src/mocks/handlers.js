@@ -3,9 +3,10 @@ import { saveRecord, getAllRecords, getRecordsByDate } from '../db.js';
 
 export const handlers = [
   // 保存 (POSTリクエスト)
+  
   http.post('/api/records', async ({ request }) => {
     const newRecord = await request.json();
-    
+
     // Dexie関数を使用して保存
     const id = await saveRecord(newRecord);
     
@@ -17,6 +18,7 @@ export const handlers = [
   http.get('/api/records', async ({ request }) => {
     const url = new URL(request.url);
     const dateStr = url.searchParams.get('date');
+    console.log("② MSWが受け取った検索日付:", dateStr);
 
     let data;
     if (dateStr) {
@@ -26,6 +28,7 @@ export const handlers = [
       // 全件取得
       data = await getAllRecords();
     }
+    console.log("③ DBから取得した結果:", data); // ここが [] (空配列) なら検索条件が合致していません
 
     return HttpResponse.json(data);
   }),

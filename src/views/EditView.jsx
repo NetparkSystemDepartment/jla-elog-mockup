@@ -93,7 +93,7 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
           <InputTile label="干潮時(cm)" icon={WavesArrowDown}>
             <div style={radioFlexStyle}>
-              <input type="number" inputMode="numeric" sclassName={styles.inputStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
+              <input type="number" inputMode="numeric" className={styles.inputStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
             </div>
           </InputTile>
 

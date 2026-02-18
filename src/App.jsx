@@ -30,8 +30,11 @@ function App() {
   //  setSavedRecords(filteredData);
   //};
 
-  const loadRecords = async (selectedDate) => {
-    const response = await fetch(`/api/records?date=${selectedDate}`);
+  const loadRecords = async () => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const response = await fetch(`/api/records?date=${dateStr}`);
+    //const url = `/api/records?date=${selectedDate}`;
+    //console.log("UI側が投げようとしているURL:", url);
     const data = await response.json();
     // data には IndexedDB から取得した配列が入る
     setSavedRecords(data); 
@@ -46,20 +49,18 @@ function App() {
       timestamp: Date.now() 
     };
     //await saveRecord(record);
-    const handleSubmit = async (formData) => {
-      const response = await fetch('/api/records', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+    const response = await fetch('/api/records', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(record),
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('保存成功（ID）:', result.id);
-      }
-    };
+    if (response.ok) {
+      const result = await response.json();
+      console.log('保存成功（ID）:', result.id);
+    }
 
     await loadRecords();
     setView('list');
