@@ -7,6 +7,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { format, addDays, subDays, isAfter, startOfDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
+registerLocale('ja', ja);
 import '../Overwrite.css';
 import styles from './ListView.module.css';
 import { toast, Toaster } from 'sonner';
@@ -49,7 +50,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                 const nextDate = addDays(baseDate, 7);
                 setBaseDate(isAfter(nextDate, today) ? today : nextDate); } }
               className={styles.iconBtnStyle}><ChevronRight size={20} /></button>
-              <DatePicker selected={selectedDate} onChange={(d) => { setBaseDate(d); setSelectedDate(d); }} maxDate={today} locale="ja" customInput={<CustomInput />} withPortal />
+              <DatePicker selected={selectedDate} onChange={(d) => { setBaseDate(d); setSelectedDate(d); }} maxDate={today} locale='ja' customInput={<CustomInput />} withPortal />
         </div>
 
         <div className={styles.dateRowStyle}>
@@ -78,7 +79,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
 
             return (
-              <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px;' }}>
+              <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div className={styles.coastNameTextStyle}>{coast.name}</div>
                   <button onClick={() => handleSelect(coast)}  className={styles.compactSelectBtnStyle}>ビーチを選択</button>
