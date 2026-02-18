@@ -24,10 +24,17 @@ function App() {
     setSavedRecords(allData.filter(r => r.date === dateStr));
   };
 
-  const loadRecords = async () => {
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const filteredData = await getRecordsByDate(dateStr);
-    setSavedRecords(filteredData);
+  //const loadRecords = async () => {
+  //  const dateStr = format(selectedDate, 'yyyy-MM-dd');
+  //  const filteredData = await getRecordsByDate(dateStr);
+  //  setSavedRecords(filteredData);
+  //};
+
+  const loadRecords = async (selectedDate) => {
+    const response = await fetch(`/api/records?date=${selectedDate}`);
+    const data = await response.json();
+    // data には IndexedDB から取得した配列が入る
+    setSavedRecords(data); 
   };
 
   // 保存処理（子から呼ばれる）
@@ -38,7 +45,22 @@ function App() {
       date: format(selectedDate, 'yyyy-MM-dd'), 
       timestamp: Date.now() 
     };
-    await saveRecord(record);
+    //await saveRecord(record);
+    const handleSubmit = async (formData) => {
+      const response = await fetch('/api/records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('保存成功（ID）:', result.id);
+      }
+    };
+
     await loadRecords();
     setView('list');
   };
