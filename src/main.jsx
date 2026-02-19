@@ -13,7 +13,7 @@ async function prepareApp() {
 
       // preview環境ではService Workerのパスがズレることがあるので指定しておくと安全
       serviceWorker: {
-        url: 'public/mockServiceWorker.js'
+        url: '/mockServiceWorker.js'
       }
     })
 //  }

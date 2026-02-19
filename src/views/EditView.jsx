@@ -6,7 +6,7 @@ import InputTile from '../components/InputTile';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import styles from './EditView.module.css';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { Construction } from 'lucide-react';
 
 const WEATHER_OPTIONS = ['晴', '曇り', '雨', '雷雨'];
@@ -17,6 +17,7 @@ const WAVE_OPTIONS = ['0～0.5m', '0.6～1m', '1.1～1.5m', '1.6m～'];
 const DIRECTIONS = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
 const WARNIBG_OPTIONS = ['なし', '大雨', '洪水', '強風', '風雪', '波浪', '高潮', '雷', '濃霧'];
 const ALERT_OPTIONS = ['なし', '大雨', '洪水', '暴風', '暴風雪', '波浪', '高潮'];
+const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 
 const initialFormData = {
   startTime: '', member: '', weather: '', windSpeed: '', tide: '', 
@@ -87,13 +88,15 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
           <InputTile label="満潮時(cm)" icon={WavesArrowUp}>
             <div style={radioFlexStyle}>
-              <input type="number" inputMode="numeric" className={styles.inputStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
+              <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
+              <span className={styles.unitTextStyle}>cm</span>
              </div>
           </InputTile>
 
           <InputTile label="干潮時(cm)" icon={WavesArrowDown}>
             <div style={radioFlexStyle}>
-              <input type="number" inputMode="numeric" className={styles.inputStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
+              <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
+              <span className={styles.unitTextStyle}>cm</span>
             </div>
           </InputTile>
 
@@ -132,12 +135,13 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
           <InputTile label="利用者数" icon={Users}>
             <div style={radioFlexStyle}>
-              <input type="number" inputMode="numeric" className={styles.inputStyle} value={formData.visitors} onChange={e => setFormData({...formData, visitors: e.target.value})} />
+              <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.visitors} onChange={e => setFormData({...formData, visitors: e.target.value})} />
+              <label className={styles.unitTextStyle}>名</label>
             </div>
           </InputTile>
 
           <InputTile label="ビーチ利用の特徴" icon={WavesLadder}>
-            <select className={styles.inputStyle} value={formData.member} onChange={e => setFormData({...formData, member: e.target.value})}><option value="">- 選択 -</option><option>担当A</option><option>担当B</option><option>担当C</option></select>
+            <select className={styles.inputStyle} value={formData.feature} onChange={e => setFormData({...formData, feature: e.target.value})}><option value="">- 選択 -</option>{FEATURE_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
           </InputTile>
 
           <InputTile label="注意喚起人数" icon={Megaphone}>
@@ -147,7 +151,9 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
             </div>
             <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               <input type="number" className={styles.inputNarrowStyle} value={formData.jpWarning} onChange={e => setFormData({...formData, jpWarning: e.target.value})} />
+              <label className={styles.unitTextStyle}>名</label>
               <input type="number" className={styles.inputNarrowStyle} value={formData.forWarning} onChange={e => setFormData({...formData, forWarning: e.target.value})} />
+              <label className={styles.unitTextStyle}>名</label>
             </div>
           </InputTile>
 
@@ -162,7 +168,6 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
       <footer>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <button onClick={handleClear} className={styles.deleteBtnStyle}>全ての入力を削除する</button>
-          <Toaster />
             <button onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {
               icon: <Construction size={18} />})}className={styles.sendBtnStyle}>送信
           </button>

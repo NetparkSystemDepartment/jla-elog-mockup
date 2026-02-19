@@ -3,6 +3,7 @@ import ListView from './views/ListView';
 import EditView from './views/EditView';
 import { getAllRecords, saveRecord, getRecordsByDate} from './db';
 import { startOfDay, format } from 'date-fns';
+import { toast, Toaster } from 'sonner';
 
 function App() {
   const [view, setView] = useState('list');
@@ -60,6 +61,7 @@ function App() {
     if (response.ok) {
       const result = await response.json();
       console.log('保存成功（ID）:', result.id);
+      toast.success('保存しました！');
     }
 
     await loadRecords();
@@ -84,6 +86,7 @@ function App() {
 
   return (
     <>
+      <Toaster position="top-center" richColors />
       {view === 'list' ? (
         <ListView 
           baseDate={baseDate} 

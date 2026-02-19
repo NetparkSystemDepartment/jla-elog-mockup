@@ -10,7 +10,7 @@ import { ja } from 'date-fns/locale';
 registerLocale('ja', ja);
 import '../Overwrite.css';
 import styles from './ListView.module.css';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 const COAST_DATA = [
   { id: 1, name: '本島北部(西)' }, { id: 2, name: '本島北部(東)' },
@@ -109,7 +109,6 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             )
           })}
           <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', padding: '12px', height: '58px' }}>
-          <Toaster />
             <button onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {
               icon: <Construction size={18} />})}className={styles.sendBtnStyle}>一括送信する</button>
           </div>
