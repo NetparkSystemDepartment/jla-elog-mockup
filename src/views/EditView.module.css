@@ -71,6 +71,7 @@
    border: 1px solid #e2e8f0;
    font-Size: 12px;
    background-Color: #fcfcfc;
+   text-Align: right;
 }
 
 .inputNoteStyle {
@@ -81,6 +82,24 @@
    height: 24px;
    background-Color: #fcfcfc;
    resize: none;
+}
+
+.inputNumericStyle {
+   /*width: 100%;*/
+   padding: 4px;
+   border-Radius: 4px;
+   border: 1px solid #e2e8f0;
+   font-Size: 14px;
+   height: 24px;
+   background-Color: #fcfcfc;
+   text-Align: right;
+}
+
+.unitTextStyle {
+   font-Size: 12px;
+   font-Weight: bold;
+   padding-Top: 8px;
+   color: #64748b;
 }
 
 .labelLeftyStyle {
