@@ -59,7 +59,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
             const dayName = format(d, 'E', { locale: ja });
             return (
               <button key={d.toString()} onClick={() => setSelectedDate(d)} style={{ ...dateBtnBaseStyle, backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.3)', 
-               color: isSel ? '#0f172a' : (dayName === '日' ? '#CC2222' : (dayName === '土' ? '#2222CC' : '#fff')),}}>
+               color: isSel ? '#0f172a' : (dayName === '日' ? '#FF8080' : (dayName === '土' ? '#70AAFF' : '#fff')),}}>
                 <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{format(d, 'd')}</span>
                 <span style={{ fontSize: '11px' }}>{dayName}</span>
               </button>
