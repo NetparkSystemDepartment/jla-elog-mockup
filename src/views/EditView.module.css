@@ -85,7 +85,7 @@
 }
 
 .inputNumericStyle {
-   /*width: 100%;*/
+   width: 80%;
    padding: 4px;
    border-Radius: 4px;
    border: 1px solid #e2e8f0;
@@ -100,6 +100,7 @@
    font-Weight: bold;
    padding-Top: 8px;
    color: #64748b;
+   width: 20%;
 }
 
 .labelLeftyStyle {
@@ -155,4 +156,15 @@
    font-Size: 8px;
    width: 100px;
    font-weight: bold;
+}
+
+.doneTextStyle {
+  background-color: #f3f4f6;
+  /*color: #374151;*/
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+  display: inline-block;
 }

@@ -36,8 +36,21 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
   // 全ての入力を削除
   const handleClear = () => {
-    setFormData(initialFormData);
- };
+    toast.warning('入力内容をすべて消去しますか？', {
+      duration: Infinity,
+      action: {
+        label: 'クリアする',
+        onClick: () => {
+          setFormData(initialFormData);
+          toast.success('クリアしました');
+        },
+      },
+      cancel: {
+        label: 'キャンセル',
+        onClick: () => toast.dismiss(),
+      },
+    });
+  };
 
   return (
     <div className={styles.container}>
@@ -52,7 +65,9 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
         <div className={styles.headerMiddleStyle}>{selectedCoast}</div>
         <div className={styles.headerBottomStyle}>
           <h3>{selectedBeach}</h3>
-          <span>パトロール未実施</span>
+          <span style={{...doneTextStyle, color: existingData ? "#10b981" : "#ef4444"}}>
+            {existingData ? "パトロール実施済み" : "パトロール未実施"}
+          </span>
         </div>
       </header>
 
@@ -87,14 +102,14 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
           </InputTile>
 
           <InputTile label="満潮時(cm)" icon={WavesArrowUp}>
-            <div style={radioFlexStyle}>
+            <div style={inputFlexStyle}>
               <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
               <span className={styles.unitTextStyle}>cm</span>
              </div>
           </InputTile>
 
           <InputTile label="干潮時(cm)" icon={WavesArrowDown}>
-            <div style={radioFlexStyle}>
+            <div style={inputFlexStyle}>
               <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
               <span className={styles.unitTextStyle}>cm</span>
             </div>
@@ -134,7 +149,7 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
           </InputTile>
 
           <InputTile label="利用者数" icon={Users}>
-            <div style={radioFlexStyle}>
+            <div style={inputFlexStyle}>
               <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.visitors} onChange={e => setFormData({...formData, visitors: e.target.value})} />
               <label className={styles.unitTextStyle}>名</label>
             </div>
@@ -181,5 +196,7 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
 const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '4px' };
 const radioBtnStyle = { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '10px', fontWeight: '600', height: '20px' };
+const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
+const doneTextStyle = { backgroundColor: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '9px', fontWeight: '600', border: '1px solid #d1d5db', display: 'inline-block' };
 
 export default EditView;
