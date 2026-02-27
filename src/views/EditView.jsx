@@ -52,6 +52,9 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
     });
   };
 
+  // 複数選択のプルダウン
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <div className={styles.container}>
     <div className="notranslate">
@@ -78,10 +81,39 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
           </InputTile>
         
           <InputTile label="パトロールメンバー" icon={User}>
-            <select className={styles.inputStyle} value={formData.member} onChange={e => setFormData({...formData, member: e.target.value})}><option value="">- 選択 -</option><option>担当A</option><option>担当B</option><option>担当C</option></select>
-            <button className={styles.memberBtnStyle} 
-              onClick={() => toast.info("この機能は本バージョンではサポートされていません。", {icon: <Construction size={18} />})}>メンバーを追加</button>
-          </InputTile>
+ <div style={{ position: 'relative' }}>
+      {/* 選択中のメンバーを表示するエリア（見た目はプルダウン風） */}
+      <div 
+        className={styles.inputStyle} 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ cursor: 'pointer', minHeight: '40px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}
+      >
+        {formData.members?.length > 0 
+          ? formData.members.map(m => <span key={m} style={{ background: '#eee', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>{m}</span>)
+          : "- 選択 -"}
+      </div>
+
+      {/* 開いた時に出てくるチェックリスト */}
+      {isOpen && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, width: '100%', background: 'white', border: '1px solid #ccc', zIndex: 100, padding: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          {['担当A', '担当B', '担当C'].map(name => (
+            <label key={name} style={{ display: 'block', padding: '8px 0', borderBottom: '1px solid #eee' }}>
+              <input
+                type="checkbox"
+                checked={formData.members?.includes(name)}
+                onChange={e => {
+                  const next = e.target.checked 
+                    ? [...(formData.members || []), name]
+                    : formData.members.filter(n => n !== name);
+                  setFormData({...formData, members: next});
+                }}
+              /> {name}
+            </label>
+          ))}
+          <button onClick={() => setIsOpen(false)} style={{ width: '100%', marginTop: '10px', padding: '5px' }}>閉じる</button>
+        </div>
+      )}
+    </div>         </InputTile>
 
           <InputTile label="天候" icon={Cloud}>
             <div style={radioFlexStyle}>
