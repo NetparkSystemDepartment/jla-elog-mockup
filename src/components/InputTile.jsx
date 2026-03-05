@@ -2,17 +2,7 @@
 import React from 'react';
 
 // props を使って、ラベル、アイコン、中身(children)を受け取ります
-const InputTile = ({ label, icon: Icon, children }) => {
-  return (
-    <div style={tileStyle}>
-      <label style={labelBaseStyle}>
-        {Icon && <Icon size={12} style={{ marginRight: 4 }} />}
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-};
+const InputTile = ({ label, icon: Icon, children, isExpandable }) => {
 
 // スタイルもこちらに移動して App.jsx を軽くします
 const tileStyle = { 
@@ -23,7 +13,9 @@ const tileStyle = {
   display: 'flex', 
   flexDirection: 'column', 
   gap: '4px', 
-  height: '58px'
+  //height: '58px',
+  height: isExpandable ? 'auto' : '58px',
+  minHeight: '58px', // どちらにせよ最低 58px は保つ
 };
 
 const labelBaseStyle = { 
@@ -33,5 +25,17 @@ const labelBaseStyle = {
   display: 'flex',
   alignItems: 'center'
 };
+
+  return (
+    <div style={tileStyle}>
+      <label style={labelBaseStyle}>
+        {Icon && <Icon size={12} style={{ marginRight: 4 }} />}
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+
+}
 
 export default InputTile;

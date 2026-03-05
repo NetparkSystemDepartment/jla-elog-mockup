@@ -17,7 +17,8 @@ const COAST_DATA = [
   { id: 3, name: '恩納村' }, { id: 4, name: '東海岸中部' },
   { id: 5, name: '本島中部' }, { id: 6, name: '本島南部' }, { id: 7, name: '座間味村' },
 ];
-const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
+//const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
+const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
 
 const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, onSelectBeach, onSelectCoast }) => {
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
@@ -97,7 +98,7 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
                           <span style={{flex:1, textAlign:'left'}}>{beach}</span>
                           {isDone && (
   <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={doneTextStyle}>送信済み</span>
+                            <span style={doneTextStyle}>未送信</span>
                             </div>
                           )}
                         </button>

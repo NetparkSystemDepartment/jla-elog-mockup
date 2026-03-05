@@ -75,7 +75,7 @@ function App() {
 
   // ビーチ選択時の処理
   // モックアップは下記3ビーチに限定
-  const targetBeaches = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ'];
+  const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
 
   const handleSelectBeach = (beachName) => {
     if (targetBeaches.includes(beachName)) {
