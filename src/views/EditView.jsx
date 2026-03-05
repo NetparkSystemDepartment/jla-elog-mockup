@@ -142,7 +142,7 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 
           <InputTile label="満潮時(cm)" icon={WavesArrowUp}>
             <div style={inputFlexStyle}>
-              <input type="time" value={formData.highTideTime} onChange={e => setFormData({...formData, highTideTime: e.target.value})} />
+              <input type="time" id="highTideTime" name="highTideTime" value={formData.highTideTime} className={styles.timeStyle} onChange={e => setFormData({...formData, highTideTime: e.target.value})} />
               <input type="number" inputMode="numeric" className={styles.inputNumericRightStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
               <span className={styles.unitTextStyle}>cm</span>
              </div>

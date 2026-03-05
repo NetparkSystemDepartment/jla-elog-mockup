@@ -2,10 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig({  
   plugins: [
     react(),
     VitePWA({
+      // VITE_MSW という環境変数が 'true' の時は PWA を無効にする
+      // これにより build -> preview 時でも無効になる
+      disable: process.env.VITE_MSW === 'true' || process.env.NODE_ENV === 'development',      
       registerType: 'autoUpdate', // 新しいSWが見つかったら自動更新
       injectRegister: 'auto',     // index.htmlに自動で登録スクリプトを挿入
       

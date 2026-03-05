@@ -4,14 +4,40 @@ import { saveRecord, getAllRecords, getRecordsByDate } from '../db.js';
 export const handlers = [
   // 保存 (POSTリクエスト)
   
-  http.post('/api/records', async ({ request }) => {
-    const newRecord = await request.json();
+//  http.post('/api/records', async ({ request }) => {
+//    const newRecord = await request.json();
+//
+//    // Dexie関数を使用して保存
+//    const id = await saveRecord(newRecord);
+//    
+//    // 保存したデータとIDをレスポンスとして返す
+//    return HttpResponse.json({ ...newRecord, id }, { status: 201 });
+//  }),
 
-    // Dexie関数を使用して保存
-    const id = await saveRecord(newRecord);
+
+  http.post('*/api/records', async ({ request }) => {
+    try {
+      const newRecord = await request.json();
+
+      // Dexie関数を使用して保存
+      const id = await saveRecord(newRecord); 
     
-    // 保存したデータとIDをレスポンスとして返す
-    return HttpResponse.json({ ...newRecord, id }, { status: 201 });
+      return HttpResponse.json({ ...newRecord, id }, { status: 201 });
+    
+    } catch (error) {
+      console.error("MSW POST操作でエラー:", error);
+
+      return new HttpResponse(
+        JSON.stringify({ 
+          error: 'Database Save Error', 
+          details: error.message 
+        }), 
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
   }),
 
 //  // 日報の取得 (GETリクエスト / 全件 または 日付指定)
@@ -65,3 +91,4 @@ http.get('/api/records', async ({ request }) => {
   }
 }),
 ];
+
