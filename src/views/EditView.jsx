@@ -75,20 +75,27 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
         </div>
       </header>
 
-      <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch' }}>
           <InputTile label="パトロール開始時間" icon={Clock}>
             <input type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
           </InputTile>
         
-          <InputTile label="パトロールメンバー" icon={User}>
+          <InputTile label="風向" icon={Wind}>
+            <select className={styles.inputStyle} value={formData.windDir} onChange={e => setFormData({...formData, windDir: e.target.value})}><option value="">- 選択 -</option>{DIRECTIONS.map(o => <option key={o}>{o}</option>)}</select>
+          </InputTile>
+
+          <InputTile label="パトロールメンバー" icon={User} isExpandable={true}>
             <MultiSelectInput
               options={['担当A', '担当B', '担当C']}
               value={formData.members || []}
               onChange={(next) => setFormData({ ...formData, members: next })}
-              inputStyle={styles.inputMultiStyle} // 既存のスタイルを渡す
+              inputStyle={styles.inputMultiStyle}
               placeholder="メンバーを選択"
             />
+          </InputTile>
+
+          <InputTile label="風向き" icon={Compass}>
+            <select className={styles.inputStyle} value={formData.windDirDetail} onChange={e => setFormData({...formData, windDirDetail: e.target.value})}><option value="">- 選択 -</option>{DIRECTIONS.map(o => <option key={o}>{o}</option>)}</select>
           </InputTile>
 
           <InputTile label="天候" icon={Cloud}>
@@ -97,53 +104,15 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
             </div>
           </InputTile>
 
-          <InputTile label="風速（天気予報の値）" icon={Gauge}>
-            <div style={radioFlexStyle}>
-              {WIND_SPEED_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, windSpeed: opt})} style={{...radioBtnStyle, backgroundColor: formData.windSpeed === opt ? '#e0f2fe' : '#fff', color: formData.windSpeed === opt ? '#0369a1' : '#64748b', borderColor: formData.windSpeed === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
-
-          <InputTile label="潮汐" icon={Waves}>
-            <div style={radioFlexStyle}>
-              {TIDE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, tide: opt})} style={{...radioBtnStyle, backgroundColor: formData.tide === opt ? '#e0f2fe' : '#fff', color: formData.tide === opt ? '#0369a1' : '#64748b', borderColor: formData.tide === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
-
-          <InputTile label="満潮時(cm)" icon={WavesArrowUp}>
-            <div style={inputFlexStyle}>
-              <input type="time" value={formData.highTideTime} onChange={e => setFormData({...formData, highTideTime: e.target.value})} />
-              <input type="number" inputMode="numeric" className={styles.inputNumericRightStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
-              <span className={styles.unitTextStyle}>cm</span>
-             </div>
-          </InputTile>
-
-          <InputTile label="干潮時(cm)" icon={WavesArrowDown}>
-            <div style={inputFlexStyle}>
-              <input type="time" id="lowTideTime" name="lowTideTime" value={formData.lowTideTime} className={styles.timeStyle} onChange={e => setFormData({...formData, lowTideTime: e.target.value})} />
-              <input type="number" inputMode="numeric" id="lowTide" name="lowTide" className={styles.inputNumericRightStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
-              <span className={styles.unitTextStyle}>cm</span>
-           </div>
-          </InputTile>
-
-          <InputTile label="潮流" icon={TrendingUpDown}>
-            <div style={radioFlexStyle}>
-              {CURRENT_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, current: opt})} style={{...radioBtnStyle, backgroundColor: formData.current === opt ? '#e0f2fe' : '#fff', color: formData.current === opt ? '#0369a1' : '#64748b', borderColor: formData.current === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <InputTile label="風向" icon={Wind}>
-            <select className={styles.inputStyle} value={formData.windDir} onChange={e => setFormData({...formData, windDir: e.target.value})}><option value="">- 選択 -</option>{DIRECTIONS.map(o => <option key={o}>{o}</option>)}</select>
-          </InputTile>
-
-          <InputTile label="風向き" icon={Compass}>
-            <select className={styles.inputStyle} value={formData.windDirDetail} onChange={e => setFormData({...formData, windDirDetail: e.target.value})}><option value="">- 選択 -</option>{DIRECTIONS.map(o => <option key={o}>{o}</option>)}</select>
-          </InputTile>
-
           <InputTile label="波高" icon={Activity}>
             <div style={radioFlexStyle}>
               {WAVE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, wave: opt})} style={{...radioBtnStyle, backgroundColor: formData.wave === opt ? '#e0f2fe' : '#fff', color: formData.wave === opt ? '#0369a1' : '#64748b', borderColor: formData.wave === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+             </div>
+          </InputTile>
+
+          <InputTile label="風速（天気予報の値）" icon={Gauge}>
+            <div style={radioFlexStyle}>
+              {WIND_SPEED_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, windSpeed: opt})} style={{...radioBtnStyle, backgroundColor: formData.windSpeed === opt ? '#e0f2fe' : '#fff', color: formData.windSpeed === opt ? '#0369a1' : '#64748b', borderColor: formData.windSpeed === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
              </div>
           </InputTile>
 
@@ -158,6 +127,12 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
             </div>
           </InputTile>
 
+          <InputTile label="潮汐" icon={Waves}>
+            <div style={radioFlexStyle}>
+              {TIDE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, tide: opt})} style={{...radioBtnStyle, backgroundColor: formData.tide === opt ? '#e0f2fe' : '#fff', color: formData.tide === opt ? '#0369a1' : '#64748b', borderColor: formData.tide === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+             </div>
+          </InputTile>
+
           <InputTile label="利用者数" icon={Users}>
             <div style={inputFlexStyle}>
               <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.visitors} onChange={e => setFormData({...formData, visitors: e.target.value})} />
@@ -165,8 +140,30 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
             </div>
           </InputTile>
 
-          <InputTile label="ビーチ利用の特徴" icon={WavesLadder}>
-            <select className={styles.inputStyle} value={formData.feature} onChange={e => setFormData({...formData, feature: e.target.value})}><option value="">- 選択 -</option>{FEATURE_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
+          <InputTile label="満潮時(cm)" icon={WavesArrowUp}>
+            <div style={inputFlexStyle}>
+              <input type="time" value={formData.highTideTime} onChange={e => setFormData({...formData, highTideTime: e.target.value})} />
+              <input type="number" inputMode="numeric" className={styles.inputNumericRightStyle} value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
+              <span className={styles.unitTextStyle}>cm</span>
+             </div>
+          </InputTile>
+
+          <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
+            <MultiSelectInput
+              options={FEATURE_OPTIONS}
+              value={formData.feature || []}
+              onChange={(next) => setFormData({ ...formData, feature: next })}
+              inputStyle={styles.inputMultiStyle}
+              placeholder="特徴を選択"
+            />
+          </InputTile>
+
+          <InputTile label="干潮時(cm)" icon={WavesArrowDown}>
+            <div style={inputFlexStyle}>
+              <input type="time" id="lowTideTime" name="lowTideTime" value={formData.lowTideTime} className={styles.timeStyle} onChange={e => setFormData({...formData, lowTideTime: e.target.value})} />
+              <input type="number" inputMode="numeric" id="lowTide" name="lowTide" className={styles.inputNumericRightStyle} value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
+              <span className={styles.unitTextStyle}>cm</span>
+           </div>
           </InputTile>
 
           <InputTile label="注意喚起人数" icon={Megaphone}>
@@ -182,11 +179,15 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
             </div>
           </InputTile>
 
+          <InputTile label="潮流" icon={TrendingUpDown}>
+            <div style={radioFlexStyle}>
+              {CURRENT_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, current: opt})} style={{...radioBtnStyle, backgroundColor: formData.current === opt ? '#e0f2fe' : '#fff', color: formData.current === opt ? '#0369a1' : '#64748b', borderColor: formData.current === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+             </div>
+          </InputTile>
+
           <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen}>
             <textarea className={styles.inputNoteStyle} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} />
           </InputTile>
-
-        </div>
 
      </main>
 
@@ -210,5 +211,12 @@ const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const doneTextStyle = { backgroundColor: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '9px', fontWeight: '600', border: '1px solid #d1d5db', display: 'inline-block' };
 
 export default EditView;
+
+//            <select className={styles.inputStyle} value={formData.feature} onChange={e => setFormData({...formData, feature: e.target.value})}><option value="">- 選択 -</option>{FEATURE_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
+//        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+//        </div>
+//        </div>
+//
+//        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
 

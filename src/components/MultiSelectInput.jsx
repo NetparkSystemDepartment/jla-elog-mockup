@@ -20,7 +20,8 @@ export const MultiSelectInput = ({ options = [], value = [], onChange, placehold
         onClick={() => setIsOpen(!isOpen)}
         style={{ 
           cursor: 'pointer', minHeight: '20px', display: 'flex', 
-          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '4px 8px' 
+          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '4px 8px' , height: 'auto',
+          maxHeight: '100px'
         }}
       >
         {value.length > 0 ? (
@@ -43,19 +44,18 @@ export const MultiSelectInput = ({ options = [], value = [], onChange, placehold
             onClick={() => setIsOpen(false)} 
           />
           
-{/*            position: 'absolute', top: '105%', left: 0, width: '100%', background: 'white', */}
           <div style={{ 
             position: 'absolute', top: '105%', left: 0, width: '100%', background: 'white', 
             border: '1px solid #ddd', borderRadius: '8px', zIndex: 100, padding: '8px', 
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '200px', overflowY: 'auto' 
           }}>
             {options.map(name => (
-              <label key={name} style={{ display: 'flex', alignItems: 'center', padding: '12px 8px', borderBottom: '1px solid #f0f0f0', fontSize: '12px' }}>
+              <label key={name} style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', borderBottom: '1px solid #f0f0f0', fontSize: '12px' }}>
                 <input
                   type="checkbox"
                   checked={value.includes(name)}
                   onChange={(e) => handleToggle(name, e.target.checked)}
-                  style={{ width: '20px', height: '20px', marginRight: '10px' }}
+                  style={{ width: '16px', height: '16px', marginRight: '10px' }}
                 /> 
                 {name}
               </label>
@@ -72,3 +72,8 @@ export const MultiSelectInput = ({ options = [], value = [], onChange, placehold
     </div>
   );
 };
+
+//        style={{ 
+//          cursor: 'pointer', minHeight: '20px', display: 'flex', 
+//          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '4px 8px' 
+//        }}
