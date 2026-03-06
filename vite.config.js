@@ -8,15 +8,17 @@ export default defineConfig({
     VitePWA({
       // VITE_MSW という環境変数が 'true' の時は PWA を無効にする
       // これにより build -> preview 時でも無効になる
-      disable: process.env.VITE_MSW === 'true' || process.env.NODE_ENV === 'development',      
+      //disable: process.env.VITE_MSW === 'true' || process.env.NODE_ENV === 'development',      
+
+      disable: false, // PWAを有効にする
       registerType: 'autoUpdate', // 新しいSWが見つかったら自動更新
       injectRegister: 'auto',     // index.htmlに自動で登録スクリプトを挿入
       
       // manifestの設定（アプリとしてインストールした時の名前や色）
       manifest: {
-        name: 'JLA e-eog',
+        name: 'Beach Patrol e-eog',
         short_name: 'e-log',
-        description: 'JLA e-log Mockup',
+        description: 'Beach Patrol e-log Mockup',
         theme_color: '#3b82f6',      // ブラウザのツールバーなどの色
         background_color: '#ffffff', // アプリ起動時の背景色
         display: 'standalone',       // アプリ単体で動いているように見せる（重要！）
