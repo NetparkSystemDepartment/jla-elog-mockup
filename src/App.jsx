@@ -33,10 +33,18 @@ function App() {
 
   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const response = await fetch(`/api/records?date=${dateStr}`);
+    //const response = await fetch(`/api/records?date=${dateStr}`);
     //const url = `/api/records?date=${selectedDate}`;
     //console.log("UI側が投げようとしているURL:", url);
-    const data = await response.json();
+    //const data = await response.json();
+
+    let data = [];
+    
+    console.log("dateStr:", dateStr);
+    // 検索。結果が null/undefined なら空配列にする
+    const result = await getRecordsByDate(dateStr);
+    data = result || [];
+ 
     // data には IndexedDB から取得した配列が入る
     setSavedRecords(data); 
   };
@@ -50,22 +58,43 @@ function App() {
       timestamp: Date.now() 
     };
     //await saveRecord(record);
-    const response = await fetch('/api/records', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(record),
-    });
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log('保存成功（ID）:', result.id);
+//    const response = await fetch('/api/records', {
+//      method: 'POST',
+//      headers: {
+//       'Content-Type': 'application/json',
+//      },
+//      body: JSON.stringify(record),
+//    });
+//
+//    if (response.ok) {
+//      const result = await response.json();
+//      console.log('保存成功（ID）:', result.id);
+//      toast.success('保存しました！');
+//    }
+
+    try {
+      // MSW(fetch) を通さず、直接 IndexedDB へ保存
+      const id = await saveRecord(record);
+    
+      console.log('保存成功（ID）:', id);
       toast.success('保存しました！');
+    
+      // リストの再読み込みと遷移
+      //await loadRecords(); 
+      //setView('list');
+    } catch (error) {
+      console.error('保存失敗:', error);
+      toast.error('保存に失敗しました');
     }
 
-    await loadRecords();
-    setView('list');
+    try {
+      await loadRecords();
+      setView('list');
+    } catch (error) {
+        console.error('読み込み失敗:', error);
+        toast.error('データの読み込みに失敗しました');
+    }
   };
 
   // 海岸選択時の処理
