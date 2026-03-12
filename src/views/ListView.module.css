@@ -117,7 +117,7 @@
 }
 
 .bottomNavStyle {
-    position: fixed;
+    position: sticky;
     bottom: 0;
     height: 65px;
     background-Color: #44445A;
@@ -140,4 +140,9 @@
 .navTextStyle {
    font-Size: 10px;
    font-Weight: 500;
+}
+
+.mainStyle {
+   padding: 12px;
+   min-Height: 78vh;
 }
