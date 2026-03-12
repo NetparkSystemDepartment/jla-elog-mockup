@@ -73,7 +73,3 @@ export const MultiSelectInput = ({ options = [], value = [], onChange, placehold
   );
 };
 
-//        style={{ 
-//          cursor: 'pointer', minHeight: '20px', display: 'flex', 
-//          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '4px 8px' 
-//        }}
