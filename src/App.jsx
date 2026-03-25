@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ListView from './views/ListView';
 import EditView from './views/EditView';
-import { getAllRecords, saveRecord, getRecordsByDate} from './db';
+import { getAllRecords, saveRecord, getRecordsByDate, checkRecordByDate} from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 
@@ -25,13 +25,7 @@ function App() {
     setSavedRecords(allData.filter(r => r.date === dateStr));
   };
 
-  //const loadRecords = async () => {
-  //  const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  //  const filteredData = await getRecordsByDate(dateStr);
-  //  setSavedRecords(filteredData);
-  //};
-
-  const loadRecords = async () => {
+   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     //const response = await fetch(`/api/records?date=${dateStr}`);
     //const url = `/api/records?date=${selectedDate}`;
@@ -51,38 +45,31 @@ function App() {
 
   // 保存処理（子から呼ばれる）
   const handleSave = async (formData) => {
+    
+    const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
+    const beachName = selectedBeach;
+
     const record = { 
       ...formData, 
-      beach: selectedBeach, 
-      date: format(selectedDate, 'yyyy-MM-dd'), 
+      beach: beachName, 
+      date: formattedDate, 
       timestamp: Date.now() 
     };
-    //await saveRecord(record);
-
-//    const response = await fetch('/api/records', {
-//      method: 'POST',
-//      headers: {
-//       'Content-Type': 'application/json',
-//      },
-//      body: JSON.stringify(record),
-//    });
-//
-//    if (response.ok) {
-//      const result = await response.json();
-//      console.log('保存成功（ID）:', result.id);
-//      toast.success('保存しました！');
-//    }
 
     try {
+
+      const existing = await checkRecordByDate(formattedDate, beachName);
+
+    if (existing) {
+      const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
+      if (!ok) return; // キャンセルならここで処理を終了
+    }      
       // MSW(fetch) を通さず、直接 IndexedDB へ保存
       const id = await saveRecord(record);
     
       console.log('保存成功（ID）:', id);
       toast.success('保存しました！');
     
-      // リストの再読み込みと遷移
-      //await loadRecords(); 
-      //setView('list');
     } catch (error) {
       console.error('保存失敗:', error);
       toast.error('保存に失敗しました');

@@ -1,4 +1,4 @@
-const DB_NAME = 'PatrolDB';
+const DB_NAME = 'PatrolDB_rev2';
 const STORE_NAME = 'records';
 
 import Dexie from 'dexie';
@@ -6,8 +6,8 @@ import Dexie from 'dexie';
 // データベースの定義
 export const db = new Dexie(DB_NAME);
 
-db.version(1).stores({
-  records: '++id, date'
+db.version(2).stores({
+  records: '[date+beach]'
 });
 
 // データの全取得
@@ -39,4 +39,9 @@ export const getRecordsByDate = async (dateStr) => {
 
   console.log("検索結果:", results); // 結果が0件なら型か中身が違う
   return results;
+};
+
+// 指定された日付のレコードを1件取得する
+export const checkRecordByDate = async (date, beach) => {
+  return await db.records.get([date, beach]);
 };

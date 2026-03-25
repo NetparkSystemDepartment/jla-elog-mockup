@@ -79,17 +79,18 @@
    border-Radius: 4px;
    border: 1px solid #e2e8f0;
    font-Size: 12px;
-   height: 24px;
+   min-height: 24px;
    background-Color: #fcfcfc;
    resize: none;
+   field-Sizing: content;
 }
 
 .inputNumericStyle {
    width: 80%;
-   padding: 4px;
+   /*padding: 4px;*/
    border-Radius: 4px;
    border: 1px solid #e2e8f0;
-   font-Size: 14px;
+   font-Size: 12px;
    height: 24px;
    background-Color: #fcfcfc;
    text-Align: right;
@@ -170,12 +171,13 @@
 }
 
 .timeStyle {
-   width:70px;
+   width: 70px;
+   height: 24px;
 }
 
 .inputNumericRightStyle {
    width: 40px;
-   padding: 4px;
+   /*padding: 4px;*/
    border-Radius: 4px;
    border: 1px solid #e2e8f0;
    font-Size: 14px;
@@ -193,4 +195,24 @@
    font-Size: 12px;
    height: 24px;
    background-Color: #fcfcfc;
+}
+
+.labelBaseStyle { 
+  font-Size: 10px; 
+  font-Weight: bold; 
+  color: #64748b;
+  display: flex;
+  align-Items: center;
+}
+
+.footerNoteStyle { 
+  font-Size: 10px; 
+  font-Weight: bold; 
+  color: #64748b;
+  text-align: right;
+  padding-bottom: 4px;
+}
+
+.inputTimeStyle {
+   height: 24px;
 }
