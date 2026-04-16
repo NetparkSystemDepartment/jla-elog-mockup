@@ -130,9 +130,9 @@ const ListView = ({ baseDate, setBaseDate, selectedDate, setSelectedDate, savedR
   );
 };
 
-const infoTextStyle = { fontSize: '10px', color: '#64748b', marginTop: '4px' };
+const infoTextStyle = { fontSize: '12px', color: '#64748b', marginTop: '4px' };
 const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
-const beachOptionStyle = { width: '100%', padding: '10px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' };
+const beachOptionStyle = { width: '100%', padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' };
 const doneTextStyle = { backgroundColor: '#d1fae5', color: '#065f46', fontSize: '12px', padding: '2px 8px', borderRadius: '9999px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center' };
 
 export default ListView;

@@ -282,7 +282,7 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onBack, 
 };
 
 const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '4px' };
-const radioBtnStyle = { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '10px', fontWeight: '600', height: '20px' };
+const radioBtnStyle = { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '14px', fontWeight: '600', height: '20px' };
 const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const doneTextStyle = { backgroundColor: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '9px', fontWeight: '600', border: '1px solid #d1d5db', display: 'inline-block' };
 

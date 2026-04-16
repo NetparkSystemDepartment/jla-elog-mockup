@@ -19,7 +19,7 @@ const tileStyle = {
 };
 
 const labelBaseStyle = { 
-  fontSize: '10px', 
+  fontSize: '12px', 
   fontWeight: 'bold', 
   color: '#64748b',
   display: 'flex',
