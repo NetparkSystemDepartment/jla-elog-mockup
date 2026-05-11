@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { User, MessageSquare, StickyNote } from 'lucide-react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS } from '../constants';
+import { MultiSelectInput } from '../components/MultiSelectInput';
 
 const DIRECTIONS = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+
+const MEMBERS = ['staff01', 'staff02', 'staff03'];
+ 
+
 
 // モックデータ：本来はDBから取得
 const MOCK_HANDOVERS = [
@@ -10,17 +17,30 @@ const MOCK_HANDOVERS = [
   { priority: '低', date: '2025/07/27', beach: 'アボガマ', content: '北西の風が強く、離岸流が発生しやすい状況です。', member: '担当Ｂ' },
 ];
 
-function BriefingView({ onComplete }) {
+function BriefingView({ user, onComplete, recentHandovers = [] }) {
   const [data, setData] = useState({
-    member1: '', member2: '',
+    members: '',
     carType: '', carNo: '',
     tide: '', highTideTime: '', highTide: '', lowTideTime: '', lowTide: '',
     warn: '', alert: '', windDir: '', windSpeed: '',
     handoverMemo: '', noteMemo: ''
   });
 
+  // ページネーター用
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(recentHandovers.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  // 表示する分だけを切り出す
+  const currentHandovers = recentHandovers.slice(indexOfFirstItem, indexOfLastItem);
+  // ページ変更ハンドラー
+  const handlePrev = () => setCurrentPage(prev => Math.max(1, prev - 1));
+  const handleNext = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    localStorage.setItem('briefing_data', JSON.stringify(data));
     onComplete(data);
   };
 
@@ -43,44 +63,63 @@ function BriefingView({ onComplete }) {
             <div style={briefingStyles.grid}>
               {/* 左列 */}
               <div style={briefingStyles.column}>
-                <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>自分以外の監視員1人目</label>
-                  <div style={briefingStyles.inputWrapper}>
-                    <User size={16} style={briefingStyles.icon} />
-                    <input type="text" placeholder="ユーザーID" style={briefingStyles.inputWithIcon} 
-                      value={data.member1} onChange={e => setData({...data, member1: e.target.value})} />
-                  </div>
-                </div>
-
-                <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>自分以外の監視員2人目</label>
-                  <div style={briefingStyles.inputWrapper}>
-                    <User size={16} style={briefingStyles.icon} />
-                    <input type="text" placeholder="ユーザーID" style={briefingStyles.inputWithIcon}
-                      value={data.member2} onChange={e => setData({...data, member2: e.target.value})} />
+                <div style={{...briefingStyles.field, minHeight: '96px'}}>
+                  <label style={briefingStyles.label}>自分以外の監視員</label>
+                  <div style={briefingStyles.inputMultiSelect}> 
+                  <MultiSelectInput
+                    options={MEMBERS}
+                    value={data.members || []}
+                    onChange={(next) => setData({ ...data, members: next })}
+                    inputStyle={briefingStyles.inputMultiStyle}
+                    placeholder="ユーザーID"
+                  />
                   </div>
                 </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>使用車両</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="text" placeholder="車種名" style={briefingStyles.input}
-                      value={data.carType} onChange={e => setData({...data, carType: e.target.value})} />
-                    <input type="text" placeholder="No." style={briefingStyles.input}
+                    <input
+                      list="carType-options"
+                      style={briefingStyles.input}
+                      value={data.someValue}
+                      onChange={(e) => setData({ ...data, carType: e.target.value })}
+                      placeholder="車種名"
+                    />
+                    <datalist id="carType-options">
+                      {CARTYPE.map((opt) => (
+                        <option key={opt} value={opt} />
+                      ))}
+                    </datalist>
+                    <input type="text" placeholder="No." style={briefingStyles.input} maxLength={4} inputMode="numeric"
                       value={data.carNo} onChange={e => setData({...data, carNo: e.target.value})} />
                   </div>
                 </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>注意報</label>
-                  <input type="text" placeholder="注意報" style={briefingStyles.input}
-                    value={data.warn} onChange={e => setData({...data, warn: e.target.value})} />
-                </div>
+                  <div style={briefingStyles.inputMultiSelect}> 
+                  <MultiSelectInput
+                    options={WARNING_OPTIONS}
+                    value={data.warn || []}
+                    onChange={(next) => setData({ ...data, warn: next })}
+                    inputStyle={briefingStyles.inputMultiStyle}
+                    placeholder="注意報を選択"
+                  />
+                  </div>
+                 </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>警報</label>
-                  <input type="text" placeholder="警報" style={briefingStyles.input}
-                    value={data.alert} onChange={e => setData({...data, alert: e.target.value})} />
+                  <div style={briefingStyles.inputMultiSelect}> 
+                  <MultiSelectInput
+                    options={ALERT_OPTIONS}
+                    value={data.alert || []}
+                    onChange={(next) => setData({ ...data, alert: next })}
+                    inputStyle={briefingStyles.inputMultiStyle}
+                    placeholder="警報を選択"
+                  />
+                  </div>
                 </div>
               </div>
 
@@ -88,8 +127,9 @@ function BriefingView({ onComplete }) {
               <div style={briefingStyles.column}>
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>潮汐</label>
-                  <input type="text" placeholder="潮汐" style={briefingStyles.input}
-                    value={data.tide} onChange={e => setData({...data, tide: e.target.value})} />
+                  <div style={briefingStyles.radioFlexStyle}>
+                    {TIDE_OPTIONS.map(opt => (<button key={opt} type="button" onClick={(e) => setData({...data, tide: opt})} style={{...briefingStyles.radioBtnStyle, backgroundColor: data.tide === opt ? '#e0f2fe' : '#fff', color: data.current === opt ? '#0369a1' : '#64748b', borderColor: data.tide === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+                  </div>
                 </div>
 
                 <div style={briefingStyles.field}>
@@ -122,8 +162,9 @@ function BriefingView({ onComplete }) {
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>風速（天気予報）</label>
-                  <input type="text" placeholder="風速" style={briefingStyles.input}
-                    value={data.windSpeed} onChange={e => setData({...data, windSpeed: e.target.value})} />
+                  <div style={briefingStyles.radioFlexStyle}>
+                    {WIND_SPEED_OPTIONS.map(opt => (<button key={opt} type="button" onClick={(e) => setData({...data, windSpeed: opt})} style={{...briefingStyles.radioBtnStyle, backgroundColor: data.windSpeed === opt ? '#e0f2fe' : '#fff', color: data.current === opt ? '#0369a1' : '#64748b', borderColor: data.windSpeed === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -170,21 +211,48 @@ function BriefingView({ onComplete }) {
           </div>
 
           <div style={briefingStyles.tableBody}>
-            {MOCK_HANDOVERS.map((item, idx) => (
+            {currentHandovers.map((item, idx) => (
               <div key={idx} style={briefingStyles.tableRow}>
-                <div style={{ flex: 1 }}>{item.priority}</div>
+                <div style={{ flex: 1 }}></div>
                 <div style={{ flex: 1 }}>{item.beach}</div>
                 <div style={{ flex: 1 }}>{item.date}</div>
-                <div style={{ flex: 2, fontSize: '12px', textAlign: 'left' }}>{item.content}</div>
-                <div style={{ flex: 1 }}>{item.member}</div>
+                <div style={{ flex: 2, fontSize: '12px', textAlign: 'left' }}>{item.handover}</div>
+                <div style={{ flex: 1 }}>{item.user_id}</div>
               </div>
             ))}
           </div>
 
           <div style={briefingStyles.pagination}>
-            <ChevronLeft size={20} color="#64748b" />
-            <span>1 / 1</span>
-            <ChevronRight size={20} color="#64748b" />
+            {/* 前へボタン */}
+            <button 
+              onClick={handlePrev} 
+              disabled={currentPage === 1}
+              style={{ 
+                ...briefingStyles.pageBtn, 
+                opacity: currentPage === 1 ? 0.3 : 1,
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <ChevronLeft size={16} /> 
+            </button>
+
+            {/* ページ情報 */}
+            <div style={briefingStyles.pageInfo}>
+              <strong>{currentPage}</strong> / {totalPages}
+            </div>
+
+            {/* 次へボタン */}
+            <button 
+              onClick={handleNext} 
+              disabled={currentPage === totalPages}
+              style={{ 
+                ...briefingStyles.pageBtn, 
+                opacity: currentPage === totalPages ? 0.3 : 1,
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         </section>
       </main>
@@ -200,20 +268,27 @@ const briefingStyles = {
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   
-  container: { flex: 1, padding: '20px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' },
-  card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '30px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '40px' },
+  container: { flex: 1, padding: '10px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' },
+  card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '30px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '10px' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
   column: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  field: { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px', textAlign: 'left' },
+  /*field: { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px', textAlign: 'left' },*/
+  field: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px', textAlign: 'left' },
   label: { fontSize: '11px', fontWeight: 'bold', color: '#374151' },
   inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' },
   icon: { position: 'absolute', left: '10px', color: '#9ca3af' },
   
   input: { width: '100%', boxSizing: 'border-box', padding: '10px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
+  inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '13px', minHeight: '80px', resize: 'none' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#44445A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 
+  inputMultiStyle: { padding: '4px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', height: '24px', backgroundColor: '#fcfcfc'},
+  /*radioFlexStyle: { display: 'flex', flexWrap: 'wrap', gap: '4px' },*/
+  radioFlexStyle: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  /*radioBtnStyle: { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '14px', fontWeight: '600', height: '20px' },*/
+  radioBtnStyle: { padding: '10px 16px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease' },
   // 申し送り一覧用
   historyTitle: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' },
   historyPlaceholder: { backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', color: '#64748b', fontSize: '14px' },
@@ -256,6 +331,34 @@ const briefingStyles = {
     right: '12px',
     pointerEvents: 'none',
     color: '#64748b'
-  }};
+  },
+pageBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '8px 16px',
+    backgroundColor: '#f1f5f9', // 薄いグレー
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    fontSize: '13px',
+    color: '#334155',
+    fontWeight: '600',
+    transition: 'all 0.2s ease',
+    // 常に表示する仕様に合わせ、cursorなどの制御はJSX側のstyle属性で上書きします
+  },};
 
 export default BriefingView;
+
+//                <div style={briefingStyles.field}>
+//                  <label style={briefingStyles.label}>自分以外の監視員2人目</label>
+//                  <div style={briefingStyles.inputWrapper}>
+//                    <User size={16} style={briefingStyles.icon} />
+//                    <input type="text" placeholder="ユーザーID" style={briefingStyles.inputWithIcon}
+//                      value={data.member2} onChange={e => setData({...data, member2: e.target.value})} />
+//                  </div>
+//                </div>
+
+//                    <select style={briefingStyles.input} value={data.carType} onChange={e => setData({...data, carType: e.target.value})}>
+//                      <option value="">車種名</option>
+//                      {CARTYPE.map(d => <option key={d} value={d}>{d}</option>)}
+//                    </select>
