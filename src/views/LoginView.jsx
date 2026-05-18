@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
 // Context API を使用する
-import { useAuth } from '../contexts/authContext';
+//import { useAuth } from '../contexts/authContext';
+// ダミー
+import { useAuth } from '../contexts/dummyAuthContext';
 
 function LoginView() {
   const { login } = useAuth(); // Contextからlogin関数を取り出す

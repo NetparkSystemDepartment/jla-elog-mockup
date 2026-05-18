@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import { X, Save, Clock, Cloud, Wind, Users, Gauge, Waves, Droplets, AlertCircle, User, 
   WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone, 
-  NotebookPen, ChevronLeft } from 'lucide-react';
+  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 registerLocale('ja', ja);
@@ -9,41 +9,62 @@ import InputTile from '../components/InputTile';
 import { MultiSelectInput } from '../components/MultiSelectInput';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import styles from './EditView.module.css';
+//import styles from './EditView.module.css';
 import { toast } from 'sonner';
 import { Construction, Calendar } from 'lucide-react';
+import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
+  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS } from '../constants';
 
-const WEATHER_OPTIONS = ['晴', '曇り', '雨', '雷雨'];
-const WIND_SPEED_OPTIONS = ['0～4m/s', '5～10m/s', '11m/s～'];
-const TIDE_OPTIONS = ['大潮', '中潮', '小潮', '長潮', '若潮'];
-const CURRENT_OPTIONS = ['下げ潮', '上げ潮'];
-const WAVE_OPTIONS = ['0～0.5m', '0.6～1m', '1.1～1.5m', '1.6m～'];
-const DIRECTIONS = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
-const WARNIBG_OPTIONS = ['なし', '大雨', '洪水', '強風', '風雪', '波浪', '高潮', '雷', '濃霧'];
-const ALERT_OPTIONS = ['なし', '大雨', '洪水', '暴風', '暴風雪', '波浪', '高潮'];
 const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
 const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
-const PRIORITY_OPTIONS = ['高', '中', '低'];
 const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
 
 const initialFormData = {
-  startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
+  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
   highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '', 
   wave: '', warn: '', alert: '', visitors: '', feature: '', 
   jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: ''
 };
 
-const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView }) => {
-  const [formData, setFormData] = useState({startDate: selectedDate}, initialFormData);
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList }) => {
+//  const [formData, setFormData] = useState({startDate: selectedDate}, initialFormData);
+  const [formData, setFormData] = useState({
+  ...initialFormData,  // 既存のデータを展開
+  startDate: selectedDate // 新しい値をセット（同名プロパティがあれば上書きされる）
+});
+
+// アンパトロールモード
+  const [isUnpatrolled, setIsUnpatrolled] = useState(false);
+
+  const handleToggle = () => {
+    const nextStatus = !isUnpatrolled;
+    setIsUnpatrolled(nextStatus);
+
+    // エラーオブジェクトをクリア
+    setErrors({});
+    
+  };  
+
+  //console.log('selectedDate:', selectedDate);
+//console.log('startDate:', formData.startDate)
+  const members = profileList;
 
   // 既存データがあればフォームにセット
   useEffect(() => {
-    console.log("EditView In:", existingData)
+//    console.log("EditView In:", existingData)
     if (existingData) setFormData(existingData);
+    //setFormData({visitors: '0'});
   }, [existingData]);
 
-  // 全ての入力を削除
+  useEffect(() => {
+  setFormData(prev => ({
+    ...prev,
+    startDate: selectedDate
+  }));
+}, [selectedDate]);
+
+  // 全ての入力を削除（モックアップのみ）
   const handleClear = () => {
     toast.warning('入力内容をすべて消去しますか？', {
       duration: Infinity,
@@ -61,19 +82,99 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onSubmit
     });
   };
 
+  // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
+
+  // 「送信」ボタンenable用
+  const isFormValid = () => {
+    // 必須項目を列挙して、すべてに値が入っているかチェック
+    return (
+      (formData.members && formData.members.length > 0) &&
+      formData.startTime && 
+      formData.endTime &&
+      (formData.weather || formData.weather === 0) &&
+      (formData.current || formData.current === 0) &&
+      formData.highTideTime &&
+      formData.highTide &&
+      (formData.wawaveOuterve || formData.waveOuter === 0) &&
+      formData.lowTideTime &&
+      formData.lowTide &&
+      (formData.wave || formData.wave === 0) &&
+      formData.windDir && 
+      (formData.tide || formData.tide === 0) &&
+      formData.windDir &&
+      formData.windDirDetail &&
+      (formData.windSpeed || formData.windSpeed === 0) &&
+      formData.visitors &&
+      formData.warn &&
+      formData.feature &&
+      formData.alert &&
+      formData.jpWarning &&
+      formData.forWarning &&
+      formData.jpTourist &&
+      formData.forTourist &&
+      formData.carType &&
+      formData.carNo &&
+      formData.handover &&
+      formData.note
+    );
+  };
+
+  const isValid = isFormValid();
+
   // 「保存して閉じる」ボタン
   const handleSaveClick = () => {
     const newErrors = {};
 
     // 必須チェック
-    if (!formData.weather) newErrors.startTime = 'パトロール開始時刻は入力が必須です';
-    if (!formData.tide) newErrors.endTime = 'パトロール終了時刻は入力が必須です';
+    if (isUnpatrolled) {
+      if (!formData.members) newErrors.members = 'パトロールメンバーは入力が必須です';
+      if (!formData.note) newErrors.note = '特記事項は入力が必須です';
+    }
+    else {
+      if (!formData.members) newErrors.members = 'パトロールメンバーは入力が必須です';
+      if (!formData.startTime) newErrors.startTime = 'パトロール開始時刻は入力が必須です';
+      if (!formData.endTime) newErrors.endTime = 'パトロール終了時刻は入力が必須です';
+      if (formData.weather === null || formData.weather === undefined || formData.weather === '') {
+        newErrors.weather = '天候は入力が必須です';
+      }  
+      if (formData.current === null || formData.current === undefined || formData.current === '') {
+        newErrors.current = '潮汐は入力が必須です';
+      }
+      if (!formData.highTideTime) newErrors.highTideTime = '満潮時刻は入力が必須です';
+      if (!formData.highTide) newErrors.highTide = '満潮高さは入力が必須です';
+      if (formData.waveOuter === null || formData.waveOuter === undefined || formData.waveOuter === '') {
+        newErrors.waveOuter = '波高（アウターリーフ）は入力が必須です';
+      }  
+      if (!formData.lowTideTime) newErrors.lowTideTime = '干潮時刻は入力が必須です';
+      if (!formData.lowTide) newErrors.lowTide = '干潮高さは入力が必須です';
+      if (formData.wave === null || formData.wave === undefined || formData.wave === '') {
+        newErrors.wave = '波高（ショアゾーン）は入力が必須です';
+      }  
+      if (!formData.windDir) newErrors.windDir = '風向（天気予報）は入力が必須です';
+      if (!formData.windDirDetail) newErrors.windDirDetail = '風向（現地）は入力が必須です';
+      if (formData.windSpeed === null || formData.windSpeed === undefined || formData.windSpeed === '') {
+        newErrors.windSpeed = '風速（天気予報）は入力が必須です';
+      }  
+      if (!formData.visitors) newErrors.visitors = '利用者数は入力が必須です';
+      if (!formData.warn) newErrors.warn = '注意報は入力が必須です';
+      if (!formData.feature) newErrors.feature = 'ビーチ利用の特徴は入力が必須です';
+      if (!formData.alert) newErrors.alert = '警報は入力が必須です';
+      if (!formData.jpWarning) newErrors.jpWarning = '注意喚起人数 日本人県内在住は入力が必須です';
+      if (!formData.forWarning) newErrors.forWarning = '注意喚起人数 外国人県内在住は入力が必須です';
+      if (!formData.jpTourist) newErrors.jpTourist = '注意喚起人数 日本人観光客は入力が必須です';
+      if (!formData.forTourist) newErrors.forTourist = '注意喚起人数 外国人観光客は入力が必須です';
+      if (!formData.carType) newErrors.carType = '車両情報 車種名は入力が必須です';
+      if (!formData.carNo) newErrors.carNo = '車両情報 No.は入力が必須です';
+      if (!formData.handover) newErrors.handover = '申し送り事項は入力が必須です';
+      if (!formData.note) newErrors.note = '特記事項は入力が必須です';
+    }
 
     // 未入力あり
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast.error('未入力の項目があります');
+      console.log('errors:', errors);
       return; 
     }
 
@@ -125,248 +226,533 @@ const EditView = ({ selectedCoast, selectedBeach, selectedDate, onSave, onSubmit
 //              <Clock size={12} style={{ marginRight: 4 }} /><label>パトロール終了時刻</label>
 //            </div>
   return (
-    <div className={styles.container}>
+    <div style={container}>
     <div className="notranslate">
       <header>
         
-        <div className={styles.headerTopStyle}>
+        <div style={headerTopStyle}>
           {/*<div className={styles.dummyStyle} ></div>*/}
           <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#44445a", color: "#FFFFFF", border: "none"} }>＜</button>
           <span style={logoTextStyle}>記録入力</span>
           <span></span>
         </div>
-        <div className={styles.headerMiddleStyle}>{selectedCoast}</div>
-        <div className={styles.headerBottomStyle}>
+        <div style={headerMiddleStyle}>{selectedCoast}</div>
+        <div style={headerBottomStyle}>
           <h3>{selectedBeach}</h3>
-          <button onClick={handleSaveClick} className={styles.saveBtnStyle} >保存して閉じる</button>
+          <button onClick={handleSaveClick} style={saveBtnStyle} >保存して閉じる</button>
           {/*
           <span style={{...doneTextStyle, color: existingData ? "#10b981" : "#ef4444"}}>
             {existingData ? "パトロール実施済み" : "パトロール未実施"}
           </span>
           */}
         </div>
-        <div className={styles.headerBottomStyle}>
+        <div style={headerBottomStyle}>
           <span>{formattedDate}の記録 #{String(dailySeq).padStart(2, '0')}</span>
         </div>
       </header>
 
       <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch' }}>
-          <InputTile label="パトロールメンバー" icon={User} isExpandable={true}>
-            <MultiSelectInput
-              options={['担当A', '担当B', '担当C']}
-              value={formData.members || []}
-              onChange={(next) => setFormData({ ...formData, members: next })}
-              inputStyle={styles.inputMultiStyle}
-              placeholder="ユーザーID"
-            />
-          </InputTile>
 
-          <InputTile isExpandable={true}>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
-              <Clock size={12} style={{ marginRight: 4 }} /><label className={styles.labelLeftyStyle}>パトロール開始時刻</label>
-              <Clock size={12} style={{ marginRight: 4 }} /><label className={styles.labelLeftyStyle}>パトロール終了時刻</label>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input type="time" style={editStyles.input}
-                value={formData.startTime} onChange={e => setData({...formData, startTime: e.target.value})} />
-              <input type="time" style={editStyles.input}
-                value={formData.endTime} onChange={e => setData({...formData, endTime: e.target.value})} />
-            </div>
-            <div className={styles.labelBaseStyle}>
-              <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
-            </div>
-            <div style={radioFlexStyle}>
-              {WEATHER_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, weather: opt})} style={{...radioBtnStyle, backgroundColor: formData.weather === opt ? '#e0f2fe' : '#fff', color: formData.weather === opt ? '#0369a1' : '#64748b', borderColor: formData.weather === opt ? '#38bdf8' : '#e2e8f0'}}> {opt}</button>))}
-            </div>
-          </InputTile>
+        {/* パトロールメンバー */}
+        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}>
+          {/* ログイン者（記録担当者）を追加 */}
+          <div style={editStyles.field}>
+            <input
+              type="text"
+              value={user.id || ''}
+              disabled
+              style={disabledInput}
+            />
+          </div>
+          <div style={labelBaseStyle}>
+            <Cloud size={12} style={{ marginRight: 4 }} /><label>パトロールメンバー</label>
+          </div>
+          <MultiSelectInput
+            options={members}
+            value={formData.members || []}
+            onChange={(next) => {
+              setFormData({ ...formData, members: next });
+              if (errors.members && next.length > 0) {
+                setErrors({ ...errors, members: null });
+              }
+            }}
+            inputStyle={{
+              ...inputMultiStyle,
+              ...(errors.members ? { backgroundColor: '#fef2f2' } : {})
+            }}
+            placeholder="ユーザーID"
+          />
+        </InputTile>
+
+        {/* パトロール開始時刻、終了時刻、天候 */}
+        <InputTile isExpandable={true}>
+          <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
+            <Clock size={12} style={{ marginRight: 4 }} /><label style={{...labelLeftyStyle, fontSize: '12px' }}>パトロール開始時刻</label>
+            <Clock size={12} style={{ marginRight: 4 }} /><label style={{...labelLeftyStyle, fontSize: '12px' }}>パトロール終了時刻</label>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="time" style={{...editStyles.input, ...(errors.startTime ? errorInput : {})}}
+              value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
+            <input type="time" style={{...editStyles.input, ...(errors.endTime ? errorInput : {})}}
+              value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
+          </div>
+          <div style={labelBaseStyle}>
+            <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
+          </div>
+          <div style={radioFlexStyle}>
+            {WEATHER_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, weather: opt.id });
+                  if (errors.weather) {
+                    setErrors({ ...errors, weather: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.weather ? '#ef4444' : (formData.weather === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.weather === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.weather === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
         
-          <InputTile label="潮汐" icon={Waves}>
-            <div style={radioFlexStyle}>
-              {TIDE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, tide: opt})} style={{...radioBtnStyle, backgroundColor: formData.tide === opt ? '#e0f2fe' : '#fff', color: formData.tide === opt ? '#0369a1' : '#64748b', borderColor: formData.tide === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
+        {/* 潮汐 */}
+        <InputTile label="潮汐" icon={Waves}>
+          <div style={radioFlexStyle}>
+            {TIDE_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, tide: opt.id });
+                  if (errors.tide) {
+                    setErrors({ ...errors, tide: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.tide ? '#ef4444' : (formData.tide === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.tide === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.tide === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
 
-          <InputTile label="潮流" icon={TrendingUpDown}>
-            <div style={radioFlexStyle}>
-              {CURRENT_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, current: opt})} style={{...radioBtnStyle, backgroundColor: formData.current === opt ? '#e0f2fe' : '#fff', color: formData.current === opt ? '#0369a1' : '#64748b', borderColor: formData.current === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
+        {/* 潮流 */}
+        <InputTile label="潮流" icon={TrendingUpDown}>
+          <div style={radioFlexStyle}>
+            {CURRENT_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, current: opt.id });
+                  if (errors.current) {
+                    setErrors({ ...errors, current: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.current ? '#ef4444' : (formData.current === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.current === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.current === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
+        
+        {/* 満潮時国・高さ */}
+        <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="time" style={{...editStyles.input, ...(errors.highTideTime ? errorInput : {})}}
+              value={formData.highTideTime} onChange={e => {setFormData({...formData, highTideTime: e.target.value}); if (errors.highTideTime) setErrors({ ...errors, highTideTime: null });}} />
+            <input type="number" placeholder="高さ [cm] "style={{...editStyles.input, textAlign: 'right', ...(errors.highTide ? errorInput : {})}}
+              value={formData.highTide} onChange={e => {setFormData({...formData, highTide: e.target.value}); if (errors.highTide) setErrors({ ...errors, highTide: null });}} />
+            <span style={unitTextStyle}>cm</span>
+          </div>
+        </InputTile>
 
-          <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input type="time" style={editStyles.input}
-                value={formData.highTideTime} onChange={e => setFormData({...formData, highTideTime: e.target.value})} />
-              <input type="number" placeholder="高さ [cm]" style={editStyles.input}
-                value={formData.highTide} onChange={e => setFormData({...formData, highTide: e.target.value})} />
-              <span className={styles.unitTextStyle}>cm</span>
-            </div>
-          </InputTile>
+        {/* 波高（アウターリーフ）*/}
+        <InputTile label="波高（アウターリーフ）" icon={Activity}>
+          <div style={radioFlexStyle}>
+             {WAVE_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, waveOuter: opt.id });
+                  if (errors.waveOuter) {
+                    setErrors({ ...errors, waveOuter: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.waveOuter ? '#ef4444' : (formData.waveOuter === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.waveOuter === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.waveOuter === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
 
-          <InputTile label="波高（アウターリーフ）" icon={Activity}>
-            <div style={radioFlexStyle}>
-              {WAVE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, waveOuter: opt})} style={{...radioBtnStyle, backgroundColor: formData.waveOuter === opt ? '#e0f2fe' : '#fff', color: formData.waveOuter === opt ? '#0369a1' : '#64748b', borderColor: formData.waveOuter === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
+        {/* 干潮時刻・高さ */}
+        <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="time" style={{...editStyles.input, ...(errors.lowTideTime ? errorInput : {})}}
+              value={formData.lowTideTime} onChange={e => {setFormData({...formData, lowTideTime: e.target.value}); if (errors.lowTideTime) setErrors({ ...errors, lowTideTime: null });}} />
+            <input type="number" placeholder="高さ [cm] "style={{...editStyles.input, textAlign: 'right', ...(errors.lowTide ? errorInput : {})}}
+              value={formData.lowTide} onChange={e => {setFormData({...formData, lowTide: e.target.value}); if (errors.lowTide) setErrors({ ...errors, lowTide: null });}} />
+            <span style={unitTextStyle}>cm</span>
+          </div>
+        </InputTile>
 
-          <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input type="time" style={editStyles.input}
-                value={formData.lowTideTime} onChange={e => setFormData({...formData, lowTideTime: e.target.value})} />
-              <input type="number" placeholder="高さ [cm]" style={editStyles.input}
-                value={formData.lowTide} onChange={e => setFormData({...formData, lowTide: e.target.value})} />
-              <span className={styles.unitTextStyle}>cm</span>
-            </div>
-          </InputTile>
+        {/* 波高（ショアゾーン） */}
+        <InputTile label="波高（ショアゾーン）" icon={Activity}>
+          <div style={radioFlexStyle}>
+             {WAVE_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, wave: opt.id });
+                  if (errors.wave) {
+                    setErrors({ ...errors, wave: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.wave ? '#ef4444' : (formData.wave === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.wave === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.wave === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+           </div>
+        </InputTile>
 
-          <InputTile label="波高（ショアゾーン）" icon={Activity}>
-            <div style={radioFlexStyle}>
-              {WAVE_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, wave: opt})} style={{...radioBtnStyle, backgroundColor: formData.wave === opt ? '#e0f2fe' : '#fff', color: formData.wave === opt ? '#0369a1' : '#64748b', borderColor: formData.wave === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
+        {/* 風向（天気予報） */}
+        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}>
+          <select 
+            value={formData.windDir || ''} 
+            onChange={e => {
+              const val = e.target.value;
+              // 選択されたIDを数値に変換して保存（未選択時は空文字）
+              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
+              if (errors.windDir) setErrors({ ...errors, windDir: null });
+            }}
+            style={{...editStyles.input, ...(errors.windDir ? errorInput : {})}}
+           >
+            <option value="">風向</option>
+              {DIRECTIONS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+          </select> 
+        </InputTile>
 
-          <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}>
-            <select style={editStyles.input} value={formData.windDir} onChange={e => setData({...formData, windDir: e.target.value})}>
-              <option value="">風向</option>
-              {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </InputTile>
+        {/* 風向（現地） */}
+        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}>
+          <select 
+            value={formData.windDirDetail || ''} 
+            onChange={e => {
+              const val = e.target.value;
+              // 選択されたIDを数値に変換して保存（未選択時は空文字）
+              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
+              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
+            }}
+            style={{...editStyles.input, ...(errors.windDirDetail ? errorInput : {})}}
+          >
+            <option value="">風向</option>
+              {DIRECTIONS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+          </select> 
+        </InputTile>
 
-          <InputTile label="風向（現地）" icon={Compass} isExpandable={true}>
-            <select style={editStyles.input} value={formData.windDirDetail} onChange={e => setData({...formData, windDirDetail: e.target.value})}>
-              <option value="">風向</option>
-              {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </InputTile>
+        {/* 風速（天気予報） */}
+        <InputTile label="風速（天気予報）" icon={Gauge}>
+          <div style={radioFlexStyle}>
+            {WIND_SPEED_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, windSpeed: opt.id });
+                  if (errors.windSpeed) {
+                    setErrors({ ...errors, windSpeed: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.windSpeed ? '#ef4444' : (formData.windSpeed === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.windSpeed === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.windSpeed === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
 
-          <InputTile label="風速（天気予報）" icon={Gauge}>
-            <div style={radioFlexStyle}>
-              {WIND_SPEED_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, windSpeed: opt})} style={{...radioBtnStyle, backgroundColor: formData.windSpeed === opt ? '#e0f2fe' : '#fff', color: formData.windSpeed === opt ? '#0369a1' : '#64748b', borderColor: formData.windSpeed === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
-             </div>
-          </InputTile>
-
+        {/* 利用者数 */}
         <InputTile label="利用者数" icon={Users}>
-            <div style={inputFlexStyle}>
-              <input type="number" inputMode="numeric" className={styles.inputNumericStyle} value={formData.visitors} onChange={e => setFormData({...formData, visitors: e.target.value})} />
-              <label className={styles.unitTextStyle}>名</label>
-            </div>
-          </InputTile>
+          <div style={inputFlexStyle}>
+            <input type="number" inputMode="numeric" style={{...inputNumericStyle, width: '50%', height: '30px', ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors} onChange={e => {setFormData({...formData, visitors: e.target.value}); if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+        </InputTile>
 
-          <InputTile label="注意報" icon={WavesLadder} isExpandable={true}>
-            <MultiSelectInput
-              options={WARNIBG_OPTIONS2}
-              value={formData.warn || []}
-              onChange={(next) => setFormData({ ...formData, warn: next })}
-              inputStyle={styles.inputMultiStyle}
-              placeholder="注意報を選択"
+        {/* 注意報 */}
+        <InputTile label="注意報" icon={WavesLadder} isExpandable={true}>
+          <MultiSelectInput
+            options={WARNIBG_OPTIONS2}
+            value={formData.warn || []}
+            onChange={(next) => {
+              setFormData({ ...formData, warn: next });
+              if (errors.members && next.length > 0) {
+                setErrors({ ...errors, warn: null });
+              }
+            }}
+            inputStyle={{
+              ...inputMultiStyle,
+              ...(errors.warn ? { backgroundColor: '#fef2f2' } : {})
+            }}
+            placeholder="注意報を選択"
+          />
+        </InputTile>
+
+        {/* ビーチ利用の特徴 */}
+        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
+          <MultiSelectInput
+            options={FEATURE_OPTIONS}
+            value={formData.feature || []}
+            onChange={(next) => {
+              setFormData({ ...formData, feature: next });
+              if (errors.feature && next.length > 0) {
+                setErrors({ ...errors, feature: null });
+              }
+            }}
+            inputStyle={{
+              ...inputMultiStyle,
+              ...(errors.feature ? { backgroundColor: '#fef2f2' } : {})
+            }}
+            placeholder="特徴を選択"
+          />
+        </InputTile>
+
+        {/* 警報 */}
+        <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
+          <MultiSelectInput
+            options={FEATURE_OPTIONS}
+            value={formData.alert || []}
+            onChange={(next) => {
+              setFormData({ ...formData, alert: next });
+              if (errors.alert && next.length > 0) {
+                setErrors({ ...errors, alert: null });
+              }
+            }}
+            inputStyle={{
+              ...inputMultiStyle,
+              ...(errors.alert ? { backgroundColor: '#fef2f2' } : {})
+            }}
+            placeholder="警報を選択"
+          />
+        </InputTile>
+
+        {/* 注意喚起人数 */}
+        <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}>
+          <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
+            <label style={labelLeftyStyle}>日本人県内在住</label>
+            <label style={labelLeftyStyle}>外国人県内在住</label>
+          </div>
+          <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpWarning ? errorInput : {})}}
+              value={formData.jpWarning} onChange={e => {setFormData({...formData, jpWarning: e.target.value}); if (errors.jpWarning) setErrors({ ...errors, jpWarning: null });}} />
+            <label style={unitTextStyle}>名</label>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.forWarning ? errorInput : {})}}
+              value={formData.forWarning} onChange={e => {setFormData({...formData, forWarning: e.target.value}); if (errors.forWarning) setErrors({ ...errors, forWarning: null });}} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
+            <label style={labelLeftyStyle}>日本人観光客</label>
+            <label style={labelLeftyStyle}>外国人観光客</label>
+          </div>
+          <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpTourist ? errorInput : {})}}
+              value={formData.jpTourist} onChange={e => {setFormData({...formData, jpTourist: e.target.value}); if (errors.jpTourist) setErrors({ ...errors, jpTourist: null });}} />
+            <label style={unitTextStyle}>名</label>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpTourist ? errorInput : {})}}
+              value={formData.forTourist} onChange={e => {setFormData({...formData, forTourist: e.target.value}); if (errors.forTourist) setErrors({ ...errors, forTourist: null });}} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+        </InputTile>
+
+        {/* 車両情報、申し送り事項 */}
+        <InputTile label="車両情報" icon={NotebookPen} isExpandable={true}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              list="carType-options"
+              style={{...editStyles.input, ...(errors.carType ? errorInput : {})}}
+              value={formData.carType}
+              onChange={(e) => {
+                setFormData({ ...formData, carType: e.target.value });
+                if (errors.carType) {
+                  setErrors({ ...errors, carType: null });
+                }
+              }}
+              placeholder="車種名"
             />
-          </InputTile>
+            <datalist id="carType-options">
+              {CARTYPE.map((opt) => (
+                <option key={opt} value={opt} />
+              ))}
+            </datalist>
+            <input type="text" placeholder="No." inputMode="numeric" style={{...editStyles.input, ...(errors.carNo ? errorInput : {})}}
+              value={formData.carNo} onChange={e => {setFormData({...formData, carNo: e.target.value}); if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
+          </div>
+          
+          <div style={labelBaseStyle}>
+            <HandHelping size={12} style={{ marginRight: 4 }} /><label>申し送り事項</label>
+          </div>
+          <textarea
+            value={formData.handover}
+            onChange={(e) => {
+              setFormData({...formData, handover: e.target.value});
+              if (errors.handover) {
+                setErrors({ ...errors, handover: null });
+              }
+            }}
+            style={{...inputNoteStyle, ...(errors.handover ? errorInput : {})}} />
 
-          <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
-            <MultiSelectInput
-              options={FEATURE_OPTIONS}
-              value={formData.feature || []}
-              onChange={(next) => setFormData({ ...formData, feature: next })}
-              inputStyle={styles.inputMultiStyle}
-              placeholder="特徴を選択"
-            />
-          </InputTile>
+          <div style={labelBaseStyle}>
+            <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
+          </div>
+          <div style={radioFlexStyle}>
+            {PRIORITY_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, priority: opt.id });
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: formData.priority === opt.id ? '#38bdf8' : '#e2e8f0',
+                  backgroundColor: formData.priority === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.priority === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
+          </div>
+        </InputTile>
 
-          <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
-            <MultiSelectInput
-              options={ALERT_OPTIONS2}
-              value={formData.alert || []}
-              onChange={(next) => setFormData({ ...formData, alert: next })}
-              inputStyle={styles.inputMultiStyle}
-              placeholder="警報を選択"
-            />
-          </InputTile>
+        {/* 特記事項（応急手当・救助・その他） */}
+        <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true}>
+          <textarea
+            value={formData.note}
+            onChange={(e) => {
+              setFormData({...formData, note: e.target.value});
+              if (errors.note) {
+                setErrors({ ...errors, note: null });
+              }
+            }}
+            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
+        
+          <div style={labelBaseStyle}>
+            <FileUp size={12} style={{ marginRight: 4 }} /><label>画像のアップロード</label>
+          </div>
+        </InputTile>
 
-          <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
-              <label className={styles.labelLeftyStyle}>日本人県内在住</label>
-              <label className={styles.labelLeftyStyle}>外国人県内在住</label>
-            </div>
-            <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              <input type="number" className={styles.inputNarrowStyle} value={formData.jpWarning} onChange={e => setFormData({...formData, jpWarning: e.target.value})} />
-              <label className={styles.unitTextStyle}>名</label>
-              <input type="number" className={styles.inputNarrowStyle} value={formData.forWarning} onChange={e => setFormData({...formData, forWarning: e.target.value})} />
-              <label className={styles.unitTextStyle}>名</label>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
-              <label className={styles.labelLeftyStyle}>日本人観光客</label>
-              <label className={styles.labelLeftyStyle}>外国人観光客</label>
-            </div>
-            <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              <input type="number" className={styles.inputNarrowStyle} value={formData.jpTourist} onChange={e => setFormData({...formData, jpTourist: e.target.value})} />
-              <label className={styles.unitTextStyle}>名</label>
-              <input type="number" className={styles.inputNarrowStyle} value={formData.forTourist} onChange={e => setFormData({...formData, forTourist: e.target.value})} />
-              <label className={styles.unitTextStyle}>名</label>
-            </div>
-          </InputTile>
-
-          <InputTile label="車両情報" icon={NotebookPen} isExpandable={true}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      list="carType-options"
-                      style={editStyles.input}
-                      value={formData.someValue}
-                      onChange={(e) => setData({ ...formData, carType: e.target.value })}
-                      placeholder="車種名"
-                    />
-                    <datalist id="carType-options">
-                      {CARTYPE.map((opt) => (
-                        <option key={opt} value={opt} />
-                      ))}
-                    </datalist>
-                    <input type="text" placeholder="No." style={editStyles.input} maxLength={4} inputMode="numeric"
-                      value={formData.carNo} onChange={e => setData({...formData, carNo: e.target.value})} />
-                  </div>
-              <div className={styles.labelBaseStyle}>
-                <Clock size={12} style={{ marginRight: 4 }} /><label>申し送り事項</label>
-              </div>
-            <textarea className={styles.inputNoteStyle} value={formData.handover} onChange={e => setFormData({...formData, handover: e.target.value})} />
-            <div className={styles.labelBaseStyle}>
-              <Cloud size={12} style={{ marginRight: 4 }} /><label>優先度</label>
-            </div>
-            <div style={radioFlexStyle}>
-              {PRIORITY_OPTIONS.map(opt => (<button key={opt} onClick={() => setFormData({...formData, priority: opt})} style={{...radioBtnStyle, backgroundColor: formData.priority === opt ? '#e0f2fe' : '#fff', color: formData.priority === opt ? '#0369a1' : '#64748b', borderColor: formData.priority === opt ? '#38bdf8' : '#e2e8f0'}}> {opt}</button>))}
-            </div>
-          </InputTile>
-
-          <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true}>
-            <textarea className={styles.inputNoteStyle} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} />
-            <div className={styles.labelBaseStyle}>
-              <Cloud size={12} style={{ marginRight: 4 }} /><label>画像のアップロード</label>
-            </div>
-          </InputTile>
-
-     </main>
+      </main>
 
       <footer>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-          <button onClick={handleClear} className={styles.deleteBtnStyle}>Unpatrolled</button>
-            <button onClick={() => onSubmit(formData)} 
-              icon: Construction size={18} className={styles.sendBtnStyle}>送信
+
+          <button
+            onClick={handleToggle}
+            style={{...unpatrolledBtnStyle, backgroundColor: isUnpatrolled ? '#ECD283' : '#cccccc',}}>
+            Unpatrolled
           </button>
+
+          <button 
+            onClick={() => onSubmit(formData)} 
+            disabled={!isValid}
+            style={{
+              ...sendBtnStyle,
+              //backgroundColor: isValid ? '#44445A' : '#777777',
+              cursor: isValid ? 'pointer' : 'not-allowed',
+              opacity: isValid ? 1 : 0.7
+            }}
+          >送信</button>
         </div>
       </footer>
-    </div>
 
+    </div>
     </div>
   );
 };
 
+const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
+const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', margin: '0px 8px 0px 8px', backgroundColor: '#44445A' };
+const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
+const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
+const inputMultiStyle = { padding: '4px', borderRadius: '4px', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6' };
+const inputNumericStyle = { width: '80%', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6', textAlign: 'right' };
+const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
+const inputNoteStyle = { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '24px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
+const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' };
+const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 //const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '4px' };
 const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px' };
 //const radioBtnStyle = { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '14px', fontWeight: '600', height: '20px' };
-const radioBtnStyle = { padding: '4px 16px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease' };
+const radioBtnStyle = { padding: '4px 10px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease' };
 const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const doneTextStyle = { backgroundColor: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '9px', fontWeight: '600', border: '1px solid #d1d5db', display: 'inline-block' };
 const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' };
-
 const editStyles = {
-  input: { width: '100%', boxSizing: 'border-box', padding: '10px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
+  input: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
 };
+const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px', color: '#64748b', width: '10%', };
+const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
+const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#777777', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginRight: '8px' };
+const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
+const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
+const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
+
+
 
 export default EditView;
 

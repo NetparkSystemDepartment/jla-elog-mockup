@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import { User, MessageSquare, StickyNote } from 'lucide-react';
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import { WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS } from '../constants';
+import { ChevronLeft, ChevronRight, ChevronDown, ArrowDownUp } from 'lucide-react';
+import { TIDE_OPTIONS, DIRECTIONS, WARNING_OPTIONS, ALERT_OPTIONS, WIND_SPEED_OPTIONS } from '../constants';
 import { MultiSelectInput } from '../components/MultiSelectInput';
 
-const DIRECTIONS = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+
+const HANDOVERAREA = ['恩納村'];
+
+// ダミー
 const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
-
-const MEMBERS = ['staff01', 'staff02', 'staff03'];
- 
-
-
 // モックデータ：本来はDBから取得
 const MOCK_HANDOVERS = [
   { priority: '高', date: '2025/07/28', beach: '裏真栄田ビーチ', content: 'ハブクラゲの目撃情報あり。防護ネット付近の点検を強化してください。', member: '担当Ａ' },
   { priority: '低', date: '2025/07/27', beach: 'アボガマ', content: '北西の風が強く、離岸流が発生しやすい状況です。', member: '担当Ｂ' },
 ];
 
-function BriefingView({ user, onComplete, recentHandovers = [] }) {
+function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const [data, setData] = useState({
     members: '',
     carType: '', carNo: '',
@@ -25,6 +23,9 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
     warn: '', alert: '', windDir: '', windSpeed: '',
     handoverMemo: '', noteMemo: ''
   });
+
+  // パトロールメンバー
+  const members = profileList;
 
   // ページネーター用
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,21 +59,32 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
         <div style={{textAlign: 'center', marginBottom: '10px' }}>
           <span style={briefingStyles.historyTitle}>ブリーフィング</span>
         </div>
-       <div style={briefingStyles.card}>
+
+        <div style={briefingStyles.card}>
           <form onSubmit={handleSubmit}>
             <div style={briefingStyles.grid}>
               {/* 左列 */}
               <div style={briefingStyles.column}>
-                <div style={{...briefingStyles.field, minHeight: '96px'}}>
-                  <label style={briefingStyles.label}>自分以外の監視員</label>
-                  <div style={briefingStyles.inputMultiSelect}> 
-                  <MultiSelectInput
-                    options={MEMBERS}
-                    value={data.members || []}
-                    onChange={(next) => setData({ ...data, members: next })}
-                    inputStyle={briefingStyles.inputMultiStyle}
-                    placeholder="ユーザーID"
+                {/* ログイン者（記録担当者）を追加 2026.5.18 */}
+                <div style={briefingStyles.field}>
+                  <label style={briefingStyles.label}>ログイン者（記録担当者）</label>
+                  <input
+                    type="text"
+                    value={user.id || ''}
+                    disabled
+                    style={briefingStyles.disabledInput}
                   />
+                </div>
+                <div style={{...briefingStyles.field, minHeight: '96px'}}>
+                  <label style={briefingStyles.label}>自分以外のパトロールメンバー</label>
+                  <div style={briefingStyles.inputMultiSelect}> 
+                    <MultiSelectInput
+                      options={members}
+                      value={data.members || []}
+                      onChange={(next) => setData({ ...data, members: next })}
+                      inputStyle={briefingStyles.inputMultiStyle}
+                      placeholder="ユーザーID"
+                    />
                   </div>
                 </div>
 
@@ -128,7 +140,14 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>潮汐</label>
                   <div style={briefingStyles.radioFlexStyle}>
-                    {TIDE_OPTIONS.map(opt => (<button key={opt} type="button" onClick={(e) => setData({...data, tide: opt})} style={{...briefingStyles.radioBtnStyle, backgroundColor: data.tide === opt ? '#e0f2fe' : '#fff', color: data.current === opt ? '#0369a1' : '#64748b', borderColor: data.tide === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+                    {TIDE_OPTIONS.map(opt => (
+                      <button 
+                        key={opt.id} 
+                        type="button"
+                        onClick={() => {
+                          setData({ ...data, tide: opt.id }); // IDを保存
+                        }} 
+                        style={{...briefingStyles.radioBtnStyle, backgroundColor: data.tide === opt.id ? '#e0f2fe' : '#fff', color: data.tide === opt.id ? '#0369a1' : '#64748b', borderColor: data.tide === opt.id ? '#38bdf8' : '#e2e8f0'}}>{opt.label}</button>))}
                   </div>
                 </div>
 
@@ -137,7 +156,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input type="time" style={briefingStyles.input}
                       value={data.highTideTime} onChange={e => setData({...data, highTideTime: e.target.value})} />
-                    <input type="number" placeholder="高さ [cm]" style={briefingStyles.input}
+                    <input type="number" placeholder="高さ [cm]" style={{...briefingStyles.input, textAlign: 'right'}}
                       value={data.highTide} onChange={e => setData({...data, highTide: e.target.value})} />
                   </div>
                 </div>
@@ -147,30 +166,49 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input type="time" style={briefingStyles.input}
                       value={data.lowTideTime} onChange={e => setData({...data, lowTideTime: e.target.value})} />
-                    <input type="number" placeholder="高さ [cm]" style={briefingStyles.input}
+                    <input type="number" placeholder="高さ [cm]" style={{...briefingStyles.input, textAlign: 'right'}}
                       value={data.lowTide} onChange={e => setData({...data, lowTide: e.target.value})} />
                   </div>
                 </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>風向（方位）</label>
-                  <select style={briefingStyles.input} value={data.windDir} onChange={e => setData({...data, windDir: e.target.value})}>
+                  <select 
+                    style={briefingStyles.input} 
+                      value={data.windDir || ''} 
+                      onChange={e => {
+                        // 選択されたIDを数値に変換して保存（未選択時は空文字）
+                        const val = e.target.value;
+                        setData({ ...data, windDir: val !== '' ? Number(val) : '' });
+                      }}
+                  >
                     <option value="">風向</option>
-                    {DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                    {DIRECTIONS.map(d => (
+                      <option key={d.id} value={d.id}>
+                      {d.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>風速（天気予報）</label>
                   <div style={briefingStyles.radioFlexStyle}>
-                    {WIND_SPEED_OPTIONS.map(opt => (<button key={opt} type="button" onClick={(e) => setData({...data, windSpeed: opt})} style={{...briefingStyles.radioBtnStyle, backgroundColor: data.windSpeed === opt ? '#e0f2fe' : '#fff', color: data.current === opt ? '#0369a1' : '#64748b', borderColor: data.windSpeed === opt ? '#38bdf8' : '#e2e8f0'}}>{opt}</button>))}
+                    {WIND_SPEED_OPTIONS.map(opt => (
+                      <button 
+                        key={opt.id} 
+                        type="button"
+                        onClick={() => {
+                          setData({ ...data, windSpeed: opt.id }); // IDを保存
+                        }} 
+                        style={{...briefingStyles.radioBtnStyle, backgroundColor: data.windSpeed === opt.id ? '#e0f2fe' : '#fff', color: data.tide === opt.id ? '#0369a1' : '#64748b', borderColor: data.windSpeed === opt.id ? '#38bdf8' : '#e2e8f0'}}>{opt.label}</button>))}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 再掲：メモエリア */}
-            <div style={{ marginTop: '20px', borderTop: '1px solid #f3f4f6', paddingTop: '20px' }}>
+            {/* メモエリア */}
+            <div style={{ marginTop: '20px', paddingTop: '0px' }}>
               <div style={briefingStyles.field}>
                 <label style={briefingStyles.label}>申し送りメモ（申し送り事項に反映する内容を記載）</label>
                 <textarea placeholder="100字以内" style={briefingStyles.textarea}
@@ -190,22 +228,24 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
         {/* 再掲：申し送り一覧セクション */}
         <section style={briefingStyles.historySection}>
           <div style={{marginBottom: '10px' }}>
-          <span style={briefingStyles.historyTitle}>申し送り一覧</span>
+            <span style={briefingStyles.historyTitle}>申し送り一覧</span>
           </div>
           <div style={briefingStyles.historyPlaceholder}>
-<div style={briefingStyles.selectorWrapper}>
-      <span style={briefingStyles.selectorLabel}>表示するエリアを選択</span>
-      <div style={briefingStyles.selectContainer}>
-        <select style={briefingStyles.areaSelect}>
-          <option value="恩納村">恩納村</option>
-        </select>
-        <ChevronDown size={16} style={briefingStyles.selectIcon} />
-      </div>
-    </div>          </div>
+            <div style={briefingStyles.selectorWrapper}>
+              <span style={briefingStyles.selectorLabel}>表示するエリアを選択</span>
+              <div style={briefingStyles.selectContainer}>
+                <ChevronDown size={16} style={briefingStyles.selectIcon} />
+                <select style={briefingStyles.areaSelect} >
+                  <option value="">エリア</option>
+                  {HANDOVERAREA.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
           <div style={briefingStyles.tableHeader}>
-            <div style={{ flex: 1 }}>優先度</div>
-            <div style={{ flex: 1 }}>ビーチ</div>
-            <div style={{ flex: 1 }}>日付</div>
+            <div style={{ flex: 1 }}>優先度 <ArrowDownUp size={16} /></div>
+            <div style={{ flex: 1 }}>ビーチ <ArrowDownUp size={16} /></div>
+            <div style={{ flex: 1 }}>日付 <ArrowDownUp size={16} /></div>
             <div style={{ flex: 2 }}>申し送り事項</div>
             <div style={{ flex: 1 }}>パトロールメンバー</div>
           </div>
@@ -222,8 +262,10 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
             ))}
           </div>
 
+          <span>エリアを選択してください。</span>
+          
           <div style={briefingStyles.pagination}>
-            {/* 前へボタン */}
+            {/* 前へボタン
             <button 
               onClick={handlePrev} 
               disabled={currentPage === 1}
@@ -234,14 +276,14 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
               }}
             >
               <ChevronLeft size={16} /> 
-            </button>
+            </button>*/}
 
-            {/* ページ情報 */}
+            {/* ページ情報
             <div style={briefingStyles.pageInfo}>
               <strong>{currentPage}</strong> / {totalPages}
-            </div>
+            </div>*/}
 
-            {/* 次へボタン */}
+            {/* 次へボタン
             <button 
               onClick={handleNext} 
               disabled={currentPage === totalPages}
@@ -252,7 +294,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
               }}
             >
               <ChevronRight size={16} />
-            </button>
+            </button> */}
           </div>
         </section>
       </main>
@@ -269,7 +311,7 @@ const briefingStyles = {
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   
   container: { flex: 1, padding: '10px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' },
-  card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '30px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '10px' },
+  card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '20px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '10px' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
   column: { display: 'flex', flexDirection: 'column', gap: '12px' },
   /*field: { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px', textAlign: 'left' },*/
@@ -278,17 +320,19 @@ const briefingStyles = {
   inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' },
   icon: { position: 'absolute', left: '10px', color: '#9ca3af' },
   
-  input: { width: '100%', boxSizing: 'border-box', padding: '10px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
+  input: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
-  inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
-  textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '13px', minHeight: '80px', resize: 'none' },
+  inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
+  disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' },
+  textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '80px', resize: 'none' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#44445A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 
-  inputMultiStyle: { padding: '4px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '12px', height: '24px', backgroundColor: '#fcfcfc'},
+  inputMultiStyle: { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6'},
   /*radioFlexStyle: { display: 'flex', flexWrap: 'wrap', gap: '4px' },*/
   radioFlexStyle: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
   /*radioBtnStyle: { padding: '0px 6px', borderRadius: '4px', border: '1px solid', fontSize: '14px', fontWeight: '600', height: '20px' },*/
-  radioBtnStyle: { padding: '10px 16px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease' },
+  radioBtnStyle: { padding: '0px 16px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', 
+    cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease', height: '32px' },
   // 申し送り一覧用
   historyTitle: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' },
   historyPlaceholder: { backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', color: '#64748b', fontSize: '14px' },

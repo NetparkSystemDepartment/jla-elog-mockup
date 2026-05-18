@@ -16,11 +16,11 @@ export const MultiSelectInput = ({ options = [], value = [], onChange, placehold
     <div style={{ position: 'relative', width: '100%' }}>
       {/* 選択中の表示エリア（既存のスタイルを適用） */}
       <div 
-        className={inputStyle} 
         onClick={() => setIsOpen(!isOpen)}
-        style={{ 
+        style={{
+          ...inputStyle, 
           cursor: 'pointer', minHeight: '20px', display: 'flex', 
-          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '4px 8px' , height: 'auto',
+          alignItems: 'center', flexWrap: 'wrap', gap: '6px', padding: '8px 8px' , height: 'auto',
           maxHeight: '100px'
         }}
       >

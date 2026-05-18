@@ -2,14 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// 1. 先にbaseの値を決めて変数に代入しておく
+const baseConfig = process.env.VERCEL ? '/' : '/p2/';
+
 export default defineConfig({  
+  // 2. 変数を割り当てる
+  base: baseConfig,
+
   plugins: [
     react(),
     VitePWA({
-      // VITE_MSW という環境変数が 'true' の時は PWA を無効にする
-      // これにより build -> preview 時でも無効になる
-      //disable: process.env.VITE_MSW === 'true' || process.env.NODE_ENV === 'development',      
-
       disable: false, // PWAを有効にする
       registerType: 'autoUpdate', // 新しいSWが見つかったら自動更新
       injectRegister: 'auto',     // index.htmlに自動で登録スクリプトを挿入
@@ -21,8 +23,13 @@ export default defineConfig({
         description: 'Beach Patrol e-log Mockup',
         theme_color: '#3b82f6',      // ブラウザのツールバーなどの色
         background_color: '#ffffff', // アプリ起動時の背景色
-        display: 'standalone',       // アプリ単体で動いているように見せる（重要！）
+        display: 'standalone',       // アプリ単体で動いているように見せる
         lang: 'ja',
+
+        // 【追加】レンタルサーバー（/v2/）でも正しくインストールできるようにする設定
+        start_url: baseConfig,
+        scope: baseConfig,
+
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -43,5 +50,5 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'], // キャッシュ対象
       },
     })
-  ]
+  ],
 })

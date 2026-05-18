@@ -1,10 +1,27 @@
 import React from 'react';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone, Menu } from 'lucide-react';
-import { useAuth } from '../contexts/authContext';
-
+//import { useAuth } from '../contexts/authContext';
+// ダミー
+import { useAuth } from '../contexts/dummyAuthContext';
+import { toast } from 'sonner';
 
 function HomeView({ user, onNavigate }) {
   const { logout } = useAuth();
+
+  const showConfirm = () => {
+    toast('ログアウトしますか？', {
+      action: {
+        label: '実行',
+        onClick: () => {
+          logout();
+        },
+      },
+      cancel: {
+        label: 'キャンセル',
+        onClick: () => console.log('キャンセルされました'),
+      },
+    });
+  };
 
   const handleLogout = () => {
     console.log("Logout clicked");
@@ -35,7 +52,7 @@ function HomeView({ user, onNavigate }) {
         <section style={styles.statsCard}>
         </section>
 
-        <button onClick={handleLogout} style={styles.logoutButton}>
+        <button onClick={showConfirm} style={styles.logoutButton}>
           <span>ログアウト</span>
         </button>
 
@@ -69,7 +86,6 @@ function HomeView({ user, onNavigate }) {
 
 const styles = {
   wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
-/*  header: { backgroundColor: '#44445A', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },*/
   header: { backgroundColor: '#44445A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
@@ -78,17 +94,13 @@ const styles = {
   pickupCard: { backgroundColor: 'white', borderRadius: '24px 24px 24px 24px', padding: '20px', minHeight: '150px' },
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },
   cardTitle: { fontSize: '16px', fontWeight: 'bold', marginBottom: '15px' },
-  listBorder: { borderBottom: '1px solid #e5e7eb', height: '30px' },
-  graphPlaceholder: { textAlign: 'center', margin: '20px 0' },
-  barChart: { fontSize: '40px' },
-  chartDate: { fontSize: '12px', color: '#666' },
-  donutGroup: { display: 'flex', justifyContent: 'space-around', marginTop: '20px', textAlign: 'center', fontSize: '11px' },
-  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', position: 'fixed', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
+//  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', position: 'fixed', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
+  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
   navItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   navItemMain: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
-  _mainCircle: { position: 'absolute', top: '-45px', width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#44445A', border: '3px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoutButton: { padding: '4px 8px', backgroundColor: '#cccccc', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '160px', height: '30px', marginleft: '8px' },
-  mainCircle: { position: 'absolute', width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
+//  mainCircle: { position: 'absolute', width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
+  mainCircle: { width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
 
 };
 
