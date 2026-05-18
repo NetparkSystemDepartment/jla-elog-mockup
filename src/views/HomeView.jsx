@@ -95,7 +95,7 @@ const styles = {
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },
   cardTitle: { fontSize: '16px', fontWeight: 'bold', marginBottom: '15px' },
 //  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', position: 'fixed', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
-  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
+  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '820px', margin: '0 auto' },
   navItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   navItemMain: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   logoutButton: { padding: '4px 8px', backgroundColor: '#cccccc', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '160px', height: '30px', marginleft: '8px' },

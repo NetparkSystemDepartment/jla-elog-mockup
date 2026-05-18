@@ -1,4 +1,4 @@
-const DB_NAME = 'PatrolDB_rev2';
+const DB_NAME = 'e-log_p1_01';
 const STORE_NAME = 'records';
 
 import Dexie from 'dexie';
