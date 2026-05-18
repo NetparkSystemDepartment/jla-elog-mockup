@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // 1. 先にbaseの値を決めて変数に代入しておく
-const baseConfig = process.env.VERCEL ? '/' : '/p2/';
+const baseConfig = process.env.VERCEL ? '/' : '/p1/';
 
 export default defineConfig({  
   // 2. 変数を割り当てる
