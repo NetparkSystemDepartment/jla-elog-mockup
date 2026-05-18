@@ -17,7 +17,7 @@ export default defineConfig({
       // Vercelやレンタルサーバー用に本番ビルド(production)する時だけ有効になります
       disable: process.env.NODE_ENV === 'development' || !process.env.VERCEL, 
       
-      disable: false, // PWAを有効にする
+      //disable: false, // PWAを有効にする
       registerType: 'autoUpdate', // 新しいSWが見つかったら自動更新
       injectRegister: 'auto',     // index.htmlに自動で登録スクリプトを挿入
       
