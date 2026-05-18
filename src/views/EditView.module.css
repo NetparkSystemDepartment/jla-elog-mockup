@@ -1,5 +1,6 @@
 .container {
 /*  max-width: 480px; */
+  max-width: 820px;
   margin: 0 auto;
   width: 100%;
   min-Height: 100vh;
@@ -11,8 +12,9 @@
   display: flex;
   align-Items: center;
   justify-content: space-between;
-  height: 30px;
+  height: 64px;
   margin: 0px 8px 0px 8px;
+  background-Color: #44445A
 }
 .headerMiddleStyle {
   display: flex;
@@ -26,17 +28,6 @@
   justify-content: space-between;
   height: 30px;
   margin: 0px 8px 0px 8px;
-}
-
-.saveBtnStyle {
-  margin-top: 8px;
-   padding: 4px 8px;
-   background-Color: #0284c7;
-   color: #fff;
-   border: none;
-   border-Radius: 8px;
-   font-Size: 10px;
-   height: 26px;
 }
 
 .dummyStyle {
@@ -62,78 +53,6 @@
    font-Size: 12px;
    height: 24px;
    background-Color: #fcfcfc;
-}
-
-.inputNarrowStyle {
-   width: 100%;
-   padding: 4px;
-   border-Radius: 4px;
-   border: 1px solid #e2e8f0;
-   font-Size: 12px;
-   background-Color: #fcfcfc;
-   text-Align: right;
-}
-
-.inputNoteStyle {
-   padding: 4px;
-   border-Radius: 4px;
-   border: 1px solid #e2e8f0;
-   font-Size: 12px;
-   min-height: 24px;
-   background-Color: #fcfcfc;
-   resize: none;
-   field-Sizing: content;
-}
-
-.inputNumericStyle {
-   width: 80%;
-   /*padding: 4px;*/
-   border-Radius: 4px;
-   border: 1px solid #e2e8f0;
-   font-Size: 12px;
-   height: 24px;
-   background-Color: #fcfcfc;
-   text-Align: right;
-}
-
-.unitTextStyle {
-   font-Size: 11px;
-   font-Weight: bold;
-   padding-Top: 8px;
-   color: #64748b;
-   width: 10%;
-}
-
-.labelLeftyStyle {
-  font-Size: 10px;
-  font-Weight: bold;
-  color: #64748b;
-  text-align: left;
-  width: 50%;
-}
-
-.deleteBtnStyle {
-   padding: 4px 8px;
-   background-Color: #cccccc;
-   color: #1a1a1a;
-   border: none;
-   border-Radius: 8px;
-   font-Size: 14px;
-   width: 160px;
-   height: 30px;
-   margin-left: 8px;
-}
-
-.sendBtnStyle {
-   padding: 4px 8px;
-   background-Color: #777777;
-   color: #fff;
-   border: none;
-   border-Radius: 8px;
-   font-Size: 14px;
-   width: 80px;
-   height: 30px;
-   margin-right: 8px;
 }
 
 .circleBtnStyle {
@@ -188,23 +107,6 @@
    min-Width: 0;
 }
 
-.inputMultiStyle {
-   padding: 4px;
-   border-Radius: 4px;
-   border: 1px solid #e2e8f0;
-   font-Size: 12px;
-   height: 24px;
-   background-Color: #fcfcfc;
-}
-
-.labelBaseStyle { 
-  font-Size: 10px; 
-  font-Weight: bold; 
-  color: #64748b;
-  display: flex;
-  align-Items: center;
-}
-
 .footerNoteStyle { 
   font-Size: 10px; 
   font-Weight: bold; 
@@ -214,5 +116,6 @@
 }
 
 .inputTimeStyle {
-   height: 24px;
+   height: 30px;
+   font-size: 12px;
 }

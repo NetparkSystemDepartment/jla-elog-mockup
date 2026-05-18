@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
+// Context API を使用する
+//import { useAuth } from '../contexts/authContext';
+// ダミー
+import { useAuth } from '../contexts/dummyAuthContext';
 
-function LoginView({ onLogin }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+function LoginView() {
+  const { login } = useAuth(); // Contextからlogin関数を取り出す
   const [loginId, setLoginId] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(''); // エラーメッセージ用の状態
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // 試行のたびにリセット
+    // 毎回リセットする
+    setError('');
 
-    // バリデーション例
+    // バリデーション
     if (!loginId.trim()) {
       setError('ユーザーIDを入力してください。');
       return;
@@ -21,14 +27,19 @@ function LoginView({ onLogin }) {
       return;
     }
 
-    // 実際はここでパスワードチェックなどを行う
-    onLogin({ 
+    // ログイン関数を呼ぶ
+    const result = await login({
       id: loginId, 
-      role: isAdmin ? 'admin' : 'staff',
       password: isAdmin ? password : null 
     });
+
+     // authContextから返ってきたメッセージをセットする  
+    if (!result.success) {
+      setError(result.message);
+    }
   };
 
+  // ログイン画面
   return (
     <div style={loginStyles.wrapper}>
       <header style={loginStyles.header}>
@@ -97,7 +108,7 @@ function LoginView({ onLogin }) {
               onClick={() => {
                 setIsAdmin(!isAdmin);
                 setPassword('');
-                setError(''); // 切り替え時にエラーも消す
+                setError(''); // 切り替え時にエラーもクリア
               }} 
               style={loginStyles.switchButton}
             >
@@ -120,7 +131,7 @@ const loginStyles = {
   container: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
   card: { backgroundColor: '#ffffff', width: '100%', maxWidth: '380px', borderRadius: '24px', padding: '30px 30px 40px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' },
   
-  // 修正：エラーボックスのスタイル
+  // エラーボックスのスタイル
   errorBox: {
     backgroundColor: '#fef2f2', // 薄い赤
     color: '#b91c1c',           // 濃い赤

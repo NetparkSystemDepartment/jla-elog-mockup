@@ -46,18 +46,39 @@ function RecordsListView({ onBack, savedRecords = [] }) {
 
         {/* テーブルボディ（データ一覧） */}
         <div style={styles.tableBody}>
-          {savedRecords.map((record, index) => (
-            <div key={index} style={styles.tableRow}>
-              <div style={{width: '30px'}}><input type="checkbox" /></div>
-              <div style={styles.col}>恩納村</div>
-              <div style={styles.col}>{record.beach}</div>
-              <div style={styles.col}>{record.date}</div>
-              <div style={styles.colMember}>
-                {record.members?.map(m => <div key={m}>@{m}</div>)}
-              </div>
-            </div>
-          ))}
         </div>
+        {savedRecords.map((record, index) => (
+          <div key={record.id || index} style={styles.tableRow}>
+            {/* 1. チェックボックスまたは同期アイコン */}
+            <div style={{width: '30px'}}>
+              <input type="checkbox" />
+            </div>
+
+            {/* 2. エリア（固定またはデータから） */}
+            <div style={styles.col}>恩納村</div>
+
+            {/* 3. ビーチ名 */}
+            <div style={styles.col}>{record.beach}</div>
+
+            {/* 4. 日付と回数（sequence_noを活用） */}
+            <div style={styles.col}>
+              {record.date} 
+              {record.sequence_no && (
+                <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '4px' }}>
+                  ({record.sequence_no}回目)
+                </span>
+              )}
+            </div>
+
+            {/* 5. パトロールメンバー（jsonbから展開されたデータ） */}
+            <div style={styles.colMember}>
+              {record.members && Array.isArray(record.members) 
+                ? record.members.map(m => <div key={m}>@{m}</div>)
+                : <div>-</div>
+              }
+            </div>
+          </div>
+          ))}
 
         {/* ページネーション */}
         <footer style={styles.tableFooter}>
@@ -101,3 +122,15 @@ const styles = {
 };
 
 export default RecordsListView;
+
+//          {savedRecords.map((record, index) => (
+//            <div key={index} style={styles.tableRow}>
+//              <div style={{width: '30px'}}><input type="checkbox" /></div>
+//              <div style={styles.col}>恩納村</div>
+//              <div style={styles.col}>{record.beach}</div>
+//              <div style={styles.col}>{record.date}</div>
+//              <div style={styles.colMember}>
+//                {record.members?.map(m => <div key={m}>@{m}</div>)}
+//              </div>
+//            </div>
+//          ))}

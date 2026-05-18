@@ -8,12 +8,23 @@ import RecordsListView from './views/RecordsListView';
 import { getAllRecords, saveRecord, getRecordsByDate, checkRecordByDate} from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
+// 
+//import { useAuth } from './contexts/authContext';
+// ダミー
+import { useAuth } from './contexts/dummyAuthContext';
+import { supabase } from './supabaseClient';
+import { fetchAllProfiles } from './api';
+
+const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
 function App() {
-  const [user, setUser] = useState(null);
+  //const [user, setUser] = useState(null);
+  //const { user, login, logout } = useAuth(); // Contextから取得
+  const { user, login, logout } = useAuth() || {}; // Contextから取得
   const [loginId, setLoginId] = useState('');
   //const [view, setView] = useState('list');
-  const [view, setView] = useState('home'); // デフォルトをhomeに
+  //const [view, setView] = useState('home'); // デフォルトをhomeに
+  const [view, setView] = useState('briefing'); // デフォルトをhomeに
   
   // --- 追加: ブリーフィングで設定する共有データ ---
   const [briefingData, setBriefingData] = useState({
@@ -26,44 +37,153 @@ function App() {
     waterTemp: ''
   });
 
+  useEffect(() => {
+    if (!user) {
+      // ログアウト（userがnull）されたらステートをリセット
+      setBriefingData({
+        weather: '',
+        windSpeed: '',
+        tide: '',
+        current: '',
+        wave: '',
+        temp: '',
+        waterTemp: ''
+      });
+      // 必要に応じて localStorage もクリア
+      localStorage.removeItem('briefing_data');
+      setView('briefing');
+    }
+  }, [user]);
+
   const [selectedCoast, setSelectedCoast] = useState('');
   const [selectedBeach, setSelectedBeach] = useState('');
   const today = startOfDay(new Date());
   const [baseDate, setBaseDate] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
   const [savedRecords, setSavedRecords] = useState([]);
+  const [recentHandovers, setRecentHandovers] = useState([]);
+  const [profileList, setProfileList] = useState([]);
+
 
   useEffect(() => {
-    if (user && view !== 'briefing') loadRecords();
+    if (user && view === 'records') loadDBRecords();
+    else if (user && view !== 'briefing') {loadRecords()}
+//    else if (user && view === 'briefing') {loadRecentHandovers(); loadProfileList()};
+    else if (user && view === 'briefing') {dummyLoadProfileList()};
   }, [selectedDate, user, view]);
 
+  // データ読み込み処理（indexedDB）
   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const result = await getRecordsByDate(dateStr);
     setSavedRecords(result || []);
   };
 
-    // 保存処理（子から呼ばれる）
-    const handleSave = async (formData) => {
-      
-      const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
-      const beachName = selectedBeach;
+  // データ読み込み処理（サーバー）
+  const loadDBRecords = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('patrol_records')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      console.error('loadDBRecords(data):', data);
+
+      const formattedRecords = data.map(record => ({
+        ...record,
+        ...record.data, // jsonbの中身（weather, members等）をトップレベルに展開
+      }));
+
+      console.error('loadDBRecords(formattedRecords):', formattedRecords);
+
+      setSavedRecords(formattedRecords || []);
   
-      const record = { 
-        ...formData, 
-        beach: beachName, 
-        date: formattedDate, 
-        timestamp: Date.now() 
-      };
+    } catch (error) {
+      console.error('データ取得失敗:', error.message);
+      toast.error('データの取得に失敗しました');
+    }
+  }
+
+  // データ読み込み処理（申し送り）
+  const loadRecentHandovers = async () => {
+    const { data, error } = await supabase
+      .from('patrol_records')
+      .select('date, beach, user_id, data->handover, data->note') // jsonb内の特定フィールドのみ
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      console.log('loadRecentHandovers:', data);
+      setRecentHandovers(data);
+    }
+
+    if (!error && data) {
+      const formatted = data.map(r => ({
+        date: r.date,
+        beach: r.beach,
+        // JSX側で使っている名前に合わせる
+        handover: r.data?.handover || 'なし', 
+        user_id: r.user_id
+      }));
+      console.log('loadRecentHandovers:', data);
+      setRecentHandovers(formatted);
+  }
+  };
+
+  // データ読み込み処理（ユーザー情報）
+  const loadProfileList = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, role')
+
+    if (error) {
+      console.error('Error fetching profiles:', error.message)
+    }
+
+    if (data) {
+      // roleでフィルタリング、かつ自分以外のメンバー
+      const filteredData = data.filter(profile => 
+        profile.role === user.role && profile.id !== user.id);
+
+      console.log('loadProfileList:', filteredData);
+      const idList = filteredData.map(profile => profile.id);
+      console.log('idList:', idList);
+      setProfileList(idList);
+    }    
+  };
+
+  // データ読み込み処理（ユーザー情報）ダミー
+  const dummyLoadProfileList = async () => {
+
+      const idlist = DUMMYSTAFF;
+//      console.log('idList:', idlist);
+      setProfileList(idlist);
   
-      try {
+  };
+
+  // 保存処理（子から呼ばれる）
+  // ローカル保存（indexedDB）
+  const handleSave = async (formData) => {
+    const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
+    const beachName = selectedBeach;
   
-        const existing = await checkRecordByDate(formattedDate, beachName);
+    const record = { 
+      ...formData, 
+      beach: beachName, 
+      date: formattedDate, 
+      isSynced: false, // サーバー未送信フラグ
+      timestamp: Date.now() 
+    };
+
+    try {
   
-      if (existing) {
-        const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
-        if (!ok) return; // キャンセルならここで処理を終了
-      }      
+      //const existing = await checkRecordByDate(formattedDate, beachName);
+  
+        //if (existing) {
+        //  const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
+        //  if (!ok) return; // キャンセルならここで処理を終了
+        //}      
         // MSW(fetch) を通さず、直接 IndexedDB へ保存
         const id = await saveRecord(record);
       
@@ -84,16 +204,72 @@ function App() {
       }
     };
   
-//  const handleLogin = (e) => {
-//    e.preventDefault();
-//    if (!loginId.trim()) return toast.error('IDを入力してください');
-//    setUser(loginId);
-//    setView('briefing'); // ログイン -> ブリーフィング
-//  };
+    // 保存処理（子から呼ばれる）
+    // サーバー保存
+    const handleSubmit = async (formData) => {
+      
+      const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
+      const beachName = selectedBeach;
+  
+      const record = { 
+        ...formData, 
+        beach: beachName, 
+        date: formattedDate, 
+        isSynced: false, // サーバー未送信フラグ
+        timestamp: Date.now() 
+      };
 
-  // ログイン時のコールバック
-  const handleLogin = (userInfo) => {
-    setUser(userInfo);
+      const id = await saveRecord(record);
+      console.log('indexedDB保存成功（ID）:', id);
+
+      console.log("supabase:", user);
+
+      const recordToSave = {
+        date: formattedDate,
+        beach: selectedBeach,
+        user_id: user.id,
+        data: { ...formData }
+      };
+
+      try {
+  
+//        const existing = await checkRecordByDate(formattedDate, beachName);
+//  
+//      if (existing) {
+//        const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
+//        if (!ok) return; // キャンセルならここで処理を終了
+//      }      
+//        // MSW(fetch) を通さず、直接 IndexedDB へ保存
+//        const id = await saveRecord(record);
+      
+        const { error } = await supabase
+          .from('patrol_records')
+          .insert([recordToSave]);
+
+//          console.log('保存成功（ID）:', id);
+        console.log('保存成功');
+        toast.success('保存しました！');
+      
+      } catch (error) {
+        console.error('保存失敗:', error);
+        toast.error('保存に失敗しました');
+      }
+  
+      try {
+        await loadRecords();
+        setView('list');
+      } catch (error) {
+          console.error('読み込み失敗:', error);
+          toast.error('データの読み込みに失敗しました');
+      }
+    };
+
+    // ログイン時のコールバック
+  const handleLogin = async (userInfo) => {
+    //setUser(userInfo);
+    //login(userInfo);
+
+
     // 管理者の場合もブリーフィング画面へ
     if (userInfo.role === 'admin') {
       setView('briefing');
@@ -101,6 +277,7 @@ function App() {
       setView('briefing');
     }
   };
+
   const handleSelectBeach = (beachName) => {
     const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
     if (targetBeaches.includes(beachName)) {
@@ -125,112 +302,89 @@ const handleBriefingComplete = (data) => {
     lowTide: data.lowTide,
     windDir: data.windDir,
     windSpeed: data.windSpeed,
-    warn: [data.warn], // MultiSelect用なら配列にする
-    alert: [data.alert],
+    warn: data.warn,
+    alert: data.alert,
     handover: data.handoverMemo,
     note: data.noteMemo,
-    members: [user.id, data.member1, data.member2].filter(Boolean)
+    members: data.members,
+    carType: data.carType,
+    carNo: data.carNo,
+    visitors: 0,
+    jpWarning: 0,
+    forWarning: 0,
+    jpTourist: 0,
+    forTourist: 0,
   };
   setBriefingData(mappedData);
+  console.log('handleBriefingComplete:', mappedData);
   setView('home');
 };
 
   // --- 画面分岐 ---
+  const renderView = () => {
+  
+    // ログイン画面
+    if (!user) {
+      return <LoginView />;
+    }
 
-  // ログイン画面
-  if (!user) {
-    return <LoginView onLogin={handleLogin} />;
-  }
-
-//  if (user.role === 'staff' && view === 'briefing') {
 //    return <BriefingView onComplete={(data) => {
 //      setBriefingData(data); // ここでEditView用の初期値を作る
 //      setView('list');
 //    }} />;
 //  }
-// 2. 監視員でブリーフィングがまだの場合
-  if (user.role === 'staff' && !briefingData) {
-    return <BriefingView onComplete={(data) => {
-      setBriefingData(data);
-      setView('home'); // ブリーフィング完了後はホームへ
-    }} />;
-  }
+    // ブリーフィング画面
+//    if (view === 'briefing') {
+//    console.log('briefingData:', briefingData);
+//    console.log('retrun BriefingView!');
+//    return <BriefingView onComplete={(data) => {
+//      setBriefingData(data);
+//      console.log('setBriefingData:', data);
+//      setView('home'); // ブリーフィング完了後はホームへ
+//    }} />;
+//  }
   
 
-  // ログイン画面
-//  if (!user) {
-//    return ( 
-//      <div style={styles.appcontainer}>
-//      <Toaster position="top-center" richColors />
-//      <header style={styles.headerStyle}>
-//        <span style={{color: '#fff', fontSize: '32px', marginTop: '24px'}}> 🔵沖縄e-log</span>
-//      </header>
-//      <div style={styles.fullScreenCenter}>
-//        <form onSubmit={handleLogin} style={styles.form}>
-//          <label>ユーザーID（記録担当者）</label>
-//          <input 
-//            type="text" value={loginId} 
-//            onChange={(e) => setLoginId(e.target.value)}
-//            placeholder="ユーザーID" style={styles.input}
-//          />
-//          <button type="submit" style={styles.button}>ログイン</button>
-//          <span>ユーザーIDに関するお問い合わせは、沖縄LS協会e-log担当（090-0000-0000）までご連絡ください。</span>
-//        </form>
-//      </div>
-//      </div>
-//    );
-//  }
-
-  // 2. ブリーフィング画面（EditViewの左列項目を入力）
-  if (view === 'briefing' || (user && !briefingData)) {
-    return <BriefingView onComplete={handleBriefingComplete} />;
-  }
-
-  // 3. メイン画面
-//  return (
-//    <>
-//      <Toaster position="top-center" richColors />
-//      <div style={styles.statusBar}>
-//        ID: {user.id} ({user.role === 'admin' ? '管理者' : '記録担当者'}) | 
-//        <button onClick={() => setUser(null)} style={styles.logoutBtn}>ログアウト</button>
-//      </div>
-//
-//      {view === 'list' ? (
-//        <ListView 
-//          baseDate={baseDate} setBaseDate={setBaseDate}
-//          selectedDate={selectedDate} setSelectedDate={setSelectedDate}
-//          savedRecords={savedRecords}
-//          onSelectBeach={handleSelectBeach}
-//          onSelectCoast={(coast) => setSelectedCoast(coast)}
-//        />
-//      ) : (
-//        <EditView
-//          selectedCoast={selectedCoast} 
-//          selectedBeach={selectedBeach}
-//          selectedDate={selectedDate} 
-//          onSave={handleSave}
-//          onBack={() => setView('list')}
-//          // --- 重要: 既存データがない場合、ブリーフィングデータを初期値として渡す ---
-//          existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
-//        />
-//      )}
-//    </>
-//  );
-
   // 画面分岐
-  switch (view) {
+    switch (view) {
     case 'home':
       return <HomeView user={user} onNavigate={(target) => setView(target)} />;
-    
+//    case 'home':
+//      return (
+//        <HomeView 
+//          user={user} 
+//          onNavigate={async (target) => {
+//          // もし「記録一覧」が押されたら、データをロードしてから画面を変える
+//          if (target === 'records') {
+//            await loadDBRecords(); 
+//          }
+//          // その後、画面を切り替える
+//            setView(target);
+//          }} 
+//        />
+//      );
+
+    case 'briefing':
+      return (
+        <BriefingView
+          user={user} 
+          onComplete={handleBriefingComplete} 
+          recentHandovers={recentHandovers}
+          profileList={profileList}
+        />
+      );
+
     case 'list':
       return (
         <>
          <ListView 
+          user={user} 
           baseDate={baseDate} setBaseDate={setBaseDate}
           selectedDate={selectedDate} setSelectedDate={setSelectedDate}
           savedRecords={savedRecords}
           onSelectBeach={handleSelectBeach}
           onSelectCoast={(coast) => setSelectedCoast(coast)}
+          onNavigate={(target) => setView(target)}
         />
          {/* ListViewの下にもHomeViewと同じフッターを配置すると使いやすくなります */}
         </>
@@ -245,22 +399,32 @@ const handleBriefingComplete = (data) => {
       );
 
     case 'edit':
+ //     console.log('selectedDate:', selectedDate);
       return (
         <EditView
+          user={user}
           selectedCoast={selectedCoast} 
           selectedBeach={selectedBeach}
           selectedDate={selectedDate} 
           onSave={handleSave}
+          onSubmit={handleSubmit}
           onBack={() => setView('list')}
           // --- 重要: 既存データがない場合、ブリーフィングデータを初期値として渡す ---
           existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
+          profileList={profileList}
         />
       );
 
     default:
       return <HomeView onNavigate={(target) => setView(target)} />;
-  }
+  }};
 
+  return (
+    <div>
+      <Toaster richColors position="top-center" />
+      {renderView()}
+    </div>
+  );
 
 }
 
