@@ -9,6 +9,19 @@ export default defineConfig({
   // 2. 変数を割り当てる
   base: baseConfig,
 
+  server: {
+    proxy: {
+      // ローカル開発中に `/api/...` へリクエストを送ったら、
+      // 自動的にプレリリース用のAPIサーバーへ転送する設定
+      '/api': {
+        target: 'https://d-elog.ripcurrent.org/api/v1', // 末尾のスラッシュを削る
+        changeOrigin: true,
+        // フロントの「/api」を消して、ターゲットの「/api/v1」へ綺麗につなぐ設定
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
+
   plugins: [
     react(),
     VitePWA({

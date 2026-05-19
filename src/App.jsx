@@ -8,10 +8,12 @@ import RecordsListView from './views/RecordsListView';
 import { getAllRecords, saveRecord, getRecordsByDate, checkRecordByDate} from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
+
 // 
-//import { useAuth } from './contexts/authContext';
+import { useAuth } from './contexts/authContext';
 // ダミー
-import { useAuth } from './contexts/dummyAuthContext';
+//import { useAuth } from './contexts/dummyAuthContext';
+
 import { supabase } from './supabaseClient';
 import { fetchAllProfiles } from './api';
 
@@ -19,8 +21,8 @@ const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
 function App() {
   //const [user, setUser] = useState(null);
-  //const { user, login, logout } = useAuth(); // Contextから取得
-  const { user, login, logout } = useAuth() || {}; // Contextから取得
+  const { user, login, logout } = useAuth(); // Contextから取得
+  //const { user, login, logout } = useAuth() || {}; // Contextから取得
   const [loginId, setLoginId] = useState('');
   //const [view, setView] = useState('list');
   //const [view, setView] = useState('home'); // デフォルトをhomeに

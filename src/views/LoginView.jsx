@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
 // Context API を使用する
-//import { useAuth } from '../contexts/authContext';
+import { useAuth } from '../contexts/authContext';
 // ダミー
-import { useAuth } from '../contexts/dummyAuthContext';
+//import { useAuth } from '../contexts/dummyAuthContext';
 
 function LoginView() {
-  const { login } = useAuth(); // Contextからlogin関数を取り出す
+  //const { login } = useAuth(); // Contextからlogin関数を取り出す
+  const { login, isPending } = useAuth();
   const [loginId, setLoginId] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState('');
@@ -93,9 +94,24 @@ function LoginView() {
             </div>
           )}
 
+            {/*
             <button type="submit" style={loginStyles.loginButton}>
               ログイン
             </button>
+            */}
+            <button 
+              type="submit" 
+              style={{
+                ...loginStyles.loginButton,
+                // 通信中はボタンの色を少しグレーっぽくして、カーソルを禁止マークにする
+                backgroundColor: isPending ? '#9ca3af' : '#44445A',
+                cursor: isPending ? 'not-allowed' : 'pointer'
+              }}
+              disabled={isPending} // 通信中はクリックできないようにする（連打防止）
+            >
+              {isPending ? 'ログイン中...' : 'ログイン'}
+            </button>
+
           </form>
 
           <p style={loginStyles.contactText}>

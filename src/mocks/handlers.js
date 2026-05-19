@@ -90,5 +90,47 @@ http.get('/api/records', async ({ request }) => {
     });
   }
 }),
+
+// 1. ログインAPIのモック
+  // axiosInstanceが '/api/login' で、プロキシを考慮して本来は '/api/v1/login' になる仕様を想定
+  http.post('/api/login', async ({ request }) => {
+    const body = await request.json();
+
+    // 仕様書に「管理者(admin)はパスワード必須」とある場合の見本
+    if (body.login_type === 'admin' && body.pass === 'password123') {
+      return HttpResponse.json({
+        token: 'mock-jwt-token-for-admin',
+        user: { id: body.user_id, role: 'admin', name: '沖縄管理者' }
+      });
+    } 
+    
+    // 記録担当者（パスワードなし）の場合の見本
+    if (body.login_type === 'staff' && body.user_id) {
+      return HttpResponse.json({
+        token: 'mock-jwt-token-for-staff',
+        user: { id: body.user_id, role: 'staff', name: 'ビーチパトロール担当' }
+      });
+    }
+
+    // エラーのシミュレート
+    return new HttpResponse(
+      JSON.stringify({ message: 'ユーザーIDまたはパスワードが違います' }),
+      { status: 401 }
+    );
+  }),
+
+  // 2. パトロール記録送信APIのモック
+  http.post('/api/records', async ({ request }) => {
+    const body = await request.json();
+    console.log('【MSW受取データ】:', body);
+
+    // 成功応答を返す
+    return HttpResponse.json({
+      success: true,
+      message: '正常に記録を保存しました（Mock）',
+      insertedId: Math.floor(Math.random() * 1000)
+    }, { status: 201 });
+  }),
+  
 ];
 
