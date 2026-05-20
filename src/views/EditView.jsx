@@ -18,7 +18,13 @@ import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
 const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
 const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
-const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+// ダミー
+//const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+const CARTYPE = [
+  { order: 1, carType: '車種Ａ' },
+  { order: 2, carType: '車種Ｂ' },
+  { order: 3, carType: '車種Ｃ' },
+];
 
 const initialFormData = {
   startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
@@ -113,7 +119,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       formData.forWarning &&
       formData.jpTourist &&
       formData.forTourist &&
-      formData.carType &&
+      (formData.carType || formData.carType === 0) &&
       formData.carNo &&
       formData.handover &&
       formData.note
@@ -164,7 +170,9 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       if (!formData.forWarning) newErrors.forWarning = '注意喚起人数 外国人県内在住は入力が必須です';
       if (!formData.jpTourist) newErrors.jpTourist = '注意喚起人数 日本人観光客は入力が必須です';
       if (!formData.forTourist) newErrors.forTourist = '注意喚起人数 外国人観光客は入力が必須です';
-      if (!formData.carType) newErrors.carType = '車両情報 車種名は入力が必須です';
+      if (formData.carType === null || formData.carType === undefined || formData.carType === '') {
+        newErrors.carType = '車両情報 車種名は入力が必須です';
+      }  
       if (!formData.carNo) newErrors.carNo = '車両情報 No.は入力が必須です';
       if (!formData.handover) newErrors.handover = '申し送り事項は入力が必須です';
       if (!formData.note) newErrors.note = '特記事項は入力が必須です';
@@ -265,7 +273,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
             />
           </div>
           <div style={labelBaseStyle}>
-            <Cloud size={12} style={{ marginRight: 4 }} /><label>パトロールメンバー</label>
+            <Cloud size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
           <MultiSelectInput
             options={members}
@@ -620,23 +628,23 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 車両情報、申し送り事項 */}
         <InputTile label="車両情報" icon={NotebookPen} isExpandable={true}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              list="carType-options"
-              style={{...editStyles.input, ...(errors.carType ? errorInput : {})}}
-              value={formData.carType}
-              onChange={(e) => {
-                setFormData({ ...formData, carType: e.target.value });
-                if (errors.carType) {
-                  setErrors({ ...errors, carType: null });
-                }
+            <select 
+              value={formData.carType || ''} 
+              onChange={e => {
+                const val = e.target.value;
+                // 選択されたIDを数値に変換して保存（未選択時は空文字）
+                setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
+                if (errors.carType) setErrors({ ...errors, carType: null });
               }}
-              placeholder="車種名"
-            />
-            <datalist id="carType-options">
-              {CARTYPE.map((opt) => (
-                <option key={opt} value={opt} />
-              ))}
-            </datalist>
+              style={{...editStyles.input, ...(errors.carType ? errorInput : {})}}
+            >
+              <option value="">車種名</option>
+                {CARTYPE.map(d => (
+                  <option key={d.order} value={d.order}>
+                    {d.carType}
+                  </option>
+                ))}
+            </select> 
             <input type="text" placeholder="No." inputMode="numeric" style={{...editStyles.input, ...(errors.carNo ? errorInput : {})}}
               value={formData.carNo} onChange={e => {setFormData({...formData, carNo: e.target.value}); if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
           </div>

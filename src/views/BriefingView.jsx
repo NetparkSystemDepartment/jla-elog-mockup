@@ -8,7 +8,13 @@ import { MultiSelectInput } from '../components/MultiSelectInput';
 const HANDOVERAREA = ['恩納村'];
 
 // ダミー
-const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+//const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+const CARTYPE = [
+  { order: 1, carType: '車種Ａ' },
+  { order: 2, carType: '車種Ｂ' },
+  { order: 3, carType: '車種Ｃ' },
+];
+
 // モックデータ：本来はDBから取得
 const MOCK_HANDOVERS = [
   { priority: '高', date: '2025/07/28', beach: '裏真栄田ビーチ', content: 'ハブクラゲの目撃情報あり。防護ネット付近の点検を強化してください。', member: '担当Ａ' },
@@ -91,18 +97,22 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>使用車両</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      list="carType-options"
-                      style={briefingStyles.input}
-                      value={data.someValue}
-                      onChange={(e) => setData({ ...data, carType: e.target.value })}
-                      placeholder="車種名"
-                    />
-                    <datalist id="carType-options">
-                      {CARTYPE.map((opt) => (
-                        <option key={opt} value={opt} />
+                    <select 
+                      style={briefingStyles.input} 
+                        value={data.carType || ''} 
+                        onChange={e => {
+                          // 選択されたIDを数値に変換して保存（未選択時は空文字）
+                          const val = e.target.value;
+                          setData({ ...data, carType: val !== '' ? Number(val) : '' });
+                        }}
+                    >
+                      <option value="">車種名</option>
+                      {CARTYPE.map(d => (
+                        <option key={d.order} value={d.order}>
+                        {d.carType}
+                        </option>
                       ))}
-                    </datalist>
+                    </select>
                     <input type="text" placeholder="No." style={briefingStyles.input} maxLength={4} inputMode="numeric"
                       value={data.carNo} onChange={e => setData({...data, carNo: e.target.value})} />
                   </div>
