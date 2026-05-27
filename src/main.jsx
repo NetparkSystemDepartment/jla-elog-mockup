@@ -26,23 +26,23 @@ const queryClient = new QueryClient({
 })
 
 // 開発環境（npm run dev）のときだけMSWを起動する
-async function enableMocking() {
-  if (process.env.NODE_ENV !== 'development') {
-    return;
-  }
-  const { worker } = await import('./mocks/browser');
-  return worker.start({
-    // 開発に関係ないアセットファイルへのリクエスト警告を非表示にする
-    onUnhandledRequest: 'bypass', 
-    serviceWorker: {
-    // Viteのbaseパス（/p1/）に合わせてMSWを探すように指定
-    url: '/p1/mockServiceWorker.js',
-    options: {
-      scope: '/p1/',
-    },
-  },
-  });
-}
+//async function enableMocking() {
+//  if (process.env.NODE_ENV !== 'development') {
+//    return;
+//  }
+//  const { worker } = await import('./mocks/browser');
+//  return worker.start({
+//    // 開発に関係ないアセットファイルへのリクエスト警告を非表示にする
+//    onUnhandledRequest: 'bypass', 
+//    serviceWorker: {
+//    // Viteのbaseパス（/p1/）に合わせてMSWを探すように指定
+//    url: '/p1/mockServiceWorker.js',
+//    options: {
+//      scope: '/p1/',
+//    },
+//  },
+//  });
+//}
 
 //createRoot(document.getElementById('root')).render(
 //  <StrictMode>
@@ -60,7 +60,7 @@ async function enableMocking() {
 //  )
 //})
 
-enableMocking().then(() => {
+//enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       {/* 3. 全体を QueryClientProvider で包み、作成した queryClient を渡す */}
@@ -73,4 +73,4 @@ enableMocking().then(() => {
       </QueryClientProvider>      
     </React.StrictMode>,
   )
-})
+//})

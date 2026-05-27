@@ -8,27 +8,21 @@ import RecordsListView from './views/RecordsListView';
 import { getAllRecords, saveRecord, getRecordsByDate, checkRecordByDate} from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
-
-// 
 import { useAuth } from './contexts/authContext';
-// ダミー
-//import { useAuth } from './contexts/dummyAuthContext';
-
 import { supabase } from './supabaseClient';
 import { fetchAllProfiles } from './api';
+import { setinfoApi } from './api/recordApi';
+
+import { ONNA_BEACHES } from './constantsPublic';
 
 const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
 function App() {
-  //const [user, setUser] = useState(null);
-  const { user, login, logout } = useAuth(); // Contextから取得
-  //const { user, login, logout } = useAuth() || {}; // Contextから取得
+  const { user, login, logout, isLoading  } = useAuth(); // Contextから取得
   const [loginId, setLoginId] = useState('');
-  //const [view, setView] = useState('list');
-  //const [view, setView] = useState('home'); // デフォルトをhomeに
   const [view, setView] = useState('briefing'); // デフォルトをhomeに
   
-  // --- 追加: ブリーフィングで設定する共有データ ---
+  // --- ブリーフィングで設定する共有データ ---
   const [briefingData, setBriefingData] = useState({
     weather: '',
     windSpeed: '',
@@ -52,7 +46,7 @@ function App() {
         waterTemp: ''
       });
       // 必要に応じて localStorage もクリア
-      localStorage.removeItem('briefing_data');
+//      localStorage.removeItem('briefing_data');
       setView('briefing');
     }
   }, [user]);
@@ -66,71 +60,29 @@ function App() {
   const [recentHandovers, setRecentHandovers] = useState([]);
   const [profileList, setProfileList] = useState([]);
 
+  // idからビーチ名を返す
+  const getNameByBeachId = (name) => ONNA_BEACHES.find((c) => c.id === name)?.name;
 
   useEffect(() => {
-    if (user && view === 'records') loadDBRecords();
-    else if (user && view !== 'briefing') {loadRecords()}
-//    else if (user && view === 'briefing') {loadRecentHandovers(); loadProfileList()};
-    else if (user && view === 'briefing') {dummyLoadProfileList()};
+    if (user && view === 'list') loadRecords();
   }, [selectedDate, user, view]);
 
   // データ読み込み処理（indexedDB）
   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const result = await getRecordsByDate(dateStr);
-    setSavedRecords(result || []);
-  };
+    console.log('result:', result);
 
-  // データ読み込み処理（サーバー）
-  const loadDBRecords = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('patrol_records')
-        .select('*')
-        .order('date', { ascending: false });
+    // resultが存在する場合のみマッピング処理を行う
+    const formattedRecords = (result || []).map((record) => {
+      return {
+        ...record, // 元のデータをそのままコピー
+        beach: getNameByBeachId(record.beach) // beach部分だけ名前（文字列）に置き換え
+      };
+    });
 
-      if (error) throw error;
-
-      console.error('loadDBRecords(data):', data);
-
-      const formattedRecords = data.map(record => ({
-        ...record,
-        ...record.data, // jsonbの中身（weather, members等）をトップレベルに展開
-      }));
-
-      console.error('loadDBRecords(formattedRecords):', formattedRecords);
-
-      setSavedRecords(formattedRecords || []);
-  
-    } catch (error) {
-      console.error('データ取得失敗:', error.message);
-      toast.error('データの取得に失敗しました');
-    }
-  }
-
-  // データ読み込み処理（申し送り）
-  const loadRecentHandovers = async () => {
-    const { data, error } = await supabase
-      .from('patrol_records')
-      .select('date, beach, user_id, data->handover, data->note') // jsonb内の特定フィールドのみ
-      .order('created_at', { ascending: false });
-
-    if (!error) {
-      console.log('loadRecentHandovers:', data);
-      setRecentHandovers(data);
-    }
-
-    if (!error && data) {
-      const formatted = data.map(r => ({
-        date: r.date,
-        beach: r.beach,
-        // JSX側で使っている名前に合わせる
-        handover: r.data?.handover || 'なし', 
-        user_id: r.user_id
-      }));
-      console.log('loadRecentHandovers:', data);
-      setRecentHandovers(formatted);
-  }
+    console.log('formattedRecords:', formattedRecords);
+    setSavedRecords(formattedRecords || []);
   };
 
   // データ読み込み処理（ユーザー情報）
@@ -155,38 +107,27 @@ function App() {
     }    
   };
 
-  // データ読み込み処理（ユーザー情報）ダミー
-  const dummyLoadProfileList = async () => {
-
-      const idlist = DUMMYSTAFF;
-//      console.log('idList:', idlist);
-      setProfileList(idlist);
-  
-  };
-
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
   const handleSave = async (formData) => {
     const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
     const beachName = selectedBeach;
   
-    const record = { 
-      ...formData, 
-      beach: beachName, 
-      date: formattedDate, 
-      isSynced: false, // サーバー未送信フラグ
-      timestamp: Date.now() 
+  // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
+    const updatedFormData = {
+      ...formData,
+      members: [user.id, ...formData.members]
     };
 
+    const record = { 
+      ...updatedFormData, 
+//      beach: beachName, 
+      date: formattedDate, 
+      isSynced: false, // サーバー未送信フラグ
+//      timestamp: Date.now() 
+    };
+console.log('record', record);
     try {
-  
-      //const existing = await checkRecordByDate(formattedDate, beachName);
-  
-        //if (existing) {
-        //  const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
-        //  if (!ok) return; // キャンセルならここで処理を終了
-        //}      
-        // MSW(fetch) を通さず、直接 IndexedDB へ保存
         const id = await saveRecord(record);
       
         console.log('保存成功（ID）:', id);
@@ -206,71 +147,93 @@ function App() {
       }
     };
   
-    // 保存処理（子から呼ばれる）
-    // サーバー保存
-    const handleSubmit = async (formData) => {
-      
-      const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
-      const beachName = selectedBeach;
-  
-      const record = { 
-        ...formData, 
-        beach: beachName, 
-        date: formattedDate, 
-        isSynced: false, // サーバー未送信フラグ
-        timestamp: Date.now() 
-      };
+  // 送信処理（子コンポーネントの EditView から呼ばれる）
+  // サーバーへ送信
+  const handleSubmit = async (formData) => {
+    const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
+//console.log('formattedDate:', formattedDate);
 
-      const id = await saveRecord(record);
-      console.log('indexedDB保存成功（ID）:', id);
+    const beachName = selectedBeach;
 
-      console.log("supabase:", user);
-
-      const recordToSave = {
-        date: formattedDate,
-        beach: selectedBeach,
-        user_id: user.id,
-        data: { ...formData }
-      };
-
-      try {
-  
-//        const existing = await checkRecordByDate(formattedDate, beachName);
-//  
-//      if (existing) {
-//        const ok = window.confirm(`${beachName} の ${formattedDate} のデータは既に存在します。上書きしてもよろしいですか？`);
-//        if (!ok) return; // キャンセルならここで処理を終了
-//      }      
-//        // MSW(fetch) を通さず、直接 IndexedDB へ保存
-//        const id = await saveRecord(record);
-      
-        const { error } = await supabase
-          .from('patrol_records')
-          .insert([recordToSave]);
-
-//          console.log('保存成功（ID）:', id);
-        console.log('保存成功');
-        toast.success('保存しました！');
-      
-      } catch (error) {
-        console.error('保存失敗:', error);
-        toast.error('保存に失敗しました');
-      }
-  
-      try {
-        await loadRecords();
-        setView('list');
-      } catch (error) {
-          console.error('読み込み失敗:', error);
-          toast.error('データの読み込みに失敗しました');
-      }
+    // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
+    const updatedFormData = {
+      ...formData,
+      members: [user.id, ...formData.members]
     };
 
-    // ログイン時のコールバック
-  const handleLogin = async (userInfo) => {
-    //setUser(userInfo);
-    //login(userInfo);
+    // 1. まずは「未送信状態(isSynced: false)」としてオブジェクトを作成
+    const record = { 
+      ...updatedFormData, 
+      date: formattedDate, 
+      isSynced: false, // サーバー未送信フラグ
+    };
 
+    let localId;
+
+    // 2. データの安全を最優先し、まずは確実に IndexedDB へ保存する
+    try {
+      localId = await saveRecord(record);
+      console.log('ローカルへの一次保存成功（ID）:', localId);
+    } catch (error) {
+      console.error('ローカル保存失敗:', error);
+      toast.error('ローカルへの保存に失敗したため、送信を中断しました');
+      return; // ローカル保存に失敗した場合は安全のためここで処理を止める
+    }
+
+    // 3. サーバーへの登録（recordApi.js の関数を呼び出し）を試みる
+    try {
+      // ユーザーに通信中であることを伝えるために Loading トーストを表示
+      const toastId = toast.loading('サーバーに送信中...');
+
+      // axiosInstance が共通でヘッダー（Authorizationなど）を処理する設計、
+      // またはサーバー側がセッション/POST内のデータで認証する設計であれば、そのまま record を渡します。
+ 
+      const { date, id, timestamp, isSynced, 
+        ...cleanRecord } = record;
+
+//console.log('cleanRecord:', cleanRecord);
+
+      const payload = {
+        type: 1,
+        data: {
+          ...cleanRecord,
+          delete_flg: false,
+        }
+      };
+
+//console.log('payload:', payload);
+      // recordApi.js のデータ登録APIを実行
+      const result = await setinfoApi(payload);
+      console.log('サーバー登録成功:', result);
+
+      // 4. 送信が成功したら、IndexedDB の該当データを「送信済み(isSynced: true)」に上書き更新
+      await saveRecord({
+        ...record,
+        id: localId,    // saveRecordが同一IDを認識できるように指定
+        isSynced: true, // 送信完了フラグを真にする
+      });
+
+      // トーストを成功表示に切り替える
+      toast.success('サーバーへ送信・登録しました！', { id: toastId });
+
+    } catch (error) {
+      console.error('サーバー送信失敗:', error);
+      // サーバーへの送信が失敗しても、ステップ2で IndexedDB にデータが入っているので消えません
+      toast.error('通信エラーのためサーバー送信に失敗しました。データはローカルに保存されたので、オンライン復帰時に自動同期されます。');
+    }
+
+    // 5. 最後に共通処理として、一覧データを再読み込みして画面をリストに戻す
+    try {
+      await loadRecords();
+      setView('list');
+    } catch (error) {
+      console.error('読み込み失敗:', error);
+      toast.error('データの再読み込みに失敗しました');
+    }
+  };
+
+  // ログイン時のコールバック
+  const handleLogin = async (userInfo) => {
 
     // 管理者の場合もブリーフィング画面へ
     if (userInfo.role === 'admin') {
@@ -288,83 +251,64 @@ function App() {
     }
   };
 
-  // ブリーフィング完了時の処理
-//  const handleBriefingComplete = (data) => {
-//    setBriefingData(data);
-//    setView('list'); // メイン画面へ
-//  };
+  // 開始
+  const handleBriefingComplete = (data) => {
+    if (data.handoverMemo === null || data.handoverMemo ==="") {
+      data.handoverMemo = "なし";
+    }
+    const mappedData = {
+      // EditView.jsx の initialFormData のキーに合わせる
+      tide: data.tide,
+      highTideTime: data.highTideTime,
+      highTide: data.highTide,
+      lowTideTime: data.lowTideTime,
+      lowTide: data.lowTide,
+      windDir: data.windDir,
+      windSpeed: data.windSpeed,
+      warn: data.warn,
+      alert: data.alert,
+      handover: data.handoverMemo,
+      note: data.noteMemo,
+      members: data.members,
+      carType: data.carType,
+      carNo: data.carNo,
+      visitors: 0,
+      jpWarning: 0,
+      forWarning: 0,
+      jpTourist: 0,
+      forTourist: 0,
+      unpatrolled: false,
+      seq: 1,
+    };
+    setBriefingData(mappedData);
+ console.log('handleBriefingComplete:', mappedData);
 
-const handleBriefingComplete = (data) => {
-  const mappedData = {
-    // EditView.jsx の initialFormData のキーに合わせる
-    tide: data.tide,
-    highTideTime: data.highTideTime,
-    highTide: data.highTide,
-    lowTideTime: data.lowTideTime,
-    lowTide: data.lowTide,
-    windDir: data.windDir,
-    windSpeed: data.windSpeed,
-    warn: data.warn,
-    alert: data.alert,
-    handover: data.handoverMemo,
-    note: data.noteMemo,
-    members: data.members,
-    carType: data.carType,
-    carNo: data.carNo,
-    visitors: 0,
-    jpWarning: 0,
-    forWarning: 0,
-    jpTourist: 0,
-    forTourist: 0,
+    // ローカルストレージに保存（ログイン認証が有効ならばブリーフィング画面に復元する）
+    localStorage.setItem('briefing_data', JSON.stringify(data));
+
+    setView('home');
   };
-  setBriefingData(mappedData);
-  console.log('handleBriefingComplete:', mappedData);
-  setView('home');
-};
 
   // --- 画面分岐 ---
   const renderView = () => {
   
-    // ログイン画面
-    if (!user) {
+//console.log('renderView:', user);
+
+    // 起動直後、localStorage からの読み込みが完了するまでは待機する
+    if (isLoading) {
+      return null;
+    }
+//console.log('renderView2:', user);
+//console.log('view:', view);
+
+    if (!user || !user.id) {
       return <LoginView />;
     }
-
-//    return <BriefingView onComplete={(data) => {
-//      setBriefingData(data); // ここでEditView用の初期値を作る
-//      setView('list');
-//    }} />;
-//  }
-    // ブリーフィング画面
-//    if (view === 'briefing') {
-//    console.log('briefingData:', briefingData);
-//    console.log('retrun BriefingView!');
-//    return <BriefingView onComplete={(data) => {
-//      setBriefingData(data);
-//      console.log('setBriefingData:', data);
-//      setView('home'); // ブリーフィング完了後はホームへ
-//    }} />;
-//  }
-  
 
   // 画面分岐
     switch (view) {
     case 'home':
       return <HomeView user={user} onNavigate={(target) => setView(target)} />;
-//    case 'home':
-//      return (
-//        <HomeView 
-//          user={user} 
-//          onNavigate={async (target) => {
-//          // もし「記録一覧」が押されたら、データをロードしてから画面を変える
-//          if (target === 'records') {
-//            await loadDBRecords(); 
-//          }
-//          // その後、画面を切り替える
-//            setView(target);
-//          }} 
-//        />
-//      );
 
     case 'briefing':
       return (
@@ -388,7 +332,6 @@ const handleBriefingComplete = (data) => {
           onSelectCoast={(coast) => setSelectedCoast(coast)}
           onNavigate={(target) => setView(target)}
         />
-         {/* ListViewの下にもHomeViewと同じフッターを配置すると使いやすくなります */}
         </>
       );
     
@@ -401,19 +344,44 @@ const handleBriefingComplete = (data) => {
       );
 
     case 'edit':
- //     console.log('selectedDate:', selectedDate);
+ // console.log('selectedDate:', selectedDate);
       return (
         <EditView
           user={user}
           selectedCoast={selectedCoast} 
           selectedBeach={selectedBeach}
-          selectedDate={selectedDate} 
+          selectedDate={format(selectedDate, 'yyyy-MM-dd')}
+//          selectedDate={selectedDate} 
           onSave={handleSave}
           onSubmit={handleSubmit}
           onBack={() => setView('list')}
           // --- 重要: 既存データがない場合、ブリーフィングデータを初期値として渡す ---
-          existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
+//         existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
+          existingData={(() => {
+            // 選択したビーチのデータを取得
+            const foundRecord = savedRecords.find(r => r.beach === selectedBeach);
+
+            // データがある場合、そのデータは送信済みか
+            // 未送信ならそのデータを返す
+            if (foundRecord && !foundRecord.isSynced) {
+              return foundRecord;
+            }
+
+            // データがない、または送信済みの場合
+            // 新規データ扱いにする
+            // データがあればそのseqに+1、なければ1にする
+            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1;
+
+            return {
+              ...briefingData,
+                seq: nextSeq,
+                unpatrolled: false,      // undefined対策
+                id: undefined,           // IndexedDBで別レコードとして新規保存させるため、IDをクリアする
+                isSynced: false          // 新しいレコードなので未送信にする
+            };
+          })()}
           profileList={profileList}
+          seq={1}
         />
       );
 

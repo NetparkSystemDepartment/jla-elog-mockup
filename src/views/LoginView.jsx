@@ -33,7 +33,7 @@ function LoginView() {
       id: loginId, 
       password: isAdmin ? password : null 
     });
-
+//console.log('result', result);
      // authContextから返ってきたメッセージをセットする  
     if (!result.success) {
       setError(result.message);

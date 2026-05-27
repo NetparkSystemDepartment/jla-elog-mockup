@@ -12,15 +12,16 @@ import { ja } from 'date-fns/locale';
 registerLocale('ja', ja);
 import '../Overwrite.css';
 import { toast } from 'sonner';
+import { COAST_DATA, ONNA_BEACHES } from '../constantsPublic';
 
-const COAST_DATA = [
-  { id: 1, name: '本島北部(西)', area: 'patrol' }, { id: 2, name: '本島北部(東)', area: 'patrol' },
-  { id: 3, name: '恩納村', area: 'patrol' }, { id: 4, name: '東海岸中部', area: 'patrol' },
-  { id: 5, name: '本島中部', area: 'patrol' }, { id: 6, name: '本島南部', area: 'patrol' }, { id: 7, name: '座間味村', area: 'tower' },
-  { id: 8, name: '渡嘉敷村', area: 'tower' }
-];
+//const COAST_DATA = [
+//  { id: 1, name: '本島北部(西)', kind: 1 }, { id: 2, name: '本島北部(東)', kind: 1 },
+//  { id: 3, name: '恩納村', kind: 1 }, { id: 4, name: '東海岸中部', kind: 1 },
+//  { id: 5, name: '本島中部', kind: 1 }, { id: 6, name: '本島南部', kind: 1 }, { id: 7, name: '座間味村', kind: 2 },
+//  { id: 8, name: '渡嘉敷村', kind: 2 }
+//];
 //const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
-const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
+//const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
 
 const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, onSelectBeach, onSelectCoast, onNavigate }) => {
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
@@ -41,10 +42,17 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
     <button onClick={onClick} ref={ref} style={iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
 
-  const filteredCoasts = user.role === 'patrol' 
-    ? COAST_DATA.filter((coast) => coast.area === 'patrol')
-    : COAST_DATA
-  console.log('filteredCoasts:', filteredCoasts);
+//  console.log('user', user);
+//  const filteredCoasts = user.kind === 1
+//    ? COAST_DATA.filter((coast) => coast.kind === 1)
+//    : COAST_DATA
+  let filteredCoasts = COAST_DATA;  
+  if (user.kind === 1) {
+    filteredCoasts = COAST_DATA.filter((coast) => coast.kind === 1);
+  } else if (user.kind === 2) {
+    filteredCoasts = COAST_DATA.filter((coast) => coast.kind === 2);
+  }
+//  console.log('filteredCoasts:', filteredCoasts);
 
   return (
     <div style={container}>
@@ -98,10 +106,10 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
                 {isExpanded && (
                   <div style={beachListStyle}>
                     {ONNA_BEACHES.map(beach => {
-                      const isDone = savedRecords.some(r => r.beach === beach);
+                      const isDone = savedRecords.some(r => r.beach === beach.name);
                       return (
-                        <button key={beach} onClick={() => onSelectBeach(beach)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
-                          <span style={{flex:1, textAlign:'left'}}>{beach}</span>
+                        <button key={beach.name} onClick={() => onSelectBeach(beach.name)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
+                          <span style={{flex:1, textAlign:'left'}}>{beach.name}</span>
                           {isDone && (
   <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span style={doneTextStyle}>未送信</span>

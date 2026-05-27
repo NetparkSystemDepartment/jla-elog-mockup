@@ -1,8 +1,10 @@
 import React from 'react';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone, Menu } from 'lucide-react';
-//import { useAuth } from '../contexts/authContext';
+
+import { useAuth } from '../contexts/authContext';
 // ダミー
-import { useAuth } from '../contexts/dummyAuthContext';
+//import { useAuth } from '../contexts/dummyAuthContext';
+
 import { toast } from 'sonner';
 
 function HomeView({ user, onNavigate }) {
