@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:match*",
+      "destination": "https://d-elog.ripcurrent.org/v1/:match*"
+    }
+  ]
+}
