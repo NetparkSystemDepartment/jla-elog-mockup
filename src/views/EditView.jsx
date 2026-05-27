@@ -14,55 +14,105 @@ import { toast } from 'sonner';
 import { Construction, Calendar } from 'lucide-react';
 import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
   WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS } from '../constants';
+import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
+
+// パトロールメンバー
+import { useSafeMembers } from '../useSafeMembers';
+// 車種名
+import { useSafeCarInfo } from '../useSafeCarInfo';
 
 const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
 const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
-const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
+//const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
 
 const initialFormData = {
   startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
   highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '', 
   wave: '', warn: '', alert: '', visitors: '', feature: '', 
-  jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: ''
+  jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: '',
+  unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList }) => {
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList, seq}) => {
 //  const [formData, setFormData] = useState({startDate: selectedDate}, initialFormData);
+//console.log('selectedDate:', selectedDate);
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
-  startDate: selectedDate // 新しい値をセット（同名プロパティがあれば上書きされる）
+  startDate: selectedDate,
+  seq: seq,
 });
 
-// アンパトロールモード
-  const [isUnpatrolled, setIsUnpatrolled] = useState(false);
+  // アンパトロールモード
+  const [unpatrolled, setUnpatrolled] = useState(false);
 
+  // パトロールメンバー
+  const safeMembers = useSafeMembers();
+  //console.log('safeMembers:', safeMembers);
+  // ログイン者を除く
+   const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
+  
+  
+  // 車両名
+  const safeCarInfo = useSafeCarInfo();
+  //console.log('safeCarInfo:', safeCarInfo);
+  
+  //  const handleToggle = () => {
+//    const nextStatus = !isUnpatrolled;
+//    setIsUnpatrolled(nextStatus);
+//
+//    // エラーオブジェクトをクリア
+//    setErrors({});
+//    
+//  }; 
+
+  //
   const handleToggle = () => {
-    const nextStatus = !isUnpatrolled;
-    setIsUnpatrolled(nextStatus);
+    setFormData(prev => ({
+      ...prev,
+      unpatrolled: !prev.unpatrolled
+    }));
 
     // エラーオブジェクトをクリア
     setErrors({});
     
-  };  
+  }; 
+   
 
-  //console.log('selectedDate:', selectedDate);
+//console.log('selectedDate:', selectedDate);
 //console.log('startDate:', formData.startDate)
-  const members = profileList;
+//  const members = profileList;
 
   // 既存データがあればフォームにセット
-  useEffect(() => {
+//  useEffect(() => {
 //    console.log("EditView In:", existingData)
-    if (existingData) setFormData(existingData);
-    //setFormData({visitors: '0'});
-  }, [existingData]);
+//    if (existingData) setFormData(existingData);
+//    //setFormData({visitors: '0'});
+//  }, [existingData]);
 
-  useEffect(() => {
-  setFormData(prev => ({
-    ...prev,
-    startDate: selectedDate
-  }));
-}, [selectedDate]);
+useEffect(() => {
+  console.log("EditView In:", existingData);
+
+  if (existingData) {
+    // 1. まずは existingData をそのままコピーしたオブジェクトを作る
+    const updatedData = { ...existingData };
+
+    // 2. members が存在し、かつ配列の場合のみ先頭を削除する
+    if (Array.isArray(existingData.members)) {
+      updatedData.members = existingData.members.slice(1);
+    }
+
+    // 3. 加工したデータを State にセットする
+    setFormData(updatedData);
+  }
+}, [existingData]);
+
+// useEffect(() => {
+//  setFormData(prev => ({
+//    ...prev,
+//    startDate: selectedDate
+//  }));
+//}, [selectedDate]);
 
   // 全ての入力を削除（モックアップのみ）
   const handleClear = () => {
@@ -84,11 +134,16 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
+  
+  // 海岸名からidを返す
+  const getCoastIdByName = (name) => COAST_DATA.find((c) => c.name === name)?.id;
+  // ビーチ名からidを返す
+  const getBeachIdByName = (name) => ONNA_BEACHES.find((c) => c.name === name)?.id;
 
   // 「送信」ボタンenable用
   const isFormValid = () => {
     // 必須項目を列挙して、すべてに値が入っているかチェック
-    return (
+  return (
       (formData.members && formData.members.length > 0) &&
       formData.startTime && 
       formData.endTime &&
@@ -96,23 +151,22 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       (formData.current || formData.current === 0) &&
       formData.highTideTime &&
       formData.highTide &&
-      (formData.wawaveOuterve || formData.waveOuter === 0) &&
+      (formData.waveOuter || formData.waveOuter === 0) &&
       formData.lowTideTime &&
       formData.lowTide &&
       (formData.wave || formData.wave === 0) &&
       formData.windDir && 
       (formData.tide || formData.tide === 0) &&
-      formData.windDir &&
       formData.windDirDetail &&
       (formData.windSpeed || formData.windSpeed === 0) &&
-      formData.visitors &&
+      (formData.visitors || formData.visitors === 0) &&
       formData.warn &&
       formData.feature &&
       formData.alert &&
-      formData.jpWarning &&
-      formData.forWarning &&
-      formData.jpTourist &&
-      formData.forTourist &&
+      (formData.jpWarning || formData.jpWarning === 0) &&
+      (formData.forWarning || formData.forWarning === 0) &&
+      (formData.jpTourist || formData.jpTourist === 0) &&
+      (formData.forTourist || formData.forTourist === 0) &&
       formData.carType &&
       formData.carNo &&
       formData.handover &&
@@ -121,13 +175,16 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   };
 
   const isValid = isFormValid();
-
+ 
   // 「保存して閉じる」ボタン
   const handleSaveClick = () => {
     const newErrors = {};
 
     // 必須チェック
-    if (isUnpatrolled) {
+    console.log('formData:', formData);
+    console.log('formData.unpatrolled:', formData.unpatrolled);
+    //if (isUnpatrolled) {
+    if (formData.unpatrolled) {
       if (!formData.members) newErrors.members = 'パトロールメンバーは入力が必須です';
       if (!formData.note) newErrors.note = '特記事項は入力が必須です';
     }
@@ -156,14 +213,24 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       if (formData.windSpeed === null || formData.windSpeed === undefined || formData.windSpeed === '') {
         newErrors.windSpeed = '風速（天気予報）は入力が必須です';
       }  
-      if (!formData.visitors) newErrors.visitors = '利用者数は入力が必須です';
+      if (formData.visitors === '' || formData.visitors === null || formData.visitors === undefined) {
+        newErrors.visitors = '利用者数は入力が必須です';
+      }
       if (!formData.warn) newErrors.warn = '注意報は入力が必須です';
       if (!formData.feature) newErrors.feature = 'ビーチ利用の特徴は入力が必須です';
       if (!formData.alert) newErrors.alert = '警報は入力が必須です';
-      if (!formData.jpWarning) newErrors.jpWarning = '注意喚起人数 日本人県内在住は入力が必須です';
-      if (!formData.forWarning) newErrors.forWarning = '注意喚起人数 外国人県内在住は入力が必須です';
-      if (!formData.jpTourist) newErrors.jpTourist = '注意喚起人数 日本人観光客は入力が必須です';
-      if (!formData.forTourist) newErrors.forTourist = '注意喚起人数 外国人観光客は入力が必須です';
+      if (formData.jpWarning === '' || formData.jpWarning === null || formData.jpWarning === undefined) {
+        newErrors.jpWarning = '注意喚起人数 日本人県内在住は入力が必須です';
+      }
+      if (formData.forWarning === '' || formData.forWarning === null || formData.forWarning === undefined) {
+        newErrors.forWarning = '注意喚起人数 外国人県内在住は入力が必須です';
+      }
+      if (formData.jpTourist === '' || formData.jpTourist === null || formData.jpTourist === undefined) {
+        newErrors.jpTourist = '注意喚起人数 日本人観光客は入力が必須です';
+      }  
+      if (formData.forTourist === '' || formData.forTourist === null || formData.forTourist === undefined) {
+        newErrors.forTourist = '注意喚起人数 外国人観光客は入力が必須です';
+      }
       if (!formData.carType) newErrors.carType = '車両情報 車種名は入力が必須です';
       if (!formData.carNo) newErrors.carNo = '車両情報 No.は入力が必須です';
       if (!formData.handover) newErrors.handover = '申し送り事項は入力が必須です';
@@ -178,9 +245,27 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       return; 
     }
 
+  //  setFormData((prev) => ({
+  //    ...prev,
+  //    members: [user.id, ...prev.members]
+  //  }));
+
+    formData.startDate = selectedDate;
+    formData.area = getCoastIdByName(selectedCoast);
+    formData.beach = getBeachIdByName(selectedBeach);
     // 保存（indexedDB）処理
     onSave(formData);
   };
+
+    // 「送信」ボタン
+  const handleSendClick = () => {
+    formData.startDate = selectedDate;
+    formData.area = getCoastIdByName(selectedCoast);
+    formData.beach = getBeachIdByName(selectedBeach);
+    console.log('formData:', formData);
+    // 保存（indexedDB）処理
+    onSubmit(formData);
+  }
 
   // 複数選択のプルダウン
   const [isOpen, setIsOpen] = useState(false);
@@ -219,12 +304,13 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 
   //const formattedDate = format(selectedDate, 'M月d日 (eee)');
   const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
-  const dailySeq = 1
+  //const dailySeq = 1
 
 // label="パトロール開始時刻　パトロール終了時刻" icon={Clock}
 //            <div className={styles.labelBaseStyle}>
 //              <Clock size={12} style={{ marginRight: 4 }} /><label>パトロール終了時刻</label>
 //            </div>
+
   return (
     <div style={container}>
     <div className="notranslate">
@@ -247,7 +333,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
           */}
         </div>
         <div style={headerBottomStyle}>
-          <span>{formattedDate}の記録 #{String(dailySeq).padStart(2, '0')}</span>
+          <span>{formattedDate}の記録 #{String(formData.seq).padStart(2, '0')}</span>
         </div>
       </header>
 
@@ -256,7 +342,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* パトロールメンバー */}
         <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}>
           {/* ログイン者（記録担当者）を追加 */}
-          <div style={editStyles.field}>
+          <div>
             <input
               type="text"
               value={user.id || ''}
@@ -265,10 +351,10 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
             />
           </div>
           <div style={labelBaseStyle}>
-            <Cloud size={12} style={{ marginRight: 4 }} /><label>パトロールメンバー</label>
+            <Cloud size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
           <MultiSelectInput
-            options={members}
+            options={exceptLogin}
             value={formData.members || []}
             onChange={(next) => {
               setFormData({ ...formData, members: next });
@@ -291,9 +377,9 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
             <Clock size={12} style={{ marginRight: 4 }} /><label style={{...labelLeftyStyle, fontSize: '12px' }}>パトロール終了時刻</label>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...editStyles.input, ...(errors.startTime ? errorInput : {})}}
+            <input type="time" style={{...inputStyle, ...(errors.startTime ? errorInput : {})}}
               value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
-            <input type="time" style={{...editStyles.input, ...(errors.endTime ? errorInput : {})}}
+            <input type="time" style={{...inputStyle, ...(errors.endTime ? errorInput : {})}}
               value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
           </div>
           <div style={labelBaseStyle}>
@@ -381,9 +467,9 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 満潮時国・高さ */}
         <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...editStyles.input, ...(errors.highTideTime ? errorInput : {})}}
+            <input type="time" style={{...inputStyle, ...(errors.highTideTime ? errorInput : {})}}
               value={formData.highTideTime} onChange={e => {setFormData({...formData, highTideTime: e.target.value}); if (errors.highTideTime) setErrors({ ...errors, highTideTime: null });}} />
-            <input type="number" placeholder="高さ [cm] "style={{...editStyles.input, textAlign: 'right', ...(errors.highTide ? errorInput : {})}}
+            <input type="number" placeholder="高さ [cm] "style={{...inputStyle, textAlign: 'right', ...(errors.highTide ? errorInput : {})}}
               value={formData.highTide} onChange={e => {setFormData({...formData, highTide: e.target.value}); if (errors.highTide) setErrors({ ...errors, highTide: null });}} />
             <span style={unitTextStyle}>cm</span>
           </div>
@@ -419,9 +505,9 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 干潮時刻・高さ */}
         <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...editStyles.input, ...(errors.lowTideTime ? errorInput : {})}}
+            <input type="time" style={{...inputStyle, ...(errors.lowTideTime ? errorInput : {})}}
               value={formData.lowTideTime} onChange={e => {setFormData({...formData, lowTideTime: e.target.value}); if (errors.lowTideTime) setErrors({ ...errors, lowTideTime: null });}} />
-            <input type="number" placeholder="高さ [cm] "style={{...editStyles.input, textAlign: 'right', ...(errors.lowTide ? errorInput : {})}}
+            <input type="number" placeholder="高さ [cm] "style={{...inputStyle, textAlign: 'right', ...(errors.lowTide ? errorInput : {})}}
               value={formData.lowTide} onChange={e => {setFormData({...formData, lowTide: e.target.value}); if (errors.lowTide) setErrors({ ...errors, lowTide: null });}} />
             <span style={unitTextStyle}>cm</span>
           </div>
@@ -464,7 +550,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
               setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
               if (errors.windDir) setErrors({ ...errors, windDir: null });
             }}
-            style={{...editStyles.input, ...(errors.windDir ? errorInput : {})}}
+            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
            >
             <option value="">風向</option>
               {DIRECTIONS.map(d => (
@@ -485,7 +571,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
               setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
               if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
             }}
-            style={{...editStyles.input, ...(errors.windDirDetail ? errorInput : {})}}
+            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
           >
             <option value="">風向</option>
               {DIRECTIONS.map(d => (
@@ -526,8 +612,12 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 利用者数 */}
         <InputTile label="利用者数" icon={Users}>
           <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNumericStyle, width: '50%', height: '30px', ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors} onChange={e => {setFormData({...formData, visitors: e.target.value}); if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
+              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
             <label style={unitTextStyle}>名</label>
           </div>
         </InputTile>
@@ -573,7 +663,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 警報 */}
         <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
           <MultiSelectInput
-            options={FEATURE_OPTIONS}
+            options={ALERT_OPTIONS2}
             value={formData.alert || []}
             onChange={(next) => {
               setFormData({ ...formData, alert: next });
@@ -597,10 +687,18 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
           </div>
           <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpWarning ? errorInput : {})}}
-              value={formData.jpWarning} onChange={e => {setFormData({...formData, jpWarning: e.target.value}); if (errors.jpWarning) setErrors({ ...errors, jpWarning: null });}} />
+              value={formData.jpWarning}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, jpWarning: val === '' ? '' : Number(val)});
+              if (errors.jpWarning) setErrors({ ...errors, jpWarning: null });}} />
             <label style={unitTextStyle}>名</label>
             <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.forWarning ? errorInput : {})}}
-              value={formData.forWarning} onChange={e => {setFormData({...formData, forWarning: e.target.value}); if (errors.forWarning) setErrors({ ...errors, forWarning: null });}} />
+              value={formData.forWarning}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, forWarning: val === '' ? '' : Number(val)});
+              if (errors.forWarning) setErrors({ ...errors, forWarning: null });}} />
             <label style={unitTextStyle}>名</label>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
@@ -609,10 +707,18 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
           </div>
           <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpTourist ? errorInput : {})}}
-              value={formData.jpTourist} onChange={e => {setFormData({...formData, jpTourist: e.target.value}); if (errors.jpTourist) setErrors({ ...errors, jpTourist: null });}} />
+              value={formData.jpTourist}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, jpTourist: val === '' ? '' : Number(val)});
+              if (errors.jpTourist) setErrors({ ...errors, jpTourist: null });}} />
             <label style={unitTextStyle}>名</label>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpTourist ? errorInput : {})}}
-              value={formData.forTourist} onChange={e => {setFormData({...formData, forTourist: e.target.value}); if (errors.forTourist) setErrors({ ...errors, forTourist: null });}} />
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.forTourist ? errorInput : {})}}
+              value={formData.forTourist}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, forTourist: val === '' ? '' : Number(val)});
+              if (errors.forTourist) setErrors({ ...errors, forTourist: null });}} />
             <label style={unitTextStyle}>名</label>
           </div>
         </InputTile>
@@ -620,24 +726,26 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         {/* 車両情報、申し送り事項 */}
         <InputTile label="車両情報" icon={NotebookPen} isExpandable={true}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input
-              list="carType-options"
-              style={{...editStyles.input, ...(errors.carType ? errorInput : {})}}
-              value={formData.carType}
-              onChange={(e) => {
-                setFormData({ ...formData, carType: e.target.value });
-                if (errors.carType) {
-                  setErrors({ ...errors, carType: null });
-                }
-              }}
-              placeholder="車種名"
-            />
-            <datalist id="carType-options">
-              {CARTYPE.map((opt) => (
-                <option key={opt} value={opt} />
-              ))}
-            </datalist>
-            <input type="text" placeholder="No." inputMode="numeric" style={{...editStyles.input, ...(errors.carNo ? errorInput : {})}}
+            <select 
+                style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
+                 value={formData.carType || ''} 
+                 onChange={e => {
+                   // 選択されたIDを数値に変換して保存（未選択時は空文字）
+                   const val = e.target.value;
+                   setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
+                    if (errors.carType) {
+                      setErrors({ ...errors, carType: null });
+                    }
+                 }}
+             >
+               <option value="">車種名</option>
+               {safeCarInfo.map(d => (
+                 <option key={d.order} value={d.order}>
+                 {d.carType}
+                 </option>
+                ))}
+             </select>
+             <input type="text" placeholder="No." inputMode="numeric" style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
               value={formData.carNo} onChange={e => {setFormData({...formData, carNo: e.target.value}); if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
           </div>
           
@@ -702,13 +810,14 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
 
           <button
+            type="button"
             onClick={handleToggle}
-            style={{...unpatrolledBtnStyle, backgroundColor: isUnpatrolled ? '#ECD283' : '#cccccc',}}>
+            style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
             Unpatrolled
           </button>
 
           <button 
-            onClick={() => onSubmit(formData)} 
+            onClick={() => handleSendClick(formData)} 
             disabled={!isValid}
             style={{
               ...sendBtnStyle,
@@ -742,9 +851,7 @@ const radioBtnStyle = { padding: '4px 10px', borderRadius: '8px', border: '1px s
 const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const doneTextStyle = { backgroundColor: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '9px', fontWeight: '600', border: '1px solid #d1d5db', display: 'inline-block' };
 const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' };
-const editStyles = {
-  input: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
-};
+const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' };
 const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px', color: '#64748b', width: '10%', };
 const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
 const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#777777', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginRight: '8px' };
@@ -752,27 +859,5 @@ const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
 
-
-
 export default EditView;
-
-//            <select className={styles.inputStyle} value={formData.feature} onChange={e => setFormData({...formData, feature: e.target.value})}><option value="">- 選択 -</option>{FEATURE_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
-//        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-//        </div>
-//        </div>
-//
-//        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-
-//          <InputTile label="注意報・警報" icon={AlertCircle}>
-//            <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
-//              <label className={styles.labelLeftyStyle}>注意報</label>
-//              <label className={styles.labelLeftyStyle}>警報</label>
-//            </div>
-//            <div style={{ display: 'flex', gap: '6px' }}>
-//              <select className={styles.inputStyle} value={formData.warn} onChange={e => setFormData({...formData, warn: e.target.value})}><option value="">- 選択 -</option>{WARNIBG_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
-//              <select className={styles.inputStyle} value={formData.alert} onChange={e => setFormData({...formData, alert: e.target.value})}><option value="">- 選択 -</option>{ALERT_OPTIONS.map(o => <option key={o}>{o}</option>)}</select>
-//            </div>
-//          </InputTile>
-
-//           <h3>{format(selectedDate, 'MM月dd日(EEE)の記録', { locale: ja })}</h3>
 

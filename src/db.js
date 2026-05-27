@@ -1,4 +1,6 @@
-const DB_NAME = 'PatrolDB_rev2';
+// indexedDB
+
+const DB_NAME = 'e-log_p1_02';
 const STORE_NAME = 'records';
 
 import Dexie from 'dexie';
@@ -7,7 +9,7 @@ import Dexie from 'dexie';
 export const db = new Dexie(DB_NAME);
 
 db.version(2).stores({
-  records: '[date+beach]'
+  records: '[date+beach+seq]'
 });
 
 // データの全取得
@@ -29,7 +31,7 @@ export const _getRecordsByDate = async (dateStr) => {
     .toArray();
 };
 
-export const getRecordsByDate = async (dateStr) => {
+export const __getRecordsByDate = async (dateStr) => {
   console.log("検索開始:", dateStr); // 渡ってきた値を確認
 
   const results = await db.records
@@ -39,6 +41,40 @@ export const getRecordsByDate = async (dateStr) => {
 
   console.log("検索結果:", results); // 結果が0件なら型か中身が違う
   return results;
+};
+
+export const getRecordsByDate = async (dateStr) => {
+  console.log("検索開始（全ビーチ分）:", dateStr);
+
+  // 1. 指定された日付のデータをすべて取得（全ビーチ、全seqが混ざった状態）
+  const allResults = await db.records
+    .where('date')
+    .equals(dateStr)
+    .toArray();
+
+  if (allResults.length === 0) {
+    console.log("検索結果: 0件");
+    return [];
+  }
+
+  // 2. ビーチごとに「seqが最大のデータ」だけを抽出する
+  const latestRecordsMap = {};
+
+  allResults.forEach((record) => {
+    const currentBeach = record.beach; // ビーチのIDなど
+
+    // まだこのビーチのデータが登録されていない、
+    // または、すでにあるデータよりも今回のデータのほうが seq が大きい場合、上書きする
+    if (!latestRecordsMap[currentBeach] || record.seq > latestRecordsMap[currentBeach].seq) {
+      latestRecordsMap[currentBeach] = record;
+    }
+  });
+
+  // 3. 連想配列（Map）の値を、通常の配列に戻して返す
+  const finalResults = Object.values(latestRecordsMap);
+
+  console.log("各ビーチの最新レコード一覧:", finalResults);
+  return finalResults; // 配列が返ります
 };
 
 // 指定された日付のレコードを1件取得する

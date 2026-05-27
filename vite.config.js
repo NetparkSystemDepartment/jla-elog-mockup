@@ -3,11 +3,21 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // 1. 先にbaseの値を決めて変数に代入しておく
-const baseConfig = process.env.VERCEL ? '/' : '/p2/';
+//const baseConfig = process.env.VERCEL ? '/' : '/p1/';
 
 export default defineConfig({  
   // 2. 変数を割り当てる
-  base: baseConfig,
+//  base: baseConfig,
+
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://d-elog.ripcurrent.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/v1')
+      }
+    }
+  },  
 
   plugins: [
     react(),
@@ -32,8 +42,8 @@ export default defineConfig({
         lang: 'ja',
 
         // 【追加】レンタルサーバー（/v2/）でも正しくインストールできるようにする設定
-        start_url: baseConfig,
-        scope: baseConfig,
+//        start_url: baseConfig,
+//        scope: baseConfig,
 
         icons: [
           {
