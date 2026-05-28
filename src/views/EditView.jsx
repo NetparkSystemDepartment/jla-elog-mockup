@@ -22,9 +22,6 @@ import { useSafeMembers } from '../useSafeMembers';
 import { useSafeCarInfo } from '../useSafeCarInfo';
 
 const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
-//const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
-//const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
-//const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
 
 const initialFormData = {
   startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
@@ -97,16 +94,17 @@ useEffect(() => {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
     const updatedData = { ...existingData };
 
-    // 2. members が存在し、かつ配列の場合のみ先頭を削除する
+    // 2. members が存在し、かつ配列の場合のみログイン者を削除する
     if (Array.isArray(existingData.members)) {
-      updatedData.members = existingData.members.slice(1);
+//      updatedData.members = existingData.members.slice(1);
+      updatedData.members = existingData.members.filter(memberId => memberId !== user.id);
     }
 
     // 3. 加工したデータを State にセットする
     setFormData(updatedData);
 
     // 4. Unpatrollのステートをセットする
-    setUnpatrolled(setUnpatrolled.unpatrolled);
+    setUnpatrolled(updatedData.unpatrolled);
   }
 }, [existingData]);
 
@@ -146,35 +144,43 @@ useEffect(() => {
   // 「送信」ボタンenable用
   const isFormValid = () => {
     // 必須項目を列挙して、すべてに値が入っているかチェック
-  return (
-      (formData.members && formData.members.length > 0) &&
-      formData.startTime && 
-      formData.endTime &&
-      (formData.weather || formData.weather === 0) &&
-      (formData.current || formData.current === 0) &&
-      formData.highTideTime &&
-      formData.highTide &&
-      (formData.waveOuter || formData.waveOuter === 0) &&
-      formData.lowTideTime &&
-      formData.lowTide &&
-      (formData.wave || formData.wave === 0) &&
-      formData.windDir && 
-      (formData.tide || formData.tide === 0) &&
-      formData.windDirDetail &&
-      (formData.windSpeed || formData.windSpeed === 0) &&
-      (formData.visitors || formData.visitors === 0) &&
-      formData.warn &&
-      formData.feature &&
-      formData.alert &&
-      (formData.jpWarning || formData.jpWarning === 0) &&
-      (formData.forWarning || formData.forWarning === 0) &&
-      (formData.jpTourist || formData.jpTourist === 0) &&
-      (formData.forTourist || formData.forTourist === 0) &&
-      formData.carType &&
-      formData.carNo &&
-      formData.handover &&
-      formData.note
-    );
+    if (unpatrolled === true) {
+      return (
+        formData.handover &&
+        formData.note
+      )
+    }
+    else {
+      return (
+        (formData.members && formData.members.length > 0) &&
+        formData.startTime && 
+        formData.endTime &&
+        (formData.weather || formData.weather === 0) &&
+        (formData.current || formData.current === 0) &&
+        formData.highTideTime &&
+        formData.highTide &&
+        (formData.waveOuter || formData.waveOuter === 0) &&
+        formData.lowTideTime &&
+        formData.lowTide &&
+        (formData.wave || formData.wave === 0) &&
+        formData.windDir && 
+        (formData.tide || formData.tide === 0) &&
+        formData.windDirDetail &&
+        (formData.windSpeed || formData.windSpeed === 0) &&
+        (formData.visitors || formData.visitors === 0) &&
+        formData.warn &&
+        formData.feature &&
+        formData.alert &&
+        (formData.jpWarning || formData.jpWarning === 0) &&
+        (formData.forWarning || formData.forWarning === 0) &&
+        (formData.jpTourist || formData.jpTourist === 0) &&
+        (formData.forTourist || formData.forTourist === 0) &&
+        formData.carType &&
+        formData.carNo &&
+        formData.handover &&
+        formData.note
+      )
+    }
   };
 
   const isValid = isFormValid();
@@ -556,7 +562,7 @@ useEffect(() => {
             }}
             style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
            >
-            <option value="">風向</option>
+            <option value="">ー選択ー</option>
               {DIRECTIONS.map(d => (
                 <option key={d.id} value={d.id}>
                   {d.label}
@@ -577,7 +583,7 @@ useEffect(() => {
             }}
             style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
           >
-            <option value="">風向</option>
+            <option value="">ー選択ー</option>
               {DIRECTIONS.map(d => (
                 <option key={d.id} value={d.id}>
                   {d.label}
@@ -780,7 +786,6 @@ useEffect(() => {
               {formData.handover.length} / 100
             </div>                  
 
-
           <div style={labelBaseStyle}>
             <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
           </div>
@@ -818,6 +823,17 @@ useEffect(() => {
               }
             }}
             style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
+            <div style={{
+              right: '12px',
+              bottom: '8px',
+              fontSize: '10px',
+              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
+              userSelect: 'none',
+              textAlign: 'right'
+              }}>
+              {formData.note.length} / 100
+            </div>                  
         
           <div style={labelBaseStyle}>
             <FileUp size={12} style={{ marginRight: 4 }} /><label>画像のアップロード</label>
@@ -855,7 +871,7 @@ useEffect(() => {
 };
 
 const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
-const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', margin: '0px 8px 0px 8px', backgroundColor: '#08172A' };
+const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '48px', margin: '0px 8px 0px 8px', backgroundColor: '#08172A' };
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
 const inputMultiStyle = { padding: '4px', borderRadius: '4px', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6' };

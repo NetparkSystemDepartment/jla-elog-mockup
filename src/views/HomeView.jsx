@@ -2,35 +2,58 @@ import React from 'react';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone, Menu } from 'lucide-react';
 
 import { useAuth } from '../contexts/authContext';
-// ダミー
-//import { useAuth } from '../contexts/dummyAuthContext';
+import { hasUnsyncedRecords } from '../db';
 
 import { toast } from 'sonner';
 
 function HomeView({ user, onNavigate }) {
   const { logout } = useAuth();
 
-  const showConfirm = () => {
-    toast('ログアウトしますか？', {
-      action: {
-        label: '実行',
-        onClick: () => {
-          logout();
-        },
-      },
-      cancel: {
-        label: 'キャンセル',
-        onClick: () => console.log('キャンセルされました'),
-      },
-    });
-  };
+//  const showConfirm = () => {
+//    toast('ログアウトしますか？', {
+//      action: {
+//        label: '実行',
+//        onClick: () => {
+//          logout();
+//        },
+//      },
+//      cancel: {
+//        label: 'キャンセル',
+//        onClick: () => console.log('キャンセルされました'),
+//      },
+//    });
+//  };
 
-  const handleLogout = () => {
-    console.log("Logout clicked");
-    if (logout) {
-      logout();
-    }
-  };
+const showConfirm = async () => {
+  // 未送信データがあるかどうかをチェック
+  const hasUnsynced = await hasUnsyncedRecords();
+
+  // 条件によってメッセージを切り替える
+  const message = hasUnsynced
+    ? <div>未送信のデータがあります。<br />本当にログアウトしてもよいですか？</div>
+    : 'ログアウトしますか？';
+
+  // 3. トーストを表示
+  toast(message, {
+    action: {
+      label: '実行',
+      onClick: () => {
+        logout();
+      },
+    },
+    cancel: {
+      label: 'キャンセル',
+      onClick: () => console.log('キャンセルされました'),
+    },
+  });
+};
+
+//  const handleLogout = () => {
+//    console.log("Logout clicked");
+//    if (logout) {
+//      logout();
+//    }
+//  };
 
   return (
     <div style={styles.wrapper}>

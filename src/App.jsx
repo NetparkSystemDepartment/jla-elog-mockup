@@ -233,16 +233,17 @@ console.log('record', record);
   };
 
   // ログイン時のコールバック
-  const handleLogin = async (userInfo) => {
+//  const handleLogin = async (userInfo) => {
+//
+//    // 管理者の場合もブリーフィング画面へ
+//    if (userInfo.role === 'admin') {
+//      setView('briefing');
+//    } else {
+//      setView('briefing');
+//    }
+//  };
 
-    // 管理者の場合もブリーフィング画面へ
-    if (userInfo.role === 'admin') {
-      setView('briefing');
-    } else {
-      setView('briefing');
-    }
-  };
-
+  // 
   const handleSelectBeach = (beachName) => {
     const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
     if (targetBeaches.includes(beachName)) {
@@ -253,9 +254,12 @@ console.log('record', record);
 
   // 開始
   const handleBriefingComplete = (data) => {
-    if (data.handoverMemo === null || data.handoverMemo ==="") {
-      data.handoverMemo = "なし";
-    }
+//    if (data.handoverMemo === null || data.handoverMemo ==="") {
+//      data.handoverMemo = "なし";
+//    }
+//    if (data.noteMemo === null || data.noteMemo ==="") {
+//      data.noteMemo = "なし";
+//    }
     const mappedData = {
       // EditView.jsx の initialFormData のキーに合わせる
       tide: data.tide,
@@ -280,12 +284,19 @@ console.log('record', record);
       unpatrolled: false,
       seq: 1,
     };
-    setBriefingData(mappedData);
- console.log('handleBriefingComplete:', mappedData);
 
     // ローカルストレージに保存（ログイン認証が有効ならばブリーフィング画面に復元する）
     localStorage.setItem('briefing_data', JSON.stringify(data));
 
+    if (mappedData.handover === null || mappedData.handover ==="") {
+      mappedData.handover = "なし";
+    }
+    if (mappedData.note === null || mappedData.note ==="") {
+      mappedData.note = "なし";
+    }
+
+    setBriefingData(mappedData);
+ 
     setView('home');
   };
 
