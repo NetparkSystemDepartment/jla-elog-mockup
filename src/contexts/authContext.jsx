@@ -130,6 +130,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('auth_data');
     localStorage.removeItem('briefing_data');
+    localStorage.removeItem('weeklyBeachData');
     setUser(null);
     setCarInfo([]);
     // queryClient.clear(); // TanStack Queryのキャッシュを全削除

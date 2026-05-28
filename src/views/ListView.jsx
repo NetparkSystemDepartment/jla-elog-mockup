@@ -92,7 +92,17 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
             const isOnna = coast.name === '恩納村';
             const isExpanded = isOnna && isEnrolledExpanded;
 
-            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
+            // 未送信のビーチを抽出する
+            const unsyncedBeaches = savedRecords
+              .filter(record => !record.isSynced)
+              .map(record => record.beach);            
+//console.log('unsyncedBeaches:', unsyncedBeaches);
+              // 未登録箇所を計算する
+//            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
+            const syncedCount = savedRecords.filter(record => record.isSynced).length;
+            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - syncedCount) : UNREGISTEREDBEACH;
+            // 選択されているのは今日か
+            const isToday = format(today, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
             return (
               <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px' }}>
@@ -101,12 +111,20 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
                   <button onClick={() => handleSelect(coast)}  style={compactSelectBtnStyle}>ビーチを選択</button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div style={infoRowStyle}><AlertCircle size={12} color={unregisteredCount > 0 ? "#f87171" : "#10b981"} /><span style={{...infoTextStyle, color: unregisteredCount > 0 ? "#ef4444" : "#10b981"}}>本日未登録箇所: {unregisteredCount}箇所</span></div>
+                  <div
+                    style={infoRowStyle}><AlertCircle size={12} color={unregisteredCount > 0 ? "#f87171" : "#10b981"} />
+                    <span style={{...infoTextStyle, color: unregisteredCount > 0 ? "#ef4444" : "#10b981"}}>
+                      {/*本日未登録箇所: {unregisteredCount}箇所*/}
+                      {isToday ? '本日' : ''}未登録箇所: {unregisteredCount}箇所
+                    </span>
+                  </div>
                 </div>
                 {isExpanded && (
                   <div style={beachListStyle}>
                     {ONNA_BEACHES.map(beach => {
-                      const isDone = savedRecords.some(r => r.beach === beach.name);
+//                      const isDone = savedRecords.some(r => r.beach === beach.name);
+                      const isDone = unsyncedBeaches.includes(beach.name);
+
                       return (
                         <button key={beach.name} onClick={() => onSelectBeach(beach.name)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
                           <span style={{flex:1, textAlign:'left'}}>{beach.name}</span>

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { User, Lock, AlertCircle } from 'lucide-react';
 // Context API を使用する
 import { useAuth } from '../contexts/authContext';
-// ダミー
-//import { useAuth } from '../contexts/dummyAuthContext';
+import { getinfoApi } from '../api/recordApi';
 
 function LoginView() {
   //const { login } = useAuth(); // Contextからlogin関数を取り出す
@@ -37,6 +36,48 @@ function LoginView() {
      // authContextから返ってきたメッセージをセットする  
     if (!result.success) {
       setError(result.message);
+    }
+    else {
+//console.log('１週分のデータをローカルストレージへ');
+      const requestBody = {
+        type: 1,
+      };
+
+      const resData = await getinfoApi(requestBody);
+//console.log('resData:', resData);      
+
+      if (resData && Array.isArray(resData.data)) {
+
+        // 基準となる「7日前」の日付文字列（YYYY-MM-DD形式）を作成
+        const d = new Date();
+        d.setDate(d.getDate() - 6); // 今日を含めて7日間（6日前まで）
+  
+        // '2026-05-21' のようなフォーマットに変換
+        const sevenDaysAgoStr = d.toISOString().split('T')[0]; 
+
+        // 7日前より新しい（＝直近1週間分の）データだけにフィルターをかける
+        const weeklyFilteredData = resData.data.filter(item => {
+        // 文字列同士の比較（ex. '2026-05-28' >= '2026-05-22'）
+          return item.startDate >= sevenDaysAgoStr;
+        });
+
+        // 必要な項目だけを抽出する
+        const weeklyData = weeklyFilteredData.map(item => ({
+          startDate: item.startDate,
+          beach: item.beach
+        }));
+
+        try {
+          // ローカルストレージに保存
+          localStorage.setItem('weeklyBeachData', JSON.stringify(weeklyData));
+//  console.log(`直近1週間分（${sevenDaysAgoStr}以降）のデータを保存しました（${weeklyData.length}件）`, weeklyData);
+        } catch (error) {
+          console.error('ローカルストレージへの保存に失敗しました:', error);
+        }
+
+      } else {
+        console.warn('resData.data が取得できませんでした。');
+      }
     }
   };
 

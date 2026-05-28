@@ -384,7 +384,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                         setData({ ...data, windDir: val !== '' ? Number(val) : '' });
                       }}
                   >
-                    <option value="">風向</option>
+                    <option value="">－選択ー</option>
                     {DIRECTIONS.map(d => (
                       <option key={d.id} value={d.id}>
                       {d.label}

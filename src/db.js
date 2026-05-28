@@ -1,6 +1,6 @@
 // indexedDB
 
-const DB_NAME = 'e-log_p1_02';
+const DB_NAME = 'e-log_p1_r03';
 const STORE_NAME = 'records';
 
 import Dexie from 'dexie';
@@ -8,8 +8,12 @@ import Dexie from 'dexie';
 // データベースの定義
 export const db = new Dexie(DB_NAME);
 
-db.version(2).stores({
-  records: '[date+beach+seq]'
+//db.version(2).stores({
+//  records: '[date+beach+seq]'
+//});
+
+db.version(3).stores({
+  records: '[date+beach+seq], isSynced'
 });
 
 // データの全取得
@@ -80,4 +84,35 @@ export const getRecordsByDate = async (dateStr) => {
 // 指定された日付のレコードを1件取得する
 export const checkRecordByDate = async (date, beach) => {
   return await db.records.get([date, beach]);
+};
+
+// 未送信のデータ（isSynced === false）が1件でも存在するかチェック
+
+// これはうまく動かなかった
+//export const hasUnsyncedRecords = async () => {
+//  // isSynced が false のデータを検索
+//  const count = await db.records
+//    .where('isSynced')
+//    .equals(false)
+//    .limit(1)
+//    .count();
+//
+//  // 件数が 0 より大きければ true、そうでなければ false を返す
+//  return count > 0;
+//}
+
+export const hasUnsyncedRecords = async () => {
+  try {
+    // 全データから、isSynced が false のものを1件だけ探す
+    const unsyncedRecord = await db.records
+      .filter(record => record.isSynced === false) 
+      .limit(1)
+      .toArray();
+
+    // 配列の長さが 1 以上（＝見つかった）なら true、空なら false
+    return unsyncedRecord.length > 0;
+  } catch (error) {
+    console.error("hasUnsyncedRecords 内部での処理エラー:", error);
+    return false; // エラー時は安全のため false を返してログアウトを止めないようにする
+  }
 };
