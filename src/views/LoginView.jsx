@@ -56,7 +56,7 @@ function LoginView() {
           <form onSubmit={handleSubmit}>
             <div style={loginStyles.inputContainer}>
               <label style={loginStyles.label}>
-                ユーザーID（{isAdmin ? '管理者' : '記録担当者'}）
+                ユーザーID{isAdmin ? '' : '（記録担当者）'}
               </label>
               <div style={loginStyles.inputWrapper}>
                 <User size={18} style={loginStyles.icon} />
@@ -72,7 +72,7 @@ function LoginView() {
 
             {isAdmin && (
               <div style={loginStyles.inputContainer}>
-                <label style={loginStyles.label}>パスワード（管理者用）</label>
+                <label style={loginStyles.label}>パスワード</label>
                 <div style={loginStyles.inputWrapper}>
                   <Lock size={18} style={loginStyles.icon} />
                   <input
@@ -109,7 +109,7 @@ function LoginView() {
               }}
               disabled={isPending} // 通信中はクリックできないようにする（連打防止）
             >
-              {isPending ? 'ログイン中...' : 'ログイン'}
+              {isPending ? 'ログイン中...' : (isAdmin ? '管理者ログイン' : 'ログイン')}
             </button>
 
           </form>
@@ -128,7 +128,7 @@ function LoginView() {
               }} 
               style={loginStyles.switchButton}
             >
-              {isAdmin ? '記録担当者はこちら' : '管理者はこちら'}
+              {isAdmin ? '監視員はこちら' : '管理者はこちら'}
             </button>
           </div>
         </div>
@@ -140,7 +140,7 @@ function LoginView() {
 const loginStyles = {
   // ...既存のスタイル...
   wrapper: { height: '100vh', backgroundColor: '#e5e7eb', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
-  header: { backgroundColor: '#44445A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
@@ -167,7 +167,7 @@ const loginStyles = {
   inputWrapper: { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' },
   icon: { position: 'absolute', left: '12px', color: '#9ca3af' },
   input: { width: '100%', boxSizing: 'border-box', padding: '14px 14px 14px 40px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px' },
-  loginButton: { width: '100%', padding: '16px', backgroundColor: '#44445A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', marginBottom: '30px' },
+  loginButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', marginBottom: '30px' },
   contactText: { fontSize: '11px', color: '#4b5563', textAlign: 'center', lineHeight: '1.6', marginBottom: '25px' },
   footer: { borderTop: '1px solid #f3f4f6', paddingTop: '20px', textAlign: 'center' },
   switchButton: { background: 'none', border: 'none', color: '#1d4ed8', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer' }

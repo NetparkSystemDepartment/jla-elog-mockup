@@ -88,7 +88,7 @@ function HomeView({ user, onNavigate }) {
 
 const styles = {
   wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
-  header: { backgroundColor: '#44445A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: 'white', fontSize: '20px', fontWeight: 'bold' },
@@ -97,12 +97,12 @@ const styles = {
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },
   cardTitle: { fontSize: '16px', fontWeight: 'bold', marginBottom: '15px' },
 //  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', position: 'fixed', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
-  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '820px', margin: '0 auto' },
+  footer: { backgroundColor: '#08172A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '820px', margin: '0 auto' },
   navItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   navItemMain: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   logoutButton: { padding: '4px 8px', backgroundColor: '#cccccc', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '160px', height: '30px', marginleft: '8px' },
 //  mainCircle: { position: 'absolute', width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
-  mainCircle: { width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
+  mainCircle: { width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#08172A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
 
 };
 
