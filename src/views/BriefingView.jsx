@@ -305,7 +305,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       ))}
                     </select>
                     <input type="text" placeholder="No." style={briefingStyles.input} maxLength={4} inputMode="numeric"
-                      value={data.carNo} onChange={e => setData({...data, carNo: e.target.value})} />
+                      value={data.carNo}
+                      onChange={e => setData({...data, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")})} />
                   </div>
                 </div>
 
@@ -691,7 +692,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
 const briefingStyles = {
   wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
-  header: { backgroundColor: '#44445A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
@@ -712,7 +713,7 @@ const briefingStyles = {
   inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' },
   textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '80px', resize: 'none', marginTop: '8px' },
-  startButton: { width: '100%', padding: '16px', backgroundColor: '#44445A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
+  startButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 
   inputMultiStyle: { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6'},
   /*radioFlexStyle: { display: 'flex', flexWrap: 'wrap', gap: '4px' },*/
@@ -721,7 +722,7 @@ const briefingStyles = {
   radioBtnStyle: { padding: '0px 16px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', 
     cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease', height: '32px' },
   // 申し送り一覧用
-  historyTitle: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '20px' },
+  historyTitle: { fontSize: '24px', fontWeight: 'bold', color: '#08172A', marginBottom: '20px' },
   historyPlaceholder: { backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px', color: '#64748b', fontSize: '14px' },
   historySection: { textAlign: 'center', paddingBottom: '40px' },
   tableHeader: { display: 'flex', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px 8px 0 0', fontSize: '12px', color: '#64748b', fontWeight: 'bold' },

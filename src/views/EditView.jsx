@@ -22,8 +22,8 @@ import { useSafeMembers } from '../useSafeMembers';
 import { useSafeCarInfo } from '../useSafeCarInfo';
 
 const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
-const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
-const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
+//const WARNIBG_OPTIONS2 = ['なし', '大雨注意報', '洪水注意報', '強風注意報', '風雪注意報', '波浪注意報', '高潮注意報', '雷注意報', '濃霧注意報'];
+//const ALERT_OPTIONS2 = ['なし', '大雨警報', '洪水警報', '暴風警報', '暴風雪警報', '波浪警報', '高潮警報'];
 //const CARTYPE = ['車種Ａ', '車種Ｂ', '車種Ｃ'];
 
 const initialFormData = {
@@ -104,6 +104,9 @@ useEffect(() => {
 
     // 3. 加工したデータを State にセットする
     setFormData(updatedData);
+
+    // 4. Unpatrollのステートをセットする
+    setUnpatrolled(setUnpatrolled.unpatrolled);
   }
 }, [existingData]);
 
@@ -180,6 +183,7 @@ useEffect(() => {
   const handleSaveClick = () => {
     const newErrors = {};
 
+/*  
     // 必須チェック
     console.log('formData:', formData);
     console.log('formData.unpatrolled:', formData.unpatrolled);
@@ -244,7 +248,7 @@ useEffect(() => {
       console.log('errors:', errors);
       return; 
     }
-
+*/
   //  setFormData((prev) => ({
   //    ...prev,
   //    members: [user.id, ...prev.members]
@@ -318,7 +322,7 @@ useEffect(() => {
         
         <div style={headerTopStyle}>
           {/*<div className={styles.dummyStyle} ></div>*/}
-          <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#44445a", color: "#FFFFFF", border: "none"} }>＜</button>
+          <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
           <span style={logoTextStyle}>記録入力</span>
           <span></span>
         </div>
@@ -625,7 +629,7 @@ useEffect(() => {
         {/* 注意報 */}
         <InputTile label="注意報" icon={WavesLadder} isExpandable={true}>
           <MultiSelectInput
-            options={WARNIBG_OPTIONS2}
+            options={WARNING_OPTIONS}
             value={formData.warn || []}
             onChange={(next) => {
               setFormData({ ...formData, warn: next });
@@ -663,7 +667,7 @@ useEffect(() => {
         {/* 警報 */}
         <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
           <MultiSelectInput
-            options={ALERT_OPTIONS2}
+            options={ALERT_OPTIONS}
             value={formData.alert || []}
             onChange={(next) => {
               setFormData({ ...formData, alert: next });
@@ -745,8 +749,10 @@ useEffect(() => {
                  </option>
                 ))}
              </select>
-             <input type="text" placeholder="No." inputMode="numeric" style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
-              value={formData.carNo} onChange={e => {setFormData({...formData, carNo: e.target.value}); if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
+             <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
+              value={formData.carNo}
+              onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
+                if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
           </div>
           
           <div style={labelBaseStyle}>
@@ -754,6 +760,7 @@ useEffect(() => {
           </div>
           <textarea
             value={formData.handover}
+            maxLength={100}
             onChange={(e) => {
               setFormData({...formData, handover: e.target.value});
               if (errors.handover) {
@@ -761,6 +768,18 @@ useEffect(() => {
               }
             }}
             style={{...inputNoteStyle, ...(errors.handover ? errorInput : {})}} />
+            <div style={{
+              right: '12px',
+              bottom: '8px',
+              fontSize: '10px',
+              color: formData.handover.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+              fontWeight: formData.handover.length >= 100 ? 'bold' : 'normal',
+              userSelect: 'none',
+              textAlign: 'right'
+              }}>
+              {formData.handover.length} / 100
+            </div>                  
+
 
           <div style={labelBaseStyle}>
             <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
@@ -791,6 +810,7 @@ useEffect(() => {
         <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true}>
           <textarea
             value={formData.note}
+            maxLength={100}
             onChange={(e) => {
               setFormData({...formData, note: e.target.value});
               if (errors.note) {
@@ -835,7 +855,7 @@ useEffect(() => {
 };
 
 const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
-const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', margin: '0px 8px 0px 8px', backgroundColor: '#44445A' };
+const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', margin: '0px 8px 0px 8px', backgroundColor: '#08172A' };
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
 const inputMultiStyle = { padding: '4px', borderRadius: '4px', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6' };

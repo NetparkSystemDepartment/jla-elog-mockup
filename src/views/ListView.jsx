@@ -158,7 +158,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
 
 // CSS
 const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
-const headerStyle = { backgroundColor: '#44445A', width: '100%', position: 'sticky', top: '0', zIndex: '100' };
+const headerStyle = { backgroundColor: '#08172A', width: '100%', position: 'sticky', top: '0', zIndex: '100' };
 const headerTopStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' };
 const monthTextStyle = { fontWeight: 'bold', fontSize: '15px', color: '#fff', minWidth: '95px', textAlign: 'center' };
 const dateRowStyle = { display: 'flex', overflowX: 'auto', gap: '8px', padding: '0 16px 12px', justifyContent: 'space-evenly' };
@@ -179,10 +179,10 @@ const doneTextStyle = { backgroundColor: '#d1fae5', color: '#065f46', fontSize: 
 
 const footerStyles = {
 //  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '804px', margin: '0 auto' },
-  footer: { backgroundColor: '#44445A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '820px', margin: '0 auto' },
+  footer: { backgroundColor: '#08172A', height: '80px', display: 'flex', justifyContent: 'space-around', alignItems: 'center', bottom: 0, width: '100%', color: 'white', maxWidth: '820px', margin: '0 auto' },
   navItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
   navItemMain: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: 'white', fontSize: '10px' },
-  mainCircle: { width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#44445A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
+  mainCircle: { width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#08172A', border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column', top: '0px' }
 };
 
 export default ListView;
