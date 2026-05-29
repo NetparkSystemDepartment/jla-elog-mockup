@@ -15,6 +15,8 @@ import { Construction, Calendar } from 'lucide-react';
 import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
   WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS } from '../constants';
 import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
+// useNetworkState	ブラウザのネットワーク接続の状態を追跡する
+import { useNetworkState } from 'react-use';
 
 // パトロールメンバー
 import { useSafeMembers } from '../useSafeMembers';
@@ -39,6 +41,10 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   startDate: selectedDate,
   seq: seq,
 });
+
+  // ネットワーク状態
+  const netState = useNetworkState();
+console.log('netState:', netState.online);
 
   // アンパトロールモード
   const [unpatrolled, setUnpatrolled] = useState(false);
@@ -69,6 +75,16 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
       ...prev,
       unpatrolled: !prev.unpatrolled
     }));
+
+    setUnpatrolled(!unpatrolled);
+
+//console.log('unpatrolled:', unpatrolled);
+    if (!unpatrolled && formData.note === "なし") {
+      formData.note = "";
+    }
+    if (unpatrolled && formData.note === "") {
+      formData.note = "なし";
+    }
 
     // エラーオブジェクトをクリア
     setErrors({});
@@ -146,8 +162,8 @@ useEffect(() => {
     // 必須項目を列挙して、すべてに値が入っているかチェック
     if (unpatrolled === true) {
       return (
-        formData.handover &&
-        formData.note
+        (formData.members && formData.members.length > 0) &&
+        !!formData.note
       )
     }
     else {
@@ -184,6 +200,7 @@ useEffect(() => {
   };
 
   const isValid = isFormValid();
+console.log('isValid:', isValid);
  
   // 「保存して閉じる」ボタン
   const handleSaveClick = () => {
@@ -320,6 +337,17 @@ useEffect(() => {
 //            <div className={styles.labelBaseStyle}>
 //              <Clock size={12} style={{ marginRight: 4 }} /><label>パトロール終了時刻</label>
 //            </div>
+
+  const isDisabled = !Boolean(isValid) || !netState.online;
+//console.log('isDisabled:', isDisabled);
+console.log({
+  isValid,
+  "Boolean(isValid)": Boolean(isValid),
+  "netState.online": netState.online,
+  "typeof netState.online": typeof netState.online,
+  "!netState.online": !netState.online,
+  isDisabled,
+});
 
   return (
     <div style={container}>
@@ -851,15 +879,16 @@ useEffect(() => {
             style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
             Unpatrolled
           </button>
-
+{console.log('isDisabled:', isDisabled)}
           <button 
             onClick={() => handleSendClick(formData)} 
-            disabled={!isValid}
+            disabled={isDisabled}
             style={{
               ...sendBtnStyle,
               //backgroundColor: isValid ? '#44445A' : '#777777',
-              cursor: isValid ? 'pointer' : 'not-allowed',
-              opacity: isValid ? 1 : 0.7
+              cursor: isDisabled ? 'not-allowed' : 'pointer' ,
+              opacity: isDisabled ? 0.7 : 1,
+
             }}
           >送信</button>
         </div>

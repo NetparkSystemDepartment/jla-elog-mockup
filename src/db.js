@@ -105,7 +105,7 @@ export const hasUnsyncedRecords = async () => {
   try {
     // 全データから、isSynced が false のものを1件だけ探す
     const unsyncedRecord = await db.records
-      .filter(record => record.isSynced === false) 
+      .filter(record => record.isSynced !== 2) 
       .limit(1)
       .toArray();
 
@@ -116,3 +116,9 @@ export const hasUnsyncedRecords = async () => {
     return false; // エラー時は安全のため false を返してログアウトを止めないようにする
   }
 };
+
+// データの削除
+export const deleteRecords = async () => {
+  return await db.records.clear();
+};
+
