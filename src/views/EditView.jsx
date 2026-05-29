@@ -44,7 +44,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 
   // ネットワーク状態
   const netState = useNetworkState();
-console.log('netState:', netState.online);
+//console.log('netState:', netState.online);
 
   // アンパトロールモード
   const [unpatrolled, setUnpatrolled] = useState(false);
@@ -104,7 +104,7 @@ console.log('netState:', netState.online);
 //  }, [existingData]);
 
 useEffect(() => {
-  console.log("EditView In:", existingData);
+//console.log("EditView In:", existingData);
 
   if (existingData) {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
@@ -200,7 +200,7 @@ useEffect(() => {
   };
 
   const isValid = isFormValid();
-console.log('isValid:', isValid);
+//console.log('isValid:', isValid);
  
   // 「保存して閉じる」ボタン
   const handleSaveClick = () => {
@@ -340,14 +340,6 @@ console.log('isValid:', isValid);
 
   const isDisabled = !Boolean(isValid) || !netState.online;
 //console.log('isDisabled:', isDisabled);
-console.log({
-  isValid,
-  "Boolean(isValid)": Boolean(isValid),
-  "netState.online": netState.online,
-  "typeof netState.online": typeof netState.online,
-  "!netState.online": !netState.online,
-  isDisabled,
-});
 
   return (
     <div style={container}>
@@ -879,7 +871,7 @@ console.log({
             style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
             Unpatrolled
           </button>
-{console.log('isDisabled:', isDisabled)}
+
           <button 
             onClick={() => handleSendClick(formData)} 
             disabled={isDisabled}

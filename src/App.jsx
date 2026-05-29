@@ -71,7 +71,7 @@ function App() {
   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const result = await getRecordsByDate(dateStr);
-    console.log('result:', result);
+//console.log('result:', result);
 
     // resultが存在する場合のみマッピング処理を行う
     const formattedRecords = (result || []).map((record) => {
@@ -81,7 +81,7 @@ function App() {
       };
     });
 
-    console.log('formattedRecords:', formattedRecords);
+console.log('formattedRecords:', formattedRecords);
     setSavedRecords(formattedRecords || []);
   };
 
@@ -100,9 +100,9 @@ function App() {
       const filteredData = data.filter(profile => 
         profile.role === user.role && profile.id !== user.id);
 
-      console.log('loadProfileList:', filteredData);
+//console.log('loadProfileList:', filteredData);
       const idList = filteredData.map(profile => profile.id);
-      console.log('idList:', idList);
+//console.log('idList:', idList);
       setProfileList(idList);
     }    
   };
