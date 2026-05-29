@@ -71,7 +71,7 @@ function App() {
   const loadRecords = async () => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const result = await getRecordsByDate(dateStr);
-    console.log('result:', result);
+//console.log('result:', result);
 
     // resultが存在する場合のみマッピング処理を行う
     const formattedRecords = (result || []).map((record) => {
@@ -81,7 +81,7 @@ function App() {
       };
     });
 
-    console.log('formattedRecords:', formattedRecords);
+console.log('formattedRecords:', formattedRecords);
     setSavedRecords(formattedRecords || []);
   };
 
@@ -100,9 +100,9 @@ function App() {
       const filteredData = data.filter(profile => 
         profile.role === user.role && profile.id !== user.id);
 
-      console.log('loadProfileList:', filteredData);
+//console.log('loadProfileList:', filteredData);
       const idList = filteredData.map(profile => profile.id);
-      console.log('idList:', idList);
+//console.log('idList:', idList);
       setProfileList(idList);
     }    
   };
@@ -123,7 +123,8 @@ function App() {
       ...updatedFormData, 
 //      beach: beachName, 
       date: formattedDate, 
-      isSynced: false, // サーバー未送信フラグ
+//      isSynced: false, // サーバー未送信フラグ
+      isSynced: 0, // サーバー未送信フラグ
 //      timestamp: Date.now() 
     };
 console.log('record', record);
@@ -165,7 +166,8 @@ console.log('record', record);
     const record = { 
       ...updatedFormData, 
       date: formattedDate, 
-      isSynced: false, // サーバー未送信フラグ
+//      isSynced: false, // サーバー未送信フラグ
+      isSynced: 1, // サーバー未送信フラグ
     };
 
     let localId;
@@ -210,7 +212,8 @@ console.log('record', record);
       await saveRecord({
         ...record,
         id: localId,    // saveRecordが同一IDを認識できるように指定
-        isSynced: true, // 送信完了フラグを真にする
+//        isSynced: true, // 送信完了フラグを真にする
+        isSynced: 2, // 送信完了フラグを真にする
       });
 
       // トーストを成功表示に切り替える
@@ -374,7 +377,8 @@ console.log('record', record);
 
             // データがある場合、そのデータは送信済みか
             // 未送信ならそのデータを返す
-            if (foundRecord && !foundRecord.isSynced) {
+//            if (foundRecord && !foundRecord.isSynced) {
+            if (foundRecord && foundRecord.isSynced === 0) {
               return foundRecord;
             }
 
@@ -388,7 +392,8 @@ console.log('record', record);
                 seq: nextSeq,
                 unpatrolled: false,      // undefined対策
                 id: undefined,           // IndexedDBで別レコードとして新規保存させるため、IDをクリアする
-                isSynced: false          // 新しいレコードなので未送信にする
+//                isSynced: false          // 新しいレコードなので未送信にする
+                isSynced: 0          // 新しいレコードなので未送信にする
             };
           })()}
           profileList={profileList}

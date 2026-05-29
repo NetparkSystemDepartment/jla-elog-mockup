@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { loginApi } from '../api/recordApi'; // Axios関数
+import { deleteRecords } from '../db';
 
 const AuthContext = createContext(null);
 
@@ -127,10 +128,15 @@ export function AuthProvider({ children }) {
    * ログアウト関数
    */
   const logout = () => {
+    // ローカルストレージを削除
     localStorage.removeItem('token');
     localStorage.removeItem('auth_data');
     localStorage.removeItem('briefing_data');
     localStorage.removeItem('weeklyBeachData');
+
+    // indexedDBを削除
+    deleteRecords();
+
     setUser(null);
     setCarInfo([]);
     // queryClient.clear(); // TanStack Queryのキャッシュを全削除
