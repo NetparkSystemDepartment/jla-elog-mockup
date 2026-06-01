@@ -5,7 +5,7 @@ import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
-import { getAllRecords, saveRecord, getRecordsByDate, checkRecordByDate} from './db';
+import { getAllRecords, saveRecord, getRecordsByDate } from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from './contexts/authContext';
@@ -59,6 +59,7 @@ function App() {
   const [savedRecords, setSavedRecords] = useState([]);
   const [recentHandovers, setRecentHandovers] = useState([]);
   const [profileList, setProfileList] = useState([]);
+  const [syncedRecords, setSyncedRecords] = useState([]);
 
   // idからビーチ名を返す
   const getNameByBeachId = (name) => ONNA_BEACHES.find((c) => c.id === name)?.name;
@@ -74,38 +75,74 @@ function App() {
 //console.log('result:', result);
 
     // resultが存在する場合のみマッピング処理を行う
+    // 基本的に当日以外はデータはないはず
     const formattedRecords = (result || []).map((record) => {
       return {
-        ...record, // 元のデータをそのままコピー
+//        ...record, // 元のデータをそのままコピー
+        startDate: record.startDate,
         beach: getNameByBeachId(record.beach) // beach部分だけ名前（文字列）に置き換え
       };
     });
 
-console.log('formattedRecords:', formattedRecords);
+//console.log('formattedRecords:', formattedRecords);
     setSavedRecords(formattedRecords || []);
-  };
+//console.log('formattedRecords:', formattedRecords);
 
-  // データ読み込み処理（ユーザー情報）
-  const loadProfileList = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, role')
+  // サーバー登録済データ
+    let localWeeklyData = [];
+    const weeklyString = localStorage.getItem('weeklyBeachData');
+//console.log('weeklyString:', weeklyString);
 
-    if (error) {
-      console.error('Error fetching profiles:', error.message)
+    if (weeklyString) {
+      try {
+        const allWeeklyData = JSON.parse(weeklyString);
+ 
+        const stringifiedItems = allWeeklyData.map(item => JSON.stringify(item));
+
+        const uniqueStrings = [...new Set(stringifiedItems)];
+
+        const WeeklyData = uniqueStrings.map(item => JSON.parse(item));
+//console.log('WeeklyData:', WeeklyData);
+    
+        if (Array.isArray(WeeklyData)) {
+          localWeeklyData = WeeklyData.filter(item => item.startDate === dateStr);
+        }
+      } catch (error) {
+        console.error('ローカルストレージのデータ解析に失敗:', error);
+      }
     }
 
-    if (data) {
-      // roleでフィルタリング、かつ自分以外のメンバー
-      const filteredData = data.filter(profile => 
-        profile.role === user.role && profile.id !== user.id);
+//console.log('localWeeklyData:', localWeeklyData);
+    setSyncedRecords(localWeeklyData || []);
 
-//console.log('loadProfileList:', filteredData);
-      const idList = filteredData.map(profile => profile.id);
-//console.log('idList:', idList);
-      setProfileList(idList);
-    }    
+//console.log('syncedRecords:', syncedRecords);
+
+
+
+
   };
+
+//  // データ読み込み処理（ユーザー情報）
+//  const loadProfileList = async () => {
+//    const { data, error } = await supabase
+//      .from('profiles')
+//      .select('id, role')
+//
+//    if (error) {
+//      console.error('Error fetching profiles:', error.message)
+//    }
+//
+//    if (data) {
+//      // roleでフィルタリング、かつ自分以外のメンバー
+//      const filteredData = data.filter(profile => 
+//        profile.role === user.role && profile.id !== user.id);
+//
+////console.log('loadProfileList:', filteredData);
+//      const idList = filteredData.map(profile => profile.id);
+////console.log('idList:', idList);
+//      setProfileList(idList);
+//    }    
+//  };
 
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
@@ -221,8 +258,21 @@ console.log('record', record);
 
     } catch (error) {
       console.error('サーバー送信失敗:', error);
-      // サーバーへの送信が失敗しても、ステップ2で IndexedDB にデータが入っているので消えません
-      toast.error('通信エラーのためサーバー送信に失敗しました。データはローカルに保存されたので、オンライン復帰時に自動同期されます。');
+
+      // Background Sync を登録する
+      if ('serviceWorker' in navigator && 'sync' in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          // 'sync-beach-reports' などのタグ名で同期タスクを登録
+          await registration.sync.register('sync-beach-reports');
+          console.log('Background Syncに同期タスクを登録しました');
+        } catch (syncError) {
+          console.error('Sync登録失敗:', syncError);
+        }
+      }
+
+      // サーバーへの送信が失敗しても、IndexedDBには isSynced: 1 で残っている
+      toast.error('通信エラーのためサーバー送信に失敗しました。電波からの復帰時に自動同期されます。');
     }
 
     // 5. 最後に共通処理として、一覧データを再読み込みして画面をリストに戻す
@@ -335,6 +385,7 @@ console.log('record', record);
       );
 
     case 'list':
+//console.log('syncedRecords:', syncedRecords);
       return (
         <>
          <ListView 
@@ -342,6 +393,7 @@ console.log('record', record);
           baseDate={baseDate} setBaseDate={setBaseDate}
           selectedDate={selectedDate} setSelectedDate={setSelectedDate}
           savedRecords={savedRecords}
+          syncedRecords={syncedRecords}
           onSelectBeach={handleSelectBeach}
           onSelectCoast={(coast) => setSelectedCoast(coast)}
           onNavigate={(target) => setView(target)}

@@ -73,10 +73,15 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             if (item.handover === null || item.handover === undefined) {
               return false;
             }
-            // 前後の空白を削除した上で "なし" であれば除外
-            if (String(item.handover).trim() === "なし") {
+
+            // 除外したいキーワードのリスト
+            const excludeKeywords = ["なし", "特になし"];
+
+            // 前後の空白を削除した上で、リストに含まれていれば除外
+            if (excludeKeywords.includes(String(item.handover).trim())) {
               return false;
             }
+
             return true;
           });
 
@@ -697,7 +702,9 @@ const briefingStyles = {
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   
-  container: { flex: 1, padding: '10px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' },
+  container: { flex: 1, padding: '10px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' ,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
   card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '20px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '10px' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
   column: { display: 'flex', flexDirection: 'column', gap: '12px' },
