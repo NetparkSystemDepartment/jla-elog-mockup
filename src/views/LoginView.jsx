@@ -185,7 +185,9 @@ const loginStyles = {
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
-  container: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
+  container: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', 
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
   card: { backgroundColor: '#ffffff', width: '100%', maxWidth: '380px', borderRadius: '24px', padding: '30px 30px 40px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' },
   
   // エラーボックスのスタイル

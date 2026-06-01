@@ -8,8 +8,6 @@ import ReactDOM from 'react-dom/client'
 
 // Context API を使用する
 import { AuthProvider } from './contexts/authContext';
-// ダミー
-//import { AuthProvider } from './contexts/dummyAuthContext';
 
 // 1. TanStack Query から必要なものをインポート
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -25,42 +23,6 @@ const queryClient = new QueryClient({
   },
 })
 
-// 開発環境（npm run dev）のときだけMSWを起動する
-//async function enableMocking() {
-//  if (process.env.NODE_ENV !== 'development') {
-//    return;
-//  }
-//  const { worker } = await import('./mocks/browser');
-//  return worker.start({
-//    // 開発に関係ないアセットファイルへのリクエスト警告を非表示にする
-//    onUnhandledRequest: 'bypass', 
-//    serviceWorker: {
-//    // Viteのbaseパス（/p1/）に合わせてMSWを探すように指定
-//    url: '/p1/mockServiceWorker.js',
-//    options: {
-//      scope: '/p1/',
-//    },
-//  },
-//  });
-//}
-
-//createRoot(document.getElementById('root')).render(
-//  <StrictMode>
-//    <AuthProvider>
-//      <App />
-//    </AuthProvider>
-//  </StrictMode>)
-
-  // モックの起動が完了してから、Reactアプリをレンダリング（マウント）する
-//enableMocking().then(() => {
-//  ReactDOM.createRoot(document.getElementById('root')).render(
-//    <React.StrictMode>
-//      <App />
-//    </React.StrictMode>,
-//  )
-//})
-
-//enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       {/* 3. 全体を QueryClientProvider で包み、作成した queryClient を渡す */}
@@ -73,4 +35,16 @@ const queryClient = new QueryClient({
       </QueryClientProvider>      
     </React.StrictMode>,
   )
-//})
+
+  // ServiceWorkerを登録する
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('ServiceWorker登録成功:', registration.scope);
+        })
+        .catch(error => {
+          console.error('ServiceWorker登録失敗:', error);
+        });
+    });
+  }

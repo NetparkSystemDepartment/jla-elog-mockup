@@ -27,26 +27,6 @@ export const saveRecord = async (record) => {
   return await db.records.put(record);
 };
 
-// 特定の日付のデータだけを抽出
-export const _getRecordsByDate = async (dateStr) => {
-  return await db.records
-    .where('date')
-    .equals(dateStr)
-    .toArray();
-};
-
-export const __getRecordsByDate = async (dateStr) => {
-  console.log("検索開始:", dateStr); // 渡ってきた値を確認
-
-  const results = await db.records
-    .where('date')
-    .equals(dateStr)
-    .toArray();
-
-  console.log("検索結果:", results); // 結果が0件なら型か中身が違う
-  return results;
-};
-
 export const getRecordsByDate = async (dateStr) => {
   console.log("検索開始（全ビーチ分）:", dateStr);
 
@@ -82,28 +62,13 @@ export const getRecordsByDate = async (dateStr) => {
 };
 
 // 指定された日付のレコードを1件取得する
-export const checkRecordByDate = async (date, beach) => {
-  return await db.records.get([date, beach]);
-};
-
-// 未送信のデータ（isSynced === false）が1件でも存在するかチェック
-
-// これはうまく動かなかった
-//export const hasUnsyncedRecords = async () => {
-//  // isSynced が false のデータを検索
-//  const count = await db.records
-//    .where('isSynced')
-//    .equals(false)
-//    .limit(1)
-//    .count();
-//
-//  // 件数が 0 より大きければ true、そうでなければ false を返す
-//  return count > 0;
-//}
+//export const checkRecordByDate = async (date, beach) => {
+//  return await db.records.get([date, beach]);
+//};
 
 export const hasUnsyncedRecords = async () => {
   try {
-    // 全データから、isSynced が false のものを1件だけ探す
+    // 全データから、isSynced が false のものを1件だけ探す　→　2以外に変更
     const unsyncedRecord = await db.records
       .filter(record => record.isSynced !== 2) 
       .limit(1)
@@ -120,5 +85,27 @@ export const hasUnsyncedRecords = async () => {
 // データの削除
 export const deleteRecords = async () => {
   return await db.records.clear();
+};
+
+// 未送信（isSynced が 1）のデータを取得（ServiceWorker用）
+export const getUnsentRecordsFromIndexedDB = async () => {
+  try {
+    // 全データから、isSynced が 1 のものを取得
+    const unsyncedRecord = await db.records
+      .where('isSynced')
+      .equals(1)
+      .toArray();
+
+    if (unsyncedRecord.length === 0) {
+      console.log("未送信データ検索結果: 0件");
+      return [];
+    }
+
+    return unsyncedRecord;
+
+  } catch (error) {
+    console.error("getUnsentRecordsFromIndexedDB 内部での処理エラー:", error);
+    return [];
+  }
 };
 

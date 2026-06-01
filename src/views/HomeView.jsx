@@ -115,7 +115,9 @@ const styles = {
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: 'white', fontSize: '20px', fontWeight: 'bold' },
-  main: { padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px', overflowY: 'auto'},
+  main: { padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px', overflowY: 'auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
   pickupCard: { backgroundColor: 'white', borderRadius: '24px 24px 24px 24px', padding: '20px', minHeight: '150px' },
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },
   cardTitle: { fontSize: '16px', fontWeight: 'bold', marginBottom: '15px' },

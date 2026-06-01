@@ -367,7 +367,9 @@ useEffect(() => {
         </div>
       </header>
 
-      <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch' }}>
+      <main style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+       }}>
 
         {/* パトロールメンバー */}
         <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}>

@@ -23,7 +23,8 @@ import { COAST_DATA, ONNA_BEACHES } from '../constantsPublic';
 //const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
 //const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
 
-const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, onSelectBeach, onSelectCoast, onNavigate }) => {
+const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, syncedRecords,
+  onSelectBeach, onSelectCoast, onNavigate }) => {
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
   const totalVisitors = 0; 
   const UNREGISTEREDBEACH = 3; 
@@ -99,7 +100,10 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
 //console.log('unsyncedBeaches:', unsyncedBeaches);
               // 未登録箇所を計算する
 //            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
-            const syncedCount = savedRecords.filter(record => record.isSynced).length;
+//            const syncedCount = syncedRecords.filter(record => record.isSynced).length;
+//console.log('syncedRecords:', syncedRecords);
+
+            const syncedCount = syncedRecords.length;
             const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - syncedCount) : UNREGISTEREDBEACH;
             // 選択されているのは今日か
             const isToday = format(today, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
@@ -189,7 +193,9 @@ const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', 
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };
 
 //const navTextStyle = { fontSize: '10px', fontWeight: '500' };
-const mainStyle = { padding: '12px', minHeight: '78vh' };
+const mainStyle = { padding: '12px', minHeight: '78vh',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+ };
 const infoTextStyle = { fontSize: '14px', color: '#64748b', marginTop: '4px' };
 const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 const beachOptionStyle = { width: '100%', padding: '10px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxSizing: 'border-box' };
