@@ -38,7 +38,8 @@ export function AuthProvider({ children }) {
           setUser({
             id: authData.id,
             kind: authData.kind,
-            area: authData.area
+            area: authData.area,
+            token: authData.token,
           });
 
           setMembers(authData.members || []);
@@ -92,8 +93,12 @@ export function AuthProvider({ children }) {
         setUser({
           id: credentials.id,
           kind: data.kind,
-          area: data.area
+          area: data.area,
+          token: data.token,
         });
+
+//        // tokenをindexedDBに書き込む
+//        saveAuthTokenToIndexedDB(authData.token);
 
         setMembers(data.members || []);
         setCarInfo(data.carInfo || []);

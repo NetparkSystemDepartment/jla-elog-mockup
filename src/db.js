@@ -13,7 +13,8 @@ export const db = new Dexie(DB_NAME);
 //});
 
 db.version(3).stores({
-  records: '[date+beach+seq], isSynced'
+  records: '[date+beach+seq], isSynced',
+  auth: 'key'
 });
 
 // データの全取得
@@ -90,7 +91,7 @@ export const deleteRecords = async () => {
 // 未送信（isSynced が 1）のデータを取得（ServiceWorker用）
 export const getUnsentRecordsFromIndexedDB = async () => {
   try {
-    // 全データから、isSynced が 1 のものを取得
+   // 全データから、isSynced が 1 のものを取得
     const unsyncedRecord = await db.records
       .where('isSynced')
       .equals(1)
@@ -101,7 +102,10 @@ export const getUnsentRecordsFromIndexedDB = async () => {
       return [];
     }
 
-    return unsyncedRecord;
+    return {
+      ...unsyncedRecord,
+      toke: authData,
+    }
 
   } catch (error) {
     console.error("getUnsentRecordsFromIndexedDB 内部での処理エラー:", error);
@@ -109,3 +113,30 @@ export const getUnsentRecordsFromIndexedDB = async () => {
   }
 };
 
+// // トークンを書き込む
+// export const saveAuthTokenToIndexedDB = async (token) => {
+//   try {
+//     // db.auth ストアを指定して書き込む
+//     await db.auth.put({
+//       key: 'current_token',
+//       token: token,
+//     });
+// //    console.log("IndexedDBにトークンを保存しました");
+//   } catch (error) {
+//     console.error("トークンの保存に失敗しました:", error);
+//   }
+// };
+
+// // トークンを読み込む
+// export const getAuthTokenFromIndexedDB = async () => {
+//   try {
+//     const authData = await db.auth.get('current_token');
+//     if (authData.length === 0) {
+//       console.log("indexedDBからtokenが取得できません");
+//       return [];
+//     }
+//   } catch (error) {
+//     console.error("getAuthTokenFromIndexedDB 内部での処理エラー:", error);
+//     return [];
+//   }
+// };

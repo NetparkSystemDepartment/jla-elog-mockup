@@ -2,13 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// 1. 先にbaseの値を決めて変数に代入しておく
-//const baseConfig = process.env.VERCEL ? '/' : '/p1/';
-
-export default defineConfig({  
-  // 2. 変数を割り当てる
-//  base: baseConfig,
-
+export default defineConfig({
   server: {
     proxy: {
       '/api': {
@@ -17,34 +11,37 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, '/v1')
       }
     }
-  },  
+  },
 
   plugins: [
     react(),
     VitePWA({
+      // ✅ 自前のsw.jsを使うモードに変更
+      strategies: 'injectManifest',
+      srcDir: 'src',       // sw.jsの場所
+      filename: 'sw.js',   // sw.jsのファイル名
 
-      // 【修正】ローカルでの開発(dev)やプレビュー(preview)の時はPWAを無効化する
-      // Vercelやレンタルサーバー用に本番ビルド(production)する時だけ有効になります
-      disable: process.env.NODE_ENV === 'development' || !process.env.VERCEL, 
-      
-      //disable: false, // PWAを有効にする
-      registerType: 'autoUpdate', // 新しいSWが見つかったら自動更新
-      injectRegister: 'auto',     // index.htmlに自動で登録スクリプトを挿入
-      
-      // manifestの設定（アプリとしてインストールした時の名前や色）
+      // 開発時は無効化（元の設定を維持）
+      //disable: process.env.NODE_ENV === 'development' || !process.env.VERCEL,
+      // テスト中は一時的にこれに変更
+      disable: false,
+
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+
+      injectManifest: {
+        // sw.js内でprecacheリストを使わない場合は注入を無効化
+        injectionPoint: undefined,
+      },
+
       manifest: {
         name: 'Beach Patrol e-eog',
         short_name: 'e-log',
         description: 'Beach Patrol e-log Mockup',
-        theme_color: '#3b82f6',      // ブラウザのツールバーなどの色
-        background_color: '#ffffff', // アプリ起動時の背景色
-        display: 'standalone',       // アプリ単体で動いているように見せる
+        theme_color: '#3b82f6',
+        background_color: '#ffffff',
+        display: 'standalone',
         lang: 'ja',
-
-        // 【追加】レンタルサーバー（/v2/）でも正しくインストールできるようにする設定
-//        start_url: baseConfig,
-//        scope: baseConfig,
-
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -55,15 +52,13 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable' // OSに合わせて形が変わる設定
+            purpose: 'any maskable'
           }
         ]
       },
 
-      // キャッシュ戦略などの詳細設定が必要な場合はここに追記
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'], // キャッシュ対象
-      },
+      // ✅ injectManifest モードでは workbox ではなく injectManifest に移動
+      // workbox: は削除（injectManifestモードでは効かない）
     })
   ],
 })

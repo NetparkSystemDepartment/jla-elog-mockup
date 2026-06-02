@@ -17,6 +17,8 @@ import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
 import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
 // useNetworkState	ブラウザのネットワーク接続の状態を追跡する
 import { useNetworkState } from 'react-use';
+import Select from 'react-select';
+
 
 // パトロールメンバー
 import { useSafeMembers } from '../useSafeMembers';
@@ -54,6 +56,23 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   //console.log('safeMembers:', safeMembers);
   // ログイン者を除く
    const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
+  // react-selectで使えるように
+  const loginOptions = exceptLogin.map(item => ({
+    value: item,
+    label: item
+  }));
+  const warningOptions = WARNING_OPTIONS.map(item => ({
+    value: item,
+    label: item
+  }));
+  const alertOptions = ALERT_OPTIONS.map(item => ({
+    value: item,
+    label: item
+  }));
+  const featureOptions = FEATURE_OPTIONS.map(item => ({
+    value: item,
+    label: item
+  }));
   
   
   // 車両名
@@ -104,7 +123,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 //  }, [existingData]);
 
 useEffect(() => {
-//console.log("EditView In:", existingData);
+console.log("EditView In:", existingData);
 
   if (existingData) {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
@@ -158,46 +177,94 @@ useEffect(() => {
   const getBeachIdByName = (name) => ONNA_BEACHES.find((c) => c.name === name)?.id;
 
   // 「送信」ボタンenable用
+  // const isFormValid = () => {
+  //   // 必須項目を列挙して、すべてに値が入っているかチェック
+  //   if (unpatrolled === true) {
+  //     return (
+  //       (formData.members && formData.members.length > 0) &&
+  //       !!formData.note
+  //     )
+  //   }
+  //   else {
+  //     return (
+  //       (formData.members && formData.members.length > 0) &&
+  //       formData.startTime && 
+  //       formData.endTime &&
+  //       (formData.weather || formData.weather === 0) &&
+  //       (formData.current || formData.current === 0) &&
+  //       formData.highTideTime &&
+  //       formData.highTide &&
+  //       (formData.waveOuter || formData.waveOuter === 0) &&
+  //       formData.lowTideTime &&
+  //       formData.lowTide &&
+  //       (formData.wave || formData.wave === 0) &&
+  //       formData.windDir && 
+  //       (formData.tide || formData.tide === 0) &&
+  //       formData.windDirDetail &&
+  //       (formData.windSpeed || formData.windSpeed === 0) &&
+  //       (formData.visitors || formData.visitors === 0) &&
+  //       formData.warn &&
+  //       formData.feature &&
+  //       formData.alert &&
+  //       (formData.jpWarning || formData.jpWarning === 0) &&
+  //       (formData.forWarning || formData.forWarning === 0) &&
+  //       (formData.jpTourist || formData.jpTourist === 0) &&
+  //       (formData.forTourist || formData.forTourist === 0) &&
+  //       formData.carType &&
+  //       formData.carNo &&
+  //       formData.handover &&
+  //       formData.note
+  //     )
+  //   }
+  // };
+
   const isFormValid = () => {
-    // 必須項目を列挙して、すべてに値が入っているかチェック
-    if (unpatrolled === true) {
-      return (
-        (formData.members && formData.members.length > 0) &&
-        !!formData.note
-      )
-    }
-    else {
-      return (
-        (formData.members && formData.members.length > 0) &&
-        formData.startTime && 
-        formData.endTime &&
-        (formData.weather || formData.weather === 0) &&
-        (formData.current || formData.current === 0) &&
-        formData.highTideTime &&
-        formData.highTide &&
-        (formData.waveOuter || formData.waveOuter === 0) &&
-        formData.lowTideTime &&
-        formData.lowTide &&
-        (formData.wave || formData.wave === 0) &&
-        formData.windDir && 
-        (formData.tide || formData.tide === 0) &&
-        formData.windDirDetail &&
-        (formData.windSpeed || formData.windSpeed === 0) &&
-        (formData.visitors || formData.visitors === 0) &&
-        formData.warn &&
-        formData.feature &&
-        formData.alert &&
-        (formData.jpWarning || formData.jpWarning === 0) &&
-        (formData.forWarning || formData.forWarning === 0) &&
-        (formData.jpTourist || formData.jpTourist === 0) &&
-        (formData.forTourist || formData.forTourist === 0) &&
-        formData.carType &&
-        formData.carNo &&
-        formData.handover &&
-        formData.note
-      )
-    }
-  };
+  // メンバーは共通必須
+  const hasMembers = formData.members?.length > 0;
+
+  if (unpatrolled === true) {
+    return (
+      hasMembers &&
+      !!formData.note?.trim()
+    );
+  }
+
+  // 数値フィールド（0 を有効値として許容）
+  const numericFields = [
+    formData.weather,
+    formData.current,
+    formData.waveOuter,
+    formData.wave,
+    formData.tide,
+    formData.windSpeed,
+    formData.visitors,
+    formData.jpWarning,
+    formData.forWarning,
+    formData.jpTourist,
+    formData.forTourist,
+  ].every(v => v != null && v !== '');
+
+  // 文字列・時刻フィールド（空文字を弾く）
+  const textFields = [
+    formData.startTime,
+    formData.endTime,
+    formData.highTideTime,
+    formData.highTide,   // ← 数値なら上のnumericFieldsへ移動
+    formData.lowTideTime,
+    formData.lowTide,    // ← 同上
+    formData.windDir,
+    formData.windDirDetail,
+    formData.warn,
+    formData.feature,
+    formData.alert,
+    formData.carType,
+    formData.carNo,
+    formData.handover,
+    formData.note,
+  ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
+
+  return hasMembers && numericFields && textFields;
+};
 
   const isValid = isFormValid();
 //console.log('isValid:', isValid);
@@ -385,6 +452,7 @@ useEffect(() => {
           <div style={labelBaseStyle}>
             <Cloud size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
+{/*}          
           <MultiSelectInput
             options={exceptLogin}
             value={formData.members || []}
@@ -400,6 +468,21 @@ useEffect(() => {
             }}
             placeholder="ユーザーID"
           />
+*/}
+          <Select
+            isMulti       // 複数選択可能（マルチセレクト）
+            isSearchable  // サジェスト検索有効
+            options={loginOptions}
+            value={(formData.members || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, members: nextMembers });
+            }}                      
+            placeholder="ユーザーID"
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
+
         </InputTile>
 
         {/* パトロール開始時刻、終了時刻、天候 */}
@@ -656,6 +739,7 @@ useEffect(() => {
 
         {/* 注意報 */}
         <InputTile label="注意報" icon={WavesLadder} isExpandable={true}>
+          {/*
           <MultiSelectInput
             options={WARNING_OPTIONS}
             value={formData.warn || []}
@@ -671,10 +755,26 @@ useEffect(() => {
             }}
             placeholder="注意報を選択"
           />
+          */}
+          <Select
+            isMulti       // 複数選択可能（マルチセレクト）
+            isSearchable  // サジェスト検索有効
+            options={warningOptions}
+            value={(formData.warn || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, warn: nextMembers });
+            }}                      
+            placeholder="注意報を選択"
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
+
         </InputTile>
 
         {/* ビーチ利用の特徴 */}
         <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
+          {/*
           <MultiSelectInput
             options={FEATURE_OPTIONS}
             value={formData.feature || []}
@@ -690,10 +790,25 @@ useEffect(() => {
             }}
             placeholder="特徴を選択"
           />
+          */}
+          <Select
+            isMulti       // 複数選択可能（マルチセレクト）
+            isSearchable  // サジェスト検索有効
+            options={featureOptions}
+            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, feature: nextMembers });
+            }}                      
+            placeholder="特徴を選択"
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
         </InputTile>
 
         {/* 警報 */}
         <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
+          {/*
           <MultiSelectInput
             options={ALERT_OPTIONS}
             value={formData.alert || []}
@@ -708,6 +823,20 @@ useEffect(() => {
               ...(errors.alert ? { backgroundColor: '#fef2f2' } : {})
             }}
             placeholder="警報を選択"
+          />
+          */}
+          <Select
+            isMulti       // 複数選択可能（マルチセレクト）
+            isSearchable  // サジェスト検索有効
+            options={warningOptions}
+            value={(formData.alert || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, alert: nextMembers });
+            }}                      
+            placeholder="警報を選択"
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
           />
         </InputTile>
 
@@ -917,6 +1046,58 @@ const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#777777', color: '#
 const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
+
+const customSelectStyles = {
+  // 入力エリア全体（コントロール）のスタイル
+  control: (provided, state) => ({
+    ...provided,
+    backgroundColor: '#f3f4f6',
+    border: 'none',
+    boxShadow: 'none',
+    '&:hover': {
+      border: 'none', 
+    },
+    borderRadius: '8px',
+    padding: '2px',
+  }),
+  // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
+  multiValue: (provided) => ({
+    ...provided,
+    backgroundColor: '#e0e0e0',
+    borderRadius: '9999px',
+    paddingLeft: '6px',
+    paddingRight: '2px',
+    border: '1px solid #e5e7eb',
+    fontSize: '14px',
+  }),
+  // バッジの中の「文字」のスタイル
+  multiValueLabel: (provided) => ({
+    ...provided,
+    color: '#1f2937',
+    paddingRight: '4px',
+  }),
+  // バッジの右側にある「×ボタン」のスタイル
+  multiValueRemove: (provided) => ({
+    ...provided,
+    borderRadius: '0 9999px 9999px 0',
+    color: '#9ca3af',
+    '&:hover': {
+      backgroundColor: '#fee2e2',
+      color: '#ef4444',
+    },
+  }),
+  // プレースホルダーのスタイル
+  placeholder: (provided) => ({
+    ...provided,
+    fontSize: '11px',
+    color: '#9ca3af',
+  }),
+  // 選択肢（オプション）のスタイル
+  option: (provided, state) => ({
+    ...provided,
+    fontSize: '14px',
+  }),
+};
 
 export default EditView;
 
