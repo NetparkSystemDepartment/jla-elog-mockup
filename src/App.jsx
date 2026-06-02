@@ -78,8 +78,8 @@ function App() {
     // 基本的に当日以外はデータはないはず
     const formattedRecords = (result || []).map((record) => {
       return {
-//        ...record, // 元のデータをそのままコピー
-        startDate: record.startDate,
+        ...record, // 元のデータをそのままコピー
+//        startDate: record.startDate,
         beach: getNameByBeachId(record.beach) // beach部分だけ名前（文字列）に置き換え
       };
     });
@@ -163,6 +163,7 @@ function App() {
 //      isSynced: false, // サーバー未送信フラグ
       isSynced: 0, // サーバー未送信フラグ
 //      timestamp: Date.now() 
+      token: user.token,
     };
 console.log('record', record);
     try {
@@ -205,6 +206,7 @@ console.log('record', record);
       date: formattedDate, 
 //      isSynced: false, // サーバー未送信フラグ
       isSynced: 1, // サーバー未送信フラグ
+      token: user.token,
     };
 
     let localId;
@@ -411,7 +413,8 @@ console.log('record', record);
 
     case 'edit':
  // console.log('selectedDate:', selectedDate);
-      return (
+//console.log('savedRecords:', savedRecords);
+       return (
         <EditView
           user={user}
           selectedCoast={selectedCoast} 

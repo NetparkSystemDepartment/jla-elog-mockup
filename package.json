@@ -19,6 +19,7 @@
     "react": "^19.2.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.0",
+    "react-select": "^5.10.2",
     "react-use": "^17.6.0",
     "sonner": "^2.0.7"
   },
@@ -33,7 +34,7 @@
     "globals": "^16.5.0",
     "msw": "^2.12.10",
     "vite": "^7.3.1",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.3.0"
   },
   "msw": {
     "workerDirectory": [

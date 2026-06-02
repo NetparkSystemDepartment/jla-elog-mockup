@@ -9,7 +9,7 @@ import { useSafeMembers } from '../useSafeMembers';
 // 車種名
 import { useSafeCarInfo } from '../useSafeCarInfo';
 import { toast } from 'sonner';
-
+import Select from 'react-select';
 
 // for phase1
 const HANDOVERAREA = ['恩納村'];
@@ -139,6 +139,19 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   // ログイン者を除く
   const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
 //console.log('exceptLogin:', exceptLogin);
+  // react-selectで使えるように
+  const loginOptions = exceptLogin.map(item => ({
+    value: item,
+    label: item
+  }));
+  const warningOptions = WARNING_OPTIONS.map(item => ({
+    value: item,
+    label: item
+  }));
+  const alertOptions = ALERT_OPTIONS.map(item => ({
+    value: item,
+    label: item
+  }));
    
   // 車両名
   const safeCarInfo = useSafeCarInfo();
@@ -280,6 +293,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={{...briefingStyles.field, minHeight: '96px'}}>
                   <label style={briefingStyles.label}>自分以外のパトロールメンバー</label>
                   <div style={briefingStyles.inputMultiSelect}> 
+{/*}
                     <MultiSelectInput
                       options={exceptLogin}
                       value={data.members || []}
@@ -287,6 +301,21 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       inputStyle={briefingStyles.inputMultiStyle}
                       placeholder="ユーザーID"
                     />
+*/}
+                    <Select
+                      isMulti       // 複数選択可能（マルチセレクト）
+                      isSearchable  // サジェスト検索有効
+                      options={loginOptions}
+                      value={(data.members || []).map(item => ({ value: item, label: item }))}
+                      onChange={(selectedOptions) => {
+                        const nextMembers = (selectedOptions || []).map(option => option.value);
+                        setData({ ...data, members: nextMembers });
+                      }}                      
+                      placeholder="ユーザーID"
+                      noOptionsMessage={() => "見つかりません"}
+                      styles={customSelectStyles}
+                    />
+
                   </div>
                 </div>
 
@@ -318,6 +347,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>注意報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
+                  {/*}
                   <MultiSelectInput
                     options={WARNING_OPTIONS}
                     value={data.warn || []}
@@ -325,12 +355,27 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                     inputStyle={briefingStyles.inputMultiStyle}
                     placeholder="注意報を選択"
                   />
+                  */}
+                    <Select
+                      isMulti       // 複数選択可能（マルチセレクト）
+                      isSearchable={false}  // サジェスト検索有効
+                      options={warningOptions}
+                      value={(data.warn || []).map(item => ({ value: item, label: item }))}
+                      onChange={(selectedOptions) => {
+                        const nextMembers = (selectedOptions || []).map(option => option.value);
+                        setData({ ...data, warn: nextMembers });
+                      }}                      
+                      placeholder="注意報を選択"
+                      noOptionsMessage={() => "見つかりません"}
+                      styles={customSelectStyles}
+                    />
                   </div>
                  </div>
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>警報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
+                  {/*
                   <MultiSelectInput
                     options={ALERT_OPTIONS}
                     value={data.alert || []}
@@ -338,6 +383,20 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                     inputStyle={briefingStyles.inputMultiStyle}
                     placeholder="警報を選択"
                   />
+                  */}
+                    <Select
+                      isMulti       // 複数選択可能（マルチセレクト）
+                      isSearchable={false}  // サジェスト検索有効
+                      options={alertOptions}
+                      value={(data.alert || []).map(item => ({ value: item, label: item }))}
+                      onChange={(selectedOptions) => {
+                        const nextMembers = (selectedOptions || []).map(option => option.value);
+                        setData({ ...data, alert: nextMembers });
+                      }}                      
+                      placeholder="警報を選択"
+                      noOptionsMessage={() => "見つかりません"}
+                      styles={customSelectStyles}
+                    />
                   </div>
                 </div>
               </div>
@@ -771,7 +830,7 @@ const briefingStyles = {
     pointerEvents: 'none',
     color: '#64748b'
   },
-pageBtn: {
+  pageBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
@@ -785,7 +844,7 @@ pageBtn: {
     transition: 'all 0.2s ease',
     // 常に表示する仕様に合わせ、cursorなどの制御はJSX側のstyle属性で上書きします
   },
-headerCellSortable: {
+  headerCellSortable: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center', // ヘッダーが中央揃えのデザインの場合
@@ -793,6 +852,46 @@ headerCellSortable: {
     userSelect: 'none', // 文字の誤選択（青反転）を防ぐ
     gap: '2px'
   },
+};
+
+const customSelectStyles = {
+  // 入力エリア全体（コントロール）のスタイル
+  control: (provided, state) => ({
+    ...provided,
+    backgroundColor: '#f3f4f6',
+    border: 'none',
+    boxShadow: 'none',
+    '&:hover': {
+      border: 'none', 
+    },
+    borderRadius: '8px',
+    padding: '2px',
+  }),
+  // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
+  multiValue: (provided) => ({
+    ...provided,
+    backgroundColor: '#e0e0e0',
+    borderRadius: '9999px',
+    paddingLeft: '6px',
+    paddingRight: '2px',
+    border: '1px solid #e5e7eb',
+  }),
+  // バッジの中の「文字」のスタイル
+  multiValueLabel: (provided) => ({
+    ...provided,
+    color: '#1f2937',
+    paddingRight: '4px',
+  }),
+  // バッジの右側にある「×ボタン」のスタイル
+  multiValueRemove: (provided) => ({
+    ...provided,
+    borderRadius: '0 9999px 9999px 0',
+    color: '#9ca3af',
+    '&:hover': {
+      backgroundColor: '#fee2e2',
+      color: '#ef4444',
+    },
+  }),
 };
 
 export default BriefingView; 
