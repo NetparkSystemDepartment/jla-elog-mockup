@@ -181,7 +181,9 @@ function LoginView() {
 
 const loginStyles = {
   // ...既存のスタイル...
-  wrapper: { height: '100dvh', backgroundColor: '#e5e7eb', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
+  wrapper: { height: '100dvh', backgroundColor: '#e5e7eb', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
