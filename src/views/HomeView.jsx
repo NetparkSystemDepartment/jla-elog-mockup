@@ -110,13 +110,14 @@ const showConfirm = async () => {
 }
 
 const styles = {
-  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
+  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100dvh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: 'white', fontSize: '20px', fontWeight: 'bold' },
   main: { padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px', overflowY: 'auto',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   pickupCard: { backgroundColor: 'white', borderRadius: '24px 24px 24px 24px', padding: '20px', minHeight: '150px' },
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },

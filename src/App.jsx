@@ -10,7 +10,7 @@ import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from './contexts/authContext';
 import { supabase } from './supabaseClient';
-import { fetchAllProfiles } from './api';
+import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
 
 import { ONNA_BEACHES } from './constantsPublic';
@@ -122,28 +122,6 @@ function App() {
 
   };
 
-//  // データ読み込み処理（ユーザー情報）
-//  const loadProfileList = async () => {
-//    const { data, error } = await supabase
-//      .from('profiles')
-//      .select('id, role')
-//
-//    if (error) {
-//      console.error('Error fetching profiles:', error.message)
-//    }
-//
-//    if (data) {
-//      // roleでフィルタリング、かつ自分以外のメンバー
-//      const filteredData = data.filter(profile => 
-//        profile.role === user.role && profile.id !== user.id);
-//
-////console.log('loadProfileList:', filteredData);
-//      const idList = filteredData.map(profile => profile.id);
-////console.log('idList:', idList);
-//      setProfileList(idList);
-//    }    
-//  };
-
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
   const handleSave = async (formData) => {
@@ -254,6 +232,10 @@ console.log('record', record);
 //        isSynced: true, // 送信完了フラグを真にする
         isSynced: 2, // 送信完了フラグを真にする
       });
+
+      // 1週間分のデータを取り込み直す
+      // promiseを待ちます
+      await loadWeeklyRecords();
 
       // トーストを成功表示に切り替える
       toast.success('サーバーへ送信・登録しました！', { id: toastId });
@@ -470,10 +452,10 @@ console.log('record', record);
 }
 
 const styles = {
-  appcontainer: { width: '100%', maxWidth: '820px', margin: '0 auto', minheight: '100vh' },
+  appcontainer: { width: '100%', maxWidth: '820px', margin: '0 auto', minheight: '100dvh' },
   headerStyle: { backgroundColor: '#44445A', width: '100%', position: 'sticky', top: '0', zIndex: '100' },
   container: { padding: '20px', maxWidth: '500px', margin: '0 auto' },
-  fullScreenCenter: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f0f4f8' },
+  fullScreenCenter: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', backgroundColor: '#f0f4f8' },
   form: { display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '300px' },
   briefingGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' },
   field: { display: 'flex', flexDirection: 'column', gap: '5px' },

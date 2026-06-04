@@ -50,6 +50,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   // 申し送りデータの取得
   useEffect(() => {
+//console.log('申し送りデータの取得', requestBody);
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
@@ -60,7 +61,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
         // トークンの有効期限切れ、利用時間外、再ログイン
         if (resData.result === false &&
-          (resData.error_no === 1004 || resData.error_no === 1005) 
+          (resData.error_no === 1002 || resData.error_no === 1004 || resData.error_no === 1005) 
         ) {
           toast.warning('再度ログインしてください。');
           logout();
@@ -152,9 +153,17 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
     value: item,
     label: item
   }));
+  // const directionOptions = DIRECTIONS.map(item => ({
+  //   value: item.id,
+  //   label: item.label
+  // }));
    
   // 車両名
   const safeCarInfo = useSafeCarInfo();
+  //const carTypeOptions = safeCarInfo.map(item => ({
+  //  value: item.order,
+  //  label: item.carType
+  //}));
 
   // 申し送り一覧のエリア
   const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
@@ -322,8 +331,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>使用車両</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
+                    
                     <select 
-                      style={briefingStyles.input} 
+                      style={{...briefingStyles.input, width: '50%' }} 
                         value={data.carType || ''} 
                         onChange={e => {
                           // 選択されたIDを数値に変換して保存（未選択時は空文字）
@@ -338,7 +348,24 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                         </option>
                       ))}
                     </select>
-                    <input type="text" placeholder="No." style={briefingStyles.input} maxLength={4} inputMode="numeric"
+                    
+                    {/*
+                    <div style={{ width: '200px' }}>
+                    <Select
+                      isMulti={false}       // 複数選択可能（マルチセレクト）
+                      isSearchable={false}  // サジェスト検索有効
+                      options={carTypeOptions}
+                      value={carTypeOptions.find(option => option.value === data.carType) || null}
+                      onChange={(selectedOption) => {
+                        const nextCarType = selectedOption ? selectedOption.value : null;
+                        setData({ ...data, carType: nextCarType })}}
+                      placeholder="車種名を選択"
+                      noOptionsMessage={() => "見つかりません"}
+                      styles={customSelectStyles}
+                    />
+                    </div>
+                    */}
+                    <input type="text" placeholder="No." style={{...briefingStyles.input, width: '50%'}} maxLength={4} inputMode="numeric"
                       value={data.carNo}
                       onChange={e => setData({...data, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")})} />
                   </div>
@@ -439,6 +466,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>風向（方位）</label>
+                  
                   <select 
                     style={briefingStyles.input} 
                       value={data.windDir || ''} 
@@ -455,6 +483,20 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       </option>
                     ))}
                   </select>
+                  {/*
+                    <Select
+                      isMulti={false}       // 複数選択可能（マルチセレクト）
+                      isSearchable={false}  // サジェスト検索有効
+                      options={directionOptions}
+                      value={directionOptions.find(option => option.value === data.windDir) || null}
+                      onChange={(selectedOption) => {
+                        const nextCarType = selectedOption ? selectedOption.value : null;
+                        setData({ ...data, windDir: nextCarType })}}
+                      placeholder="風向を選択"
+                      noOptionsMessage={() => "見つかりません"}
+                      styles={customSelectStyles}
+                    />
+                  */}
                 </div>
 
                 <div style={briefingStyles.field}>
@@ -755,14 +797,16 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 }
 
 const briefingStyles = {
-  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
-  header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100dvh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
+  header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
   logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   
   container: { flex: 1, padding: '10px 10px', maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' ,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   card: { backgroundColor: '#ffffff', borderRadius: '24px', padding: '20px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '10px' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
@@ -778,7 +822,7 @@ const briefingStyles = {
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' },
-  textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '80px', resize: 'none', marginTop: '8px' },
+  textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '64px', resize: 'none', marginTop: '8px' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 
   inputMultiStyle: { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6'},
@@ -866,6 +910,7 @@ const customSelectStyles = {
     },
     borderRadius: '8px',
     padding: '2px',
+//    height: '32px',
   }),
   // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
   multiValue: (provided) => ({
@@ -891,6 +936,32 @@ const customSelectStyles = {
       backgroundColor: '#fee2e2',
       color: '#ef4444',
     },
+  }),
+  // 2. プレースホルダーのフォントサイズ
+  placeholder: (provided) => ({
+    ...provided,
+    fontSize: '14px',       // 👈 選択前の「車種名を選択」のサイズ
+    color: '#9ca3af',
+  }),
+
+  // 3. 🔍 選択されたアイテム（確定した文字）のフォントサイズ
+  singleValue: (provided) => ({
+    ...provided,
+    fontSize: '14px',       // 👈 選択した後の「セレナ」などの文字サイズ
+    color: '#1f2937',       // 文字色（ダークグレー）
+  }),
+
+  // 4. 開いたドロップダウンリスト内のフォントサイズ
+  option: (provided, state) => ({
+    ...provided,
+    fontSize: '14px',       // 👈 リストに並ぶ「セレナ」「ビッツ」のサイズ
+    backgroundColor: state.isSelected 
+      ? '#73a7fa' 
+      : state.isFocused 
+        ? '#d3e3fd' 
+        : '#ffffff',
+    color: state.isSelected ? '#ffffff' : '#1f2937',
+    cursor: 'pointer',
   }),
 };
 

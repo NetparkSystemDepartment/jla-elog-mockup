@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
 
     const savedAuthData = localStorage.getItem('auth_data');
+//console.log('ブラウザ起動時:', savedAuthData);
 
     if (savedAuthData) {
       try {

@@ -72,7 +72,7 @@ function RecordDetailView({ record, onBack }) {
 }
 
 const detailStyles = {
-  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100dvh', display: 'flex', flexDirection: 'column' },
   header: { 
     backgroundColor: '#0f172a', 
     height: '64px', 
