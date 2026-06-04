@@ -33,7 +33,7 @@ export const loadWeeklyRecords = async () => {
     try {
       // ローカルストレージに保存
       localStorage.setItem('weeklyBeachData', JSON.stringify(weeklyData));
-console.log('weeklyBeachDataを保存しました');      
+//console.log('weeklyBeachDataを保存しました');      
     } catch (error) {
       console.error('ローカルストレージへの保存に失敗しました:', error);
     }

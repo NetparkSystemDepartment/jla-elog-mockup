@@ -227,7 +227,7 @@ const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', 
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };
 
 //const navTextStyle = { fontSize: '10px', fontWeight: '500' };
-const mainStyle = { padding: '12px', minHeight: '78vh',
+const mainStyle = { padding: '12px', minHeight: '79vh',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
  };
 const infoTextStyle = { fontSize: '14px', color: '#64748b', marginTop: '4px' };
