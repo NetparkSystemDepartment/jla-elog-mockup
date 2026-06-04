@@ -43,6 +43,36 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
     <button onClick={onClick} ref={ref} style={iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
 
+  // // // ローカルストレージから１週間分のデータを読む
+  // const dateStr = format(selectedDate, 'yyyy-MM-dd');
+  // // //const [weeklyRecords, setWeeklyRecords] = useState(savedRecords);  
+  // console.log('savedRecords:', savedRecords);
+
+  // let localWeeklyData = [];
+  // const weeklyString = localStorage.getItem('weeklyBeachData');
+  // console.log('weeklyString:', weeklyString);
+
+  // if (weeklyString) {
+  //   try {
+  //     const allWeeklyData = JSON.parse(weeklyString);
+
+  //     const stringifiedItems = allWeeklyData.map(item => JSON.stringify(item));
+
+  //     const uniqueStrings = [...new Set(stringifiedItems)];
+
+  //     const WeeklyData = uniqueStrings.map(item => JSON.parse(item));
+    
+  //     if (Array.isArray(WeeklyData)) {
+  //       localWeeklyData = WeeklyData.filter(item => item.startDate === dateStr);
+  //     }
+  //   } catch (error) {
+  //     console.error('ローカルストレージのデータ解析に失敗:', error);
+  //   }
+  // }
+
+  // const weeklyRecords = (localWeeklyData || []);
+
+
 //  console.log('user', user);
 //  const filteredCoasts = user.kind === 1
 //    ? COAST_DATA.filter((coast) => coast.kind === 1)
@@ -95,7 +125,9 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
 
             // 未送信のビーチを抽出する
             const unsyncedBeaches = savedRecords
-              .filter(record => !record.isSynced)
+//            const unsyncedBeaches = localWeeklyData
+//              .filter(record => !record.isSynced)
+              .filter(record => record.isSynced !== 2) 
               .map(record => record.beach);            
 //console.log('unsyncedBeaches:', unsyncedBeaches);
               // 未登録箇所を計算する
@@ -179,7 +211,9 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
 };
 
 // CSS
-const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
+const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100dvh', position: 'relative', backgroundColor: '#f1f5f9',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+};
 const headerStyle = { backgroundColor: '#08172A', width: '100%', position: 'sticky', top: '0', zIndex: '100' };
 const headerTopStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px' };
 const monthTextStyle = { fontWeight: 'bold', fontSize: '15px', color: '#fff', minWidth: '95px', textAlign: 'center' };

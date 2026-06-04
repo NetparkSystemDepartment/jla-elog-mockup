@@ -123,7 +123,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 //  }, [existingData]);
 
 useEffect(() => {
-console.log("EditView In:", existingData);
+//console.log("EditView In:", existingData);
 
   if (existingData) {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
@@ -758,7 +758,7 @@ console.log("EditView In:", existingData);
           */}
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable  // サジェスト検索有効
+            isSearchable={false}   // サジェスト検索有効
             options={warningOptions}
             value={(formData.warn || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
@@ -793,7 +793,7 @@ console.log("EditView In:", existingData);
           */}
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable  // サジェスト検索有効
+            isSearchable={false}   // サジェスト検索有効
             options={featureOptions}
             value={(formData.feature || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
@@ -827,7 +827,7 @@ console.log("EditView In:", existingData);
           */}
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable  // サジェスト検索有効
+            isSearchable={false}  // サジェスト検索有効
             options={warningOptions}
             value={(formData.alert || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
@@ -1022,7 +1022,9 @@ console.log("EditView In:", existingData);
   );
 };
 
-const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100vh', position: 'relative', backgroundColor: '#f1f5f9' };
+const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100dvh', position: 'relative', backgroundColor: '#f1f5f9',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+};
 const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '48px', margin: '0px 8px 0px 8px', backgroundColor: '#08172A' };
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };

@@ -18,6 +18,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // ローカルストレージからログイン結果を丸ごと取得
     const savedAuth = localStorage.getItem('auth_data');
+//console.log('リクエスト・インターセプト:', savedAuth);
     
     if (savedAuth) {
       try {

@@ -99,7 +99,7 @@ const XIcon = () => <span style={{fontSize: '12px', marginLeft: '4px'}}>×</span
 const UpDownIcon = () => <span style={{fontSize: '10px', marginLeft: '2px'}}>⇅</span>;
 
 const styles = {
-  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
+  wrapper: { backgroundColor: '#e5e7eb', minHeight: '100dvh', display: 'flex', flexDirection: 'column', maxWidth: '820px', margin: '0 auto' },
   header: { backgroundColor: '#0f172a', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   headerTitle: { color: 'white', fontSize: '20px', fontWeight: 'bold' },
   main: { flex: 1, display: 'flex', flexDirection: 'column' },
