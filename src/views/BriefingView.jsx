@@ -10,6 +10,8 @@ import { useSafeMembers } from '../useSafeMembers';
 import { useSafeCarInfo } from '../useSafeCarInfo';
 import { toast } from 'sonner';
 import Select from 'react-select';
+import { loadWeeklyRecords } from '../api';
+
 
 // for phase1
 const HANDOVERAREA = ['恩納村'];
@@ -124,6 +126,10 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
           // 加工・ソートが完了したデータをStateにセット
           setNoticeList(initialSortedData);
+
+          // 1週間分のデータを取り込み直す
+          await loadWeeklyRecords();
+          
         }
       } catch (err) {
         console.error('申し送り一覧の取得に失敗:', err);

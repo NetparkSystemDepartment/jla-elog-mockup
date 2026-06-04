@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import { X, Save, Clock, Cloud, Wind, Users, Gauge, Waves, Droplets, AlertCircle, User, 
   WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone, 
-  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping } from 'lucide-react';
+  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping, Ban, Lock } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 registerLocale('ja', ja);
@@ -1010,10 +1010,11 @@ useEffect(() => {
               ...sendBtnStyle,
               //backgroundColor: isValid ? '#44445A' : '#777777',
               cursor: isDisabled ? 'not-allowed' : 'pointer' ,
-              opacity: isDisabled ? 0.7 : 1,
-
+              opacity: isDisabled ? 0.5 : 1,
             }}
-          >送信</button>
+          >
+          <span style={{ marginTop: 4}}>{isDisabled ? ( <Ban size={14} style={{ marginRight: 8}} />) : ('')}</span>            
+          <span>送信</span></button>
         </div>
       </footer>
 
@@ -1044,7 +1045,7 @@ const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' }
 const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' };
 const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px', color: '#64748b', width: '10%', };
 const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
-const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#777777', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginRight: '8px' };
+const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#08172A', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', width: '128px', height: '36px', marginRight: '8px', textAlign: 'center' };
 const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
