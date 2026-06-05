@@ -143,7 +143,7 @@ function App() {
 //      timestamp: Date.now() 
       token: user.token,
     };
-console.log('record', record);
+//console.log('record', record);
     try {
         const id = await saveRecord(record);
       
@@ -396,7 +396,13 @@ console.log('record', record);
     case 'edit':
  // console.log('selectedDate:', selectedDate);
 //console.log('savedRecords:', savedRecords);
-       return (
+//console.log('syncedRecords:', syncedRecords);
+      const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach);
+      const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
+//console.log('foundSyncedRecord:', foundSyncedRecord);
+//console.log('syncedRecoredSeq:', syncedRecoredSeq);
+
+      return (
         <EditView
           user={user}
           selectedCoast={selectedCoast} 
@@ -422,7 +428,8 @@ console.log('record', record);
             // データがない、または送信済みの場合
             // 新規データ扱いにする
             // データがあればそのseqに+1、なければ1にする
-            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1;
+//            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1;
+            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1 + syncedRecoredSeq;
 
             return {
               ...briefingData,
