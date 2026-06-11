@@ -4,6 +4,7 @@ export const loadWeeklyRecords = async () => {
 
   const requestBody = {
     type: 1,
+  //  key: 62,
   };
 
   const resData = await getinfoApi(requestBody);

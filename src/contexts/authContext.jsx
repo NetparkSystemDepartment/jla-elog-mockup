@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
             kind: authData.kind,
             area: authData.area,
             token: authData.token,
+            name: authData.login_name,
           });
 
           setMembers(authData.members || []);
@@ -96,21 +97,21 @@ export function AuthProvider({ children }) {
           kind: data.kind,
           area: data.area,
           token: data.token,
+          name: data.login_name,
         });
 
 //        // tokenをindexedDBに書き込む
 //        saveAuthTokenToIndexedDB(authData.token);
 
         setMembers(data.members || []);
-        setCarInfo(data.carInfo || []);
-// console.log('carInfo;', carInfo);
+        setCarInfo(data.master_info.car_info || []);
 
         //// LoginView.jsx が期待する形式（{ success: true }）で返す
         //return { success: true };
         return { 
           success: true, 
           user: user, 
-          carInfo: data.carInfo || [] 
+          carInfo: data.master_info.car_info || [] 
         };
       }
       else {
@@ -123,7 +124,7 @@ export function AuthProvider({ children }) {
       
       const errorMessage = 
         error.response?.data?.message || 
-        'ログインに失敗しました。ユーザーIDまたはパスワードを確認してください。';
+        'ログインに失敗しました。';
       
       // LoginView.jsx が期待する形式（{ success: false, message: ... }）で返す
       return { success: false, message: errorMessage };

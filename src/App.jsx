@@ -125,13 +125,15 @@ function App() {
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
   const handleSave = async (formData) => {
+console.log('formData', formData);
     const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
     const beachName = selectedBeach;
   
   // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
+  // 2026.6.5 user_idは挿入しない
     const updatedFormData = {
       ...formData,
-      members: [user.id, ...formData.members]
+//      members: [user.id, ...formData.members]
     };
 
     const record = { 
@@ -175,7 +177,7 @@ function App() {
     // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
     const updatedFormData = {
       ...formData,
-      members: [user.id, ...formData.members]
+//      members: [user.id, ...formData.members]
     };
 
     // 1. まずは「未送信状態(isSynced: false)」としてオブジェクトを作成
@@ -282,11 +284,13 @@ function App() {
 
   // 
   const handleSelectBeach = (beachName) => {
-    const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
-    if (targetBeaches.includes(beachName)) {
+  
+    // 6/E版で全エリア全ビーチ対応
+    //const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
+    //if (targetBeaches.includes(beachName)) {
       setSelectedBeach(beachName);
       setView('edit');
-    }
+    //}
   };
 
   // 開始

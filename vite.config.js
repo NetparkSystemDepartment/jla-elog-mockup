@@ -2,7 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const baseConfig = process.env.VERCEL ? '/' : '/p2/';
+//const baseConfig = '/p2/';
+//const baseConfig = '/';
+
 export default defineConfig({
+
+  base: baseConfig,
+
   server: {
     host: true,
     port: 5173,
@@ -11,9 +18,22 @@ export default defineConfig({
       '/api': {
         target: 'https://d-elog.ripcurrent.org',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/v1')
+        rewrite: (path) => path.replace(/^\/api/, '/v2')
       }
     }
+    // proxy: {
+    //   '/vi': {
+    //     target: 'https://d-elog.ripcurrent.org',
+    //     changeOrigin: true,
+    //     rewrite: (path) => path.replace('/v1', '/p1/v1'),
+    //     // ログを追加して、黒い画面（ターミナル）で確認する
+    // configure: (proxy, options) => {
+    //   proxy.on('proxyReq', (proxyReq, req, res) => {
+    //     console.log('【プロキシ転送先】:', proxyReq.path);
+    //   });
+    // }
+    //   }
+    // }
   },
 
   plugins: [

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef } from 'react';
-import { X, Save, Clock, Cloud, Wind, Users, Gauge, Waves, Droplets, AlertCircle, User, 
+import { X, Save, Clock, Cloud, Wind, Users, Gauge, Waves, Droplets, User, 
   WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone, 
-  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping, Ban, Lock } from 'lucide-react';
+  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping, Ban, Lock, Car, CircleAlert, TriangleAlert } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 registerLocale('ja', ja);
@@ -55,9 +55,9 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   const safeMembers = useSafeMembers();
   //console.log('safeMembers:', safeMembers);
   // ログイン者を除く
-   const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
+  // const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
   // react-selectで使えるように
-  const loginOptions = exceptLogin.map(item => ({
+  const loginOptions = safeMembers.map(item => ({
     value: item,
     label: item
   }));
@@ -110,18 +110,6 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
     
   }; 
    
-
-//console.log('selectedDate:', selectedDate);
-//console.log('startDate:', formData.startDate)
-//  const members = profileList;
-
-  // 既存データがあればフォームにセット
-//  useEffect(() => {
-//    console.log("EditView In:", existingData)
-//    if (existingData) setFormData(existingData);
-//    //setFormData({visitors: '0'});
-//  }, [existingData]);
-
 useEffect(() => {
 //console.log("EditView In:", existingData);
 
@@ -175,48 +163,6 @@ useEffect(() => {
   const getCoastIdByName = (name) => COAST_DATA.find((c) => c.name === name)?.id;
   // ビーチ名からidを返す
   const getBeachIdByName = (name) => ONNA_BEACHES.find((c) => c.name === name)?.id;
-
-  // 「送信」ボタンenable用
-  // const isFormValid = () => {
-  //   // 必須項目を列挙して、すべてに値が入っているかチェック
-  //   if (unpatrolled === true) {
-  //     return (
-  //       (formData.members && formData.members.length > 0) &&
-  //       !!formData.note
-  //     )
-  //   }
-  //   else {
-  //     return (
-  //       (formData.members && formData.members.length > 0) &&
-  //       formData.startTime && 
-  //       formData.endTime &&
-  //       (formData.weather || formData.weather === 0) &&
-  //       (formData.current || formData.current === 0) &&
-  //       formData.highTideTime &&
-  //       formData.highTide &&
-  //       (formData.waveOuter || formData.waveOuter === 0) &&
-  //       formData.lowTideTime &&
-  //       formData.lowTide &&
-  //       (formData.wave || formData.wave === 0) &&
-  //       formData.windDir && 
-  //       (formData.tide || formData.tide === 0) &&
-  //       formData.windDirDetail &&
-  //       (formData.windSpeed || formData.windSpeed === 0) &&
-  //       (formData.visitors || formData.visitors === 0) &&
-  //       formData.warn &&
-  //       formData.feature &&
-  //       formData.alert &&
-  //       (formData.jpWarning || formData.jpWarning === 0) &&
-  //       (formData.forWarning || formData.forWarning === 0) &&
-  //       (formData.jpTourist || formData.jpTourist === 0) &&
-  //       (formData.forTourist || formData.forTourist === 0) &&
-  //       formData.carType &&
-  //       formData.carNo &&
-  //       formData.handover &&
-  //       formData.note
-  //     )
-  //   }
-  // };
 
   const isFormValid = () => {
   // メンバーは共通必須
@@ -273,72 +219,6 @@ useEffect(() => {
   const handleSaveClick = () => {
     const newErrors = {};
 
-/*  
-    // 必須チェック
-    console.log('formData:', formData);
-    console.log('formData.unpatrolled:', formData.unpatrolled);
-    //if (isUnpatrolled) {
-    if (formData.unpatrolled) {
-      if (!formData.members) newErrors.members = 'パトロールメンバーは入力が必須です';
-      if (!formData.note) newErrors.note = '特記事項は入力が必須です';
-    }
-    else {
-      if (!formData.members) newErrors.members = 'パトロールメンバーは入力が必須です';
-      if (!formData.startTime) newErrors.startTime = 'パトロール開始時刻は入力が必須です';
-      if (!formData.endTime) newErrors.endTime = 'パトロール終了時刻は入力が必須です';
-      if (formData.weather === null || formData.weather === undefined || formData.weather === '') {
-        newErrors.weather = '天候は入力が必須です';
-      }  
-      if (formData.current === null || formData.current === undefined || formData.current === '') {
-        newErrors.current = '潮汐は入力が必須です';
-      }
-      if (!formData.highTideTime) newErrors.highTideTime = '満潮時刻は入力が必須です';
-      if (!formData.highTide) newErrors.highTide = '満潮高さは入力が必須です';
-      if (formData.waveOuter === null || formData.waveOuter === undefined || formData.waveOuter === '') {
-        newErrors.waveOuter = '波高（アウターリーフ）は入力が必須です';
-      }  
-      if (!formData.lowTideTime) newErrors.lowTideTime = '干潮時刻は入力が必須です';
-      if (!formData.lowTide) newErrors.lowTide = '干潮高さは入力が必須です';
-      if (formData.wave === null || formData.wave === undefined || formData.wave === '') {
-        newErrors.wave = '波高（ショアゾーン）は入力が必須です';
-      }  
-      if (!formData.windDir) newErrors.windDir = '風向（天気予報）は入力が必須です';
-      if (!formData.windDirDetail) newErrors.windDirDetail = '風向（現地）は入力が必須です';
-      if (formData.windSpeed === null || formData.windSpeed === undefined || formData.windSpeed === '') {
-        newErrors.windSpeed = '風速（天気予報）は入力が必須です';
-      }  
-      if (formData.visitors === '' || formData.visitors === null || formData.visitors === undefined) {
-        newErrors.visitors = '利用者数は入力が必須です';
-      }
-      if (!formData.warn) newErrors.warn = '注意報は入力が必須です';
-      if (!formData.feature) newErrors.feature = 'ビーチ利用の特徴は入力が必須です';
-      if (!formData.alert) newErrors.alert = '警報は入力が必須です';
-      if (formData.jpWarning === '' || formData.jpWarning === null || formData.jpWarning === undefined) {
-        newErrors.jpWarning = '注意喚起人数 日本人県内在住は入力が必須です';
-      }
-      if (formData.forWarning === '' || formData.forWarning === null || formData.forWarning === undefined) {
-        newErrors.forWarning = '注意喚起人数 外国人県内在住は入力が必須です';
-      }
-      if (formData.jpTourist === '' || formData.jpTourist === null || formData.jpTourist === undefined) {
-        newErrors.jpTourist = '注意喚起人数 日本人観光客は入力が必須です';
-      }  
-      if (formData.forTourist === '' || formData.forTourist === null || formData.forTourist === undefined) {
-        newErrors.forTourist = '注意喚起人数 外国人観光客は入力が必須です';
-      }
-      if (!formData.carType) newErrors.carType = '車両情報 車種名は入力が必須です';
-      if (!formData.carNo) newErrors.carNo = '車両情報 No.は入力が必須です';
-      if (!formData.handover) newErrors.handover = '申し送り事項は入力が必須です';
-      if (!formData.note) newErrors.note = '特記事項は入力が必須です';
-    }
-
-    // 未入力あり
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast.error('未入力の項目があります');
-      console.log('errors:', errors);
-      return; 
-    }
-*/
   //  setFormData((prev) => ({
   //    ...prev,
   //    members: [user.id, ...prev.members]
@@ -444,31 +324,14 @@ useEffect(() => {
           <div>
             <input
               type="text"
-              value={user.id || ''}
+              value={(user.id + user.name) || ''}
               disabled
               style={disabledInput}
             />
           </div>
           <div style={labelBaseStyle}>
-            <Cloud size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
+            <Users size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
-{/*}          
-          <MultiSelectInput
-            options={exceptLogin}
-            value={formData.members || []}
-            onChange={(next) => {
-              setFormData({ ...formData, members: next });
-              if (errors.members && next.length > 0) {
-                setErrors({ ...errors, members: null });
-              }
-            }}
-            inputStyle={{
-              ...inputMultiStyle,
-              ...(errors.members ? { backgroundColor: '#fef2f2' } : {})
-            }}
-            placeholder="ユーザーID"
-          />
-*/}
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable  // サジェスト検索有効
@@ -738,34 +601,38 @@ useEffect(() => {
         </InputTile>
 
         {/* 注意報 */}
-        <InputTile label="注意報" icon={WavesLadder} isExpandable={true}>
-          {/*
-          <MultiSelectInput
-            options={WARNING_OPTIONS}
-            value={formData.warn || []}
-            onChange={(next) => {
-              setFormData({ ...formData, warn: next });
-              if (errors.members && next.length > 0) {
-                setErrors({ ...errors, warn: null });
-              }
-            }}
-            inputStyle={{
-              ...inputMultiStyle,
-              ...(errors.warn ? { backgroundColor: '#fef2f2' } : {})
-            }}
-            placeholder="注意報を選択"
-          />
-          */}
+        <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}>
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}   // サジェスト検索有効
             options={warningOptions}
             value={(formData.warn || []).map(item => ({ value: item, label: item }))}
+            // onChange={(selectedOptions) => {
+            //   const nextMembers = (selectedOptions || []).map(option => option.value);
+            //   setFormData({ ...formData, warn: nextMembers });
+            // }}                      
+            // 6月末版で変更                     
             onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, warn: nextMembers });
+              // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+              const currentValues = (selectedOptions || []).map(option => option.value);
+  
+              let updatedValues = currentValues;
+
+              // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+              const prevValues = formData.warn || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+              if (addedValue === 'なし') {
+                // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                updatedValues = ['なし'];
+              } else if (currentValues.includes('なし') && currentValues.length > 1) {
+              // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                updatedValues = currentValues.filter(val => val !== 'なし');
+              }
+
+              setFormData({ ...formData, warn: updatedValues });
             }}                      
-            placeholder="注意報を選択"
+            placeholder="注意報"
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
@@ -774,23 +641,6 @@ useEffect(() => {
 
         {/* ビーチ利用の特徴 */}
         <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
-          {/*
-          <MultiSelectInput
-            options={FEATURE_OPTIONS}
-            value={formData.feature || []}
-            onChange={(next) => {
-              setFormData({ ...formData, feature: next });
-              if (errors.feature && next.length > 0) {
-                setErrors({ ...errors, feature: null });
-              }
-            }}
-            inputStyle={{
-              ...inputMultiStyle,
-              ...(errors.feature ? { backgroundColor: '#fef2f2' } : {})
-            }}
-            placeholder="特徴を選択"
-          />
-          */}
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}   // サジェスト検索有効
@@ -800,41 +650,45 @@ useEffect(() => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, feature: nextMembers });
             }}                      
-            placeholder="特徴を選択"
+            placeholder="特徴"
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
         </InputTile>
 
         {/* 警報 */}
-        <InputTile label="警報" icon={WavesLadder} isExpandable={true}>
-          {/*
-          <MultiSelectInput
-            options={ALERT_OPTIONS}
-            value={formData.alert || []}
-            onChange={(next) => {
-              setFormData({ ...formData, alert: next });
-              if (errors.alert && next.length > 0) {
-                setErrors({ ...errors, alert: null });
-              }
-            }}
-            inputStyle={{
-              ...inputMultiStyle,
-              ...(errors.alert ? { backgroundColor: '#fef2f2' } : {})
-            }}
-            placeholder="警報を選択"
-          />
-          */}
+        <InputTile label="警報" icon={CircleAlert} isExpandable={true}>
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}  // サジェスト検索有効
-            options={warningOptions}
+            options={alertOptions}
             value={(formData.alert || []).map(item => ({ value: item, label: item }))}
+            // onChange={(selectedOptions) => {
+            //   const nextMembers = (selectedOptions || []).map(option => option.value);
+            //   setFormData({ ...formData, alert: nextMembers });
+            // }}                      
+            // 6月末版で変更                     
             onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, alert: nextMembers });
+              // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+              const currentValues = (selectedOptions || []).map(option => option.value);
+  
+              let updatedValues = currentValues;
+
+              // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+              const prevValues = formData.alert || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+              if (addedValue === 'なし') {
+                // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                updatedValues = ['なし'];
+              } else if (currentValues.includes('なし') && currentValues.length > 1) {
+              // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                updatedValues = currentValues.filter(val => val !== 'なし');
+              }
+
+              setFormData({ ...formData, alert: updatedValues });
             }}                      
-            placeholder="警報を選択"
+            placeholder="警報"
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
@@ -885,7 +739,7 @@ useEffect(() => {
         </InputTile>
 
         {/* 車両情報、申し送り事項 */}
-        <InputTile label="車両情報" icon={NotebookPen} isExpandable={true}>
+        <InputTile label="車両情報" icon={Car} isExpandable={true}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <select 
                 style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
@@ -911,10 +765,34 @@ useEffect(() => {
               onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
                 if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
           </div>
+        </InputTile>
           
-          <div style={labelBaseStyle}>
-            <HandHelping size={12} style={{ marginRight: 4 }} /><label>申し送り事項</label>
-          </div>
+        {/* 特記事項（応急手当・救助・その他） */}
+          <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'} >
+          <textarea
+            value={formData.note}
+            maxLength={100}
+            onChange={(e) => {
+              setFormData({...formData, note: e.target.value});
+              if (errors.note) {
+                setErrors({ ...errors, note: null });
+              }
+            }}
+            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
+            <div style={{
+              right: '12px',
+              bottom: '8px',
+              fontSize: '10px',
+              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
+              userSelect: 'none',
+              textAlign: 'right'
+              }}>
+              {formData.note.length} / 100
+            </div>                  
+        </InputTile>
+
+        <InputTile label="申し送り事項" icon={HandHelping} isExpandable={true}>
           <textarea
             value={formData.handover}
             maxLength={100}
@@ -963,32 +841,7 @@ useEffect(() => {
         </InputTile>
 
         {/* 特記事項（応急手当・救助・その他） */}
-        <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true}>
-          <textarea
-            value={formData.note}
-            maxLength={100}
-            onChange={(e) => {
-              setFormData({...formData, note: e.target.value});
-              if (errors.note) {
-                setErrors({ ...errors, note: null });
-              }
-            }}
-            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
-            <div style={{
-              right: '12px',
-              bottom: '8px',
-              fontSize: '10px',
-              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
-              userSelect: 'none',
-              textAlign: 'right'
-              }}>
-              {formData.note.length} / 100
-            </div>                  
-        
-          <div style={labelBaseStyle}>
-            <FileUp size={12} style={{ marginRight: 4 }} /><label>画像のアップロード</label>
-          </div>
+        <InputTile label="画像のアップロード）" icon={FileUp} isExpandable={true}>
         </InputTile>
 
       </main>
@@ -1049,6 +902,7 @@ const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#08172A', color: '#
 const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
+const noteAreaStyle = { background: '#ECD283' };
 
 const customSelectStyles = {
   // 入力エリア全体（コントロール）のスタイル

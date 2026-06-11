@@ -2,11 +2,11 @@
 import React from 'react';
 
 // props を使って、ラベル、アイコン、中身(children)を受け取ります
-const InputTile = ({ label, icon: Icon, children, isExpandable }) => {
+const InputTile = ({ label, icon: Icon, children, isExpandable, backgroundColor = '#fff' }) => {
 
 // スタイルもこちらに移動して App.jsx を軽くします
 const tileStyle = { 
-  backgroundColor: '#fff', 
+  backgroundColor: backgroundColor, 
   padding: '8px', 
   borderRadius: '10px', 
   border: '1px solid #e2e8f0', 

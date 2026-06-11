@@ -4,14 +4,13 @@ import { useAuth } from './contexts/authContext';
 
 export function useSafeCarInfo() {
   const { carInfo } = useAuth();
-
   const safeCarInfo = React.useMemo(() => {
     if (carInfo && carInfo.length > 0) return carInfo;
     const saved = localStorage.getItem('auth_data');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.carInfo || [];
+        return parsed.master_info.car_info || [];
       } catch (e) {
         return [];
       }

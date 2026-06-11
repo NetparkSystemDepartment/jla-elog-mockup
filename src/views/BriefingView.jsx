@@ -47,7 +47,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const requestBody = {
     type: 1,
 // debug only    
-//    key: 1,
+// key: 59,
   };
 
   // 申し送りデータの取得
@@ -87,6 +87,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
             return true;
           });
+
+//console.log('filteredData:', filteredData);
 
           // 最優先: priority(昇順) ➔ key(降順) ➔ detail_key(降順)
           const initialSortedData = filteredData.sort((a, b) => {
@@ -300,7 +302,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   <label style={briefingStyles.label}>ログイン者（記録担当者）</label>
                   <input
                     type="text"
-                    value={user.id || ''}
+                    value={(user.id + user.name) || ''}
                     disabled
                     style={briefingStyles.disabledInput}
                   />
@@ -308,15 +310,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={{...briefingStyles.field, minHeight: '96px'}}>
                   <label style={briefingStyles.label}>自分以外のパトロールメンバー</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-{/*}
-                    <MultiSelectInput
-                      options={exceptLogin}
-                      value={data.members || []}
-                      onChange={(next) => setData({ ...data, members: next })}
-                      inputStyle={briefingStyles.inputMultiStyle}
-                      placeholder="ユーザーID"
-                    />
-*/}
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
                       isSearchable  // サジェスト検索有効
@@ -355,22 +348,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       ))}
                     </select>
                     
-                    {/*
-                    <div style={{ width: '200px' }}>
-                    <Select
-                      isMulti={false}       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
-                      options={carTypeOptions}
-                      value={carTypeOptions.find(option => option.value === data.carType) || null}
-                      onChange={(selectedOption) => {
-                        const nextCarType = selectedOption ? selectedOption.value : null;
-                        setData({ ...data, carType: nextCarType })}}
-                      placeholder="車種名を選択"
-                      noOptionsMessage={() => "見つかりません"}
-                      styles={customSelectStyles}
-                    />
-                    </div>
-                    */}
                     <input type="text" placeholder="No." style={{...briefingStyles.input, width: '50%'}} maxLength={4} inputMode="numeric"
                       value={data.carNo}
                       onChange={e => setData({...data, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")})} />
@@ -380,25 +357,37 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>注意報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-                  {/*}
-                  <MultiSelectInput
-                    options={WARNING_OPTIONS}
-                    value={data.warn || []}
-                    onChange={(next) => setData({ ...data, warn: next })}
-                    inputStyle={briefingStyles.inputMultiStyle}
-                    placeholder="注意報を選択"
-                  />
-                  */}
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
+                      isSearchable={false}
                       options={warningOptions}
                       value={(data.warn || []).map(item => ({ value: item, label: item }))}
+//                      onChange={(selectedOptions) => {
+//                        const nextMembers = (selectedOptions || []).map(option => option.value);
+//                        setData({ ...data, warn: nextMembers });
+//                      }} 
+                      // 6月末版で変更                     
                       onChange={(selectedOptions) => {
-                        const nextMembers = (selectedOptions || []).map(option => option.value);
-                        setData({ ...data, warn: nextMembers });
+                        // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+                        const currentValues = (selectedOptions || []).map(option => option.value);
+  
+                        let updatedValues = currentValues;
+
+                        // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+                        const prevValues = data.warn || [];
+                        const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+                        if (addedValue === 'なし') {
+                          // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                          updatedValues = ['なし'];
+                        } else if (currentValues.includes('なし') && currentValues.length > 1) {
+                          // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                          updatedValues = currentValues.filter(val => val !== 'なし');
+                        }
+
+                        setData({ ...data, warn: updatedValues });
                       }}                      
-                      placeholder="注意報を選択"
+                      placeholder="注意報"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
                     />
@@ -408,25 +397,37 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>警報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-                  {/*
-                  <MultiSelectInput
-                    options={ALERT_OPTIONS}
-                    value={data.alert || []}
-                    onChange={(next) => setData({ ...data, alert: next })}
-                    inputStyle={briefingStyles.inputMultiStyle}
-                    placeholder="警報を選択"
-                  />
-                  */}
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
                       isSearchable={false}  // サジェスト検索有効
                       options={alertOptions}
                       value={(data.alert || []).map(item => ({ value: item, label: item }))}
+                      // onChange={(selectedOptions) => {
+                      //   const nextMembers = (selectedOptions || []).map(option => option.value);
+                      //   setData({ ...data, alert: nextMembers });
+                      // }}                      
+                      // 6月末版で変更                     
                       onChange={(selectedOptions) => {
-                        const nextMembers = (selectedOptions || []).map(option => option.value);
-                        setData({ ...data, alert: nextMembers });
+                        // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+                        const currentValues = (selectedOptions || []).map(option => option.value);
+  
+                        let updatedValues = currentValues;
+
+                        // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+                        const prevValues = data.alert || [];
+                        const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+                        if (addedValue === 'なし') {
+                          // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                          updatedValues = ['なし'];
+                        } else if (currentValues.includes('なし') && currentValues.length > 1) {
+                          // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                          updatedValues = currentValues.filter(val => val !== 'なし');
+                        }
+
+                        setData({ ...data, alert: updatedValues });
                       }}                      
-                      placeholder="警報を選択"
+                      placeholder="警報"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
                     />
@@ -489,20 +490,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       </option>
                     ))}
                   </select>
-                  {/*
-                    <Select
-                      isMulti={false}       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
-                      options={directionOptions}
-                      value={directionOptions.find(option => option.value === data.windDir) || null}
-                      onChange={(selectedOption) => {
-                        const nextCarType = selectedOption ? selectedOption.value : null;
-                        setData({ ...data, windDir: nextCarType })}}
-                      placeholder="風向を選択"
-                      noOptionsMessage={() => "見つかりません"}
-                      styles={customSelectStyles}
-                    />
-                  */}
                 </div>
 
                 <div style={briefingStyles.field}>
