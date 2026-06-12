@@ -15,16 +15,6 @@ import { toast } from 'sonner';
 import { COAST_DATA, ONNA_BEACHES } from '../constantsPublic';
 import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
 
-
-//const COAST_DATA = [
-//  { id: 1, name: '本島北部(西)', kind: 1 }, { id: 2, name: '本島北部(東)', kind: 1 },
-//  { id: 3, name: '恩納村', kind: 1 }, { id: 4, name: '東海岸中部', kind: 1 },
-//  { id: 5, name: '本島中部', kind: 1 }, { id: 6, name: '本島南部', kind: 1 }, { id: 7, name: '座間味村', kind: 2 },
-//  { id: 8, name: '渡嘉敷村', kind: 2 }
-//];
-//const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
-//const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
-
 const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, syncedRecords,
   onSelectBeach, onSelectCoast, onNavigate }) => {
   // 選択されたエリア

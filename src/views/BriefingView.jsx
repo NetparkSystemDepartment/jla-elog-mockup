@@ -11,15 +11,19 @@ import { useSafeCarInfo } from '../useSafeCarInfo';
 import { toast } from 'sonner';
 import Select from 'react-select';
 import { loadWeeklyRecords } from '../api';
+import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
 
 
 // for phase1
-const HANDOVERAREA = ['恩納村'];
+//const HANDOVERAREA = ['恩納村'];
 
 function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   const { logout } = useAuth();
   
+  // エリアを取得
+  const filteredCoasts = useAreaInfo(user.kind);
+
   // 🛠️ ローカルストレージから既存データを読み込む初期化関数
   const [data, setData] = useState(() => {
     const savedData = localStorage.getItem('briefing_data');
@@ -42,6 +46,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   const [noticeList, setNoticeList] = useState([]);
   const [isInfoLoading, setIsInfoLoading] = useState(true);
+  // 申し送り一覧のエリア
+  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // サーバーのBody部に渡すパラメーター（Payload）
   const requestBody = {
@@ -52,7 +58,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   // 申し送りデータの取得
   useEffect(() => {
-//console.log('申し送りデータの取得', requestBody);
+console.log('申し送りデータの取得', requestBody);
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
@@ -141,7 +147,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
     };
 
     fetchNoticeData();
-  }, []);
+  }, [selectedArea]);
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
@@ -172,9 +178,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   //  value: item.order,
   //  label: item.carType
   //}));
-
-  // 申し送り一覧のエリア
-  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // チェックされた行のインデックスを保持
   const [selectedRows, setSelectedRows] = useState([]); 
@@ -576,8 +579,10 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   onChange={(e) => setSelectedArea(e.target.value)}
                 >
                   <option value="">エリア</option>
-                  {HANDOVERAREA.map((area, idx) => (
-                    <option key={idx} value={area}>{area}</option>
+                  {filteredCoasts.map((area) => (
+                  <option key={area.no} value={area.no}>
+                    {area.name}
+                  </option>
                   ))}
                 </select>
                 <ChevronDown size={18} style={briefingStyles.selectIcon} />
