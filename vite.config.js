@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 //const baseConfig = process.env.VERCEL ? '/' : '/p2/';
-const baseConfig = '/p2/';
-//const baseConfig = '/';
+//const baseConfig = '/p2/';
+const baseConfig = '/';
 
 export default defineConfig({
 
