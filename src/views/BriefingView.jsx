@@ -262,6 +262,7 @@ console.log('申し送りデータの取得', requestBody);
       // 現在のページに表示されている行の item.key をすべて集めてStateに入れる
       // ※ item.key が存在しない場合を考慮して item.detail_key などをフォールバックにしています
       const allCurrentKeys = currentHandovers.map(item => item.key || item.detail_key || item.id);
+      //const allCurrentKeys = sortedNotices.map(item => item.key || item.detail_key || item.id);
       setSelectedRows(allCurrentKeys);
     } else {
       // チェックが外されたら、完全に空にして全解除
