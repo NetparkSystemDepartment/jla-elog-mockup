@@ -58,7 +58,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   // 申し送りデータの取得
   useEffect(() => {
-console.log('申し送りデータの取得', requestBody);
+//console.log('申し送りデータの取得', requestBody);
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
@@ -151,13 +151,16 @@ console.log('申し送りデータの取得', requestBody);
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
+//console.log('safeMembers:', safeMembers);
   // ログイン者を除く
-  const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
+//console.log('user.user_id:', user.user_id);
+  //const exceptLogin = safeMembers.filter((member, index) => (member !== user.user_id));
+  const exceptLogin = safeMembers.filter(item => item.user_id !== user.user_id);
 //console.log('exceptLogin:', exceptLogin);
   // react-selectで使えるように
   const loginOptions = exceptLogin.map(item => ({
     value: item,
-    label: item
+    label: item.user_id,
   }));
   const warningOptions = WARNING_OPTIONS.map(item => ({
     value: item,
@@ -224,15 +227,14 @@ console.log('申し送りデータの取得', requestBody);
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // 表示する分だけを切り出す
   const currentHandovers = sortedNotices.slice(indexOfFirstItem, indexOfLastItem);
-
   // ページ変更ハンドラー
   const handlePrev = () => {
     setCurrentPage(prev => Math.max(1, prev - 1));
-    setSelectedRows([]); // ページを切り替えたら選択をクリア
+  //  setSelectedRows([]); // ページを切り替えたら選択をクリア
   };
   const handleNext = () => {
     setCurrentPage(prev => Math.min(totalPages, prev + 1));
-    setSelectedRows([]); // ページを切り替えたら選択をクリア
+  //  setSelectedRows([]); // ページを切り替えたら選択をクリア
   };
 
   // 開始ボタン
@@ -261,8 +263,8 @@ console.log('申し送りデータの取得', requestBody);
     if (e.target.checked) {
       // 現在のページに表示されている行の item.key をすべて集めてStateに入れる
       // ※ item.key が存在しない場合を考慮して item.detail_key などをフォールバックにしています
-      const allCurrentKeys = currentHandovers.map(item => item.key || item.detail_key || item.id);
-      //const allCurrentKeys = sortedNotices.map(item => item.key || item.detail_key || item.id);
+      //const allCurrentKeys = currentHandovers.map(item => item.key || item.detail_key || item.id);
+      const allCurrentKeys = sortedNotices.map(item => item.key || item.detail_key || item.id);
       setSelectedRows(allCurrentKeys);
     } else {
       // チェックが外されたら、完全に空にして全解除
@@ -317,12 +319,20 @@ console.log('申し送りデータの取得', requestBody);
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
                       isSearchable  // サジェスト検索有効
+                      hideSelectedOptions={true}
                       options={loginOptions}
-                      value={(data.members || []).map(item => ({ value: item, label: item }))}
+                      value={(data.members || []).map(item => ({ value: item, label: item.user_id }))}
                       onChange={(selectedOptions) => {
                         const nextMembers = (selectedOptions || []).map(option => option.value);
                         setData({ ...data, members: nextMembers });
-                      }}                      
+                      }}  
+                      isOptionSelected={(option, selectedValues) => {
+                        return selectedValues.some(selectedValue => {
+                          const optionId = option.value.id || option.value['id '];
+                          const selectedId = selectedValue.value.id || selectedValue.value['id '];
+                          return optionId === selectedId;
+                        });
+                      }}                    
                       placeholder="ユーザーID"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
@@ -707,7 +717,7 @@ console.log('申し送りデータの取得', requestBody);
                         ? item.members 
                         : (item.members ? [item.members] : []);
                       const displayMembers = memberArray.slice(0, 2);
-
+                      const memberNamesArray = displayMembers.map(m => m.user_id);
                       return (
                         <div key={idx} style={briefingStyles.tableRow}>
 
@@ -744,8 +754,8 @@ console.log('申し送りデータの取得', requestBody);
                             flex: 1, display: 'flex', flexDirection: 'column', 
                             justifyContent: 'center', fontSize: '12px', lineHeight: '1.4' 
                           }}>
-                            {displayMembers.length > 0 ? (
-                              displayMembers.map((member, mIdx) => (
+                            {memberNamesArray.length > 0 ? (
+                              memberNamesArray.map((member, mIdx) => (
                                 <div key={mIdx}>{member}</div>
                               ))
                             ) : (

@@ -21,7 +21,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
   const [selectedArea, setSelectedArea] = useState({ no: null, name: '' });
   // エリア内のビーチを取得
   const beaches = useBeachInfo(selectedArea.no);
-console.log('beaches:', beaches);
+//console.log('beaches:', beaches);
   
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
   const totalVisitors = 0; 
@@ -30,22 +30,28 @@ console.log('beaches:', beaches);
 
   // 「ビーチを選択」ボタン  
   const handleSelect = (coast) => {
-    onSelectCoast(coast.name);
+
+    if (coast.no === selectedArea.no) {
+      setSelectedArea({no: null, name: ''});
+    }
+    else {
+      onSelectCoast(coast);
 
     // // 恩納村なら、ビーチメニューを開閉 --- phase1 5/E版
     // if (coast.name === '恩納村') {
     //   setIsEnrolledExpanded(!isEnrolledExpanded);
     // }
 
-    // ビーチを取得
-    const targetArea = filteredCoasts.find(item => item.name === coast.name);
-    if (targetArea) {
-      setSelectedArea({
-        no: targetArea.no,
-        name: targetArea.name
-      });
-      setIsEnrolledExpanded(!isEnrolledExpanded);
-    }      
+      // ビーチを取得
+      const targetArea = filteredCoasts.find(item => item.name === coast.name);
+      if (targetArea) {
+        setSelectedArea({
+          no: targetArea.no,
+          name: targetArea.name
+        });
+        setIsEnrolledExpanded(!isEnrolledExpanded);
+      }      
+    }
   };
 
   const CustomInput = React.forwardRef(({ onClick }, ref) => (
@@ -54,6 +60,7 @@ console.log('beaches:', beaches);
 
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
+//console.log('filteredCoasts:', filteredCoasts);
 
   return (
     <div style={container}>
@@ -106,10 +113,14 @@ console.log('beaches:', beaches);
 //            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
 //            const syncedCount = syncedRecords.filter(record => record.isSynced).length;
 //console.log('syncedRecords:', syncedRecords);
+//console.log('coast.name:', coast.name)
 
-            const syncedCount = syncedRecords.length;
+            //const syncedCount = syncedRecords.length;
+            const syncedCount = syncedRecords.filter(item => item.area === coast.name).length;
+//console.log('syncedCount:', syncedCount);            
+//console.log('coast.count:', coast.count);            
 //            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - syncedCount) : UNREGISTEREDBEACH;
-            const unregisteredCount = (UNREGISTEREDBEACH - syncedCount);
+            const unregisteredCount = (coast.count - syncedCount);
             // 選択されているのは今日か
             const isToday = format(today, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
@@ -137,7 +148,7 @@ console.log('beaches:', beaches);
                       const isSynced = syncedRecords.some(item => item.beach === beach.name);
 
                       return (
-                        <button key={beach.name} onClick={() => onSelectBeach(beach.name)} style={{...beachOptionStyle, backgroundColor: isSynced ? '#e5e7eb' : '#f0f9ff'}}>
+                        <button key={beach.name} onClick={() => onSelectBeach(beach)} style={{...beachOptionStyle, backgroundColor: isSynced ? '#e5e7eb' : '#f0f9ff'}}>
                           <span style={{flex:1, textAlign:'left'}}>{beach.name}</span>
                           {isDone && (
   <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -196,7 +207,9 @@ const dateRowStyle = { display: 'flex', overflowX: 'auto', gap: '8px', padding: 
 //const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 //const cardStyle = { backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px' };
 const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '4px' };
-const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
+//const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
+const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px',
+  maxHeight: '135px', overflowY: 'auto' };
 const coastNameTextStyle = { fontSize: '16px', fontWeight: 'bold', color: '#1e293b', flex: '1' };
 const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' };
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };
