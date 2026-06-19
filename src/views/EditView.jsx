@@ -56,10 +56,11 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   //console.log('safeMembers:', safeMembers);
   // ログイン者を除く
   // const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
-  // react-selectで使えるように
-  const loginOptions = safeMembers.map(item => ({
+  const exceptLogin = safeMembers.filter(item => item.user_id !== user.user_id);
+// react-selectで使えるように
+  const loginOptions = exceptLogin.map(item => ({
     value: item,
-    label: item
+    label: item.user_id
   }));
   const warningOptions = WARNING_OPTIONS.map(item => ({
     value: item,
@@ -116,11 +117,10 @@ useEffect(() => {
   if (existingData) {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
     const updatedData = { ...existingData };
-
     // 2. members が存在し、かつ配列の場合のみログイン者を削除する
     if (Array.isArray(existingData.members)) {
 //      updatedData.members = existingData.members.slice(1);
-      updatedData.members = existingData.members.filter(memberId => memberId !== user.id);
+      updatedData.members = existingData.members.filter(item => item.user_id !== user.user_id);
     }
 
     // 3. 加工したデータを State にセットする
@@ -225,8 +225,10 @@ useEffect(() => {
   //  }));
 
     formData.startDate = selectedDate;
-    formData.area = getCoastIdByName(selectedCoast);
-    formData.beach = getBeachIdByName(selectedBeach);
+//    formData.area = getCoastIdByName(selectedCoast);
+//    formData.beach = getBeachIdByName(selectedBeach);
+    formData.area = selectedCoast.no;
+    formData.beach = selectedBeach.no;
     // 保存（indexedDB）処理
     onSave(formData);
   };
@@ -234,8 +236,9 @@ useEffect(() => {
     // 「送信」ボタン
   const handleSendClick = () => {
     formData.startDate = selectedDate;
-    formData.area = getCoastIdByName(selectedCoast);
-    formData.beach = getBeachIdByName(selectedBeach);
+//    formData.area = getCoastIdByName(selectedCoast);
+    formData.area = selectedCoast.no;
+    formData.beach = selectedBeach.no;
     console.log('formData:', formData);
     // 保存（indexedDB）処理
     onSubmit(formData);
@@ -299,9 +302,9 @@ useEffect(() => {
           <span style={logoTextStyle}>記録入力</span>
           <span></span>
         </div>
-        <div style={headerMiddleStyle}>{selectedCoast}</div>
+        <div style={headerMiddleStyle}>{selectedCoast.name}</div>
         <div style={headerBottomStyle}>
-          <h3>{selectedBeach}</h3>
+          <h3>{selectedBeach.name}</h3>
           <button onClick={handleSaveClick} style={saveBtnStyle} >保存して閉じる</button>
           {/*
           <span style={{...doneTextStyle, color: existingData ? "#10b981" : "#ef4444"}}>
@@ -335,12 +338,20 @@ useEffect(() => {
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable  // サジェスト検索有効
+            hideSelectedOptions={true}
             options={loginOptions}
-            value={(formData.members || []).map(item => ({ value: item, label: item }))}
+            value={(formData.members || []).map(item => ({ value: item, label: item.user_id }))}
             onChange={(selectedOptions) => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, members: nextMembers });
             }}                      
+            isOptionSelected={(option, selectedValues) => {
+              return selectedValues.some(selectedValue => {
+                const optionId = option.value.id || option.value['id '];
+                const selectedId = selectedValue.value.id || selectedValue.value['id '];
+                return optionId === selectedId;
+              });
+            }}                    
             placeholder="ユーザーID"
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}

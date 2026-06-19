@@ -20,10 +20,16 @@ export function useAreaInfo(authType) {
       // orderby の昇順（小さい順）で並び替え
       const sorted = [...filtered].sort((a, b) => a.orderby - b.orderby);
 
-      const formatted = sorted.map(item => ({
+      const formatted = sorted.map(item => {
+
+        const beachList = item.beach_info || [];
+
+        return {
         no: item.no,      // id (no) をそのまま no として格納
-        name: item.area   // area を name として格納
-      }));
+        name: item.area,   // area を name として格納
+        count: beachList.length
+        };
+      });
 
       return formatted;    } catch (e) {
       console.error('Failed to parse auth_data', e);

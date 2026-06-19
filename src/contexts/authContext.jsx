@@ -42,6 +42,7 @@ export function AuthProvider({ children }) {
             area: authData.area,
             token: authData.token,
             name: authData.login_name,
+            user_id: authData.id + authData.login_name,
           });
 
           setMembers(authData.members || []);
@@ -98,6 +99,7 @@ export function AuthProvider({ children }) {
           area: data.area,
           token: data.token,
           name: data.login_name,
+          user_id: credentials.id + data.login_name,
         });
 
 //        // tokenをindexedDBに書き込む

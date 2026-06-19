@@ -283,12 +283,12 @@ console.log('formData', formData);
 //  };
 
   // 
-  const handleSelectBeach = (beachName) => {
+  const handleSelectBeach = (beach) => {
   
     // 6/E版で全エリア全ビーチ対応
     //const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
     //if (targetBeaches.includes(beachName)) {
-      setSelectedBeach(beachName);
+      setSelectedBeach(beach);
       setView('edit');
     //}
   };
@@ -398,13 +398,8 @@ console.log('formData', formData);
       );
 
     case 'edit':
- // console.log('selectedDate:', selectedDate);
-//console.log('savedRecords:', savedRecords);
-//console.log('syncedRecords:', syncedRecords);
       const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach);
       const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
-//console.log('foundSyncedRecord:', foundSyncedRecord);
-//console.log('syncedRecoredSeq:', syncedRecoredSeq);
 
       return (
         <EditView

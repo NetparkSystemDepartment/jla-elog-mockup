@@ -40,7 +40,7 @@ function LoginView() {
     else {
 //console.log('１週分のデータをローカルストレージへ');
       const requestBody = {
-        type: 1,
+        type: 2,
       };
 
       const resData = await getinfoApi(requestBody);
@@ -65,13 +65,14 @@ function LoginView() {
         const weeklyData = weeklyFilteredData.map(item => ({
           startDate: item.startDate,
           detail_key: item.detail_key,
+          area: item.area,
           beach: item.beach
         }));
 
         try {
           // ローカルストレージに保存
           localStorage.setItem('weeklyBeachData', JSON.stringify(weeklyData));
-//  console.log(`直近1週間分（${sevenDaysAgoStr}以降）のデータを保存しました（${weeklyData.length}件）`, weeklyData);
+  //console.log(`直近1週間分（${sevenDaysAgoStr}以降）のデータを保存しました（${weeklyData.length}件）`, weeklyData);
         } catch (error) {
           console.error('ローカルストレージへの保存に失敗しました:', error);
         }
