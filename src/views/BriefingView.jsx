@@ -24,7 +24,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
 
-  // 🛠️ ローカルストレージから既存データを読み込む初期化関数
+  // ローカルストレージから既存データを読み込む初期化関数
   const [data, setData] = useState(() => {
     const savedData = localStorage.getItem('briefing_data');
     if (savedData) {
@@ -50,15 +50,21 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // サーバーのBody部に渡すパラメーター（Payload）
-  const requestBody = {
-    type: 1,
-// debug only    
-// key: 59,
-  };
+//   const requestBody = {
+//     type: 1,
+// // debug only    
+// // key: 59,
+//   };
 
   // 申し送りデータの取得
   useEffect(() => {
-//console.log('申し送りデータの取得', requestBody);
+console.log('申し送りデータの取得', selectedArea);
+    if (!selectedArea) return;
+
+    const requestBody = {
+      type: 1,
+      areaNo: Number(selectedArea),
+    };
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
@@ -84,7 +90,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             }
 
             // 除外したいキーワードのリスト
-            const excludeKeywords = ["なし", "特になし"];
+            // 画面定義書_20250618で「特になし」はキーワードから削除
+            //const excludeKeywords = ["なし", "特になし"];
+            const excludeKeywords = ["なし"];
 
             // 前後の空白を削除した上で、リストに含まれていれば除外
             if (excludeKeywords.includes(String(item.handover).trim())) {
@@ -226,7 +234,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // 表示する分だけを切り出す
+// console.log('sortedNotices:', sortedNotices);  
   const currentHandovers = sortedNotices.slice(indexOfFirstItem, indexOfLastItem);
+// console.log('currentHandovers:', currentHandovers);  
   // ページ変更ハンドラー
   const handlePrev = () => {
     setCurrentPage(prev => Math.max(1, prev - 1));
@@ -240,8 +250,15 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   // 開始ボタン
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('briefing_data', JSON.stringify(data));
-    onComplete(data);
+    console.log('data:', data);
+    const briefingData = {
+      ...data,
+      id: user.id,
+      timestamp: Date.now() 
+    }
+    console.log('briefingData:', briefingData);
+    localStorage.setItem('briefing_data', JSON.stringify(briefingData));
+    onComplete(briefingData);
   };
 
   // ソートボタンのハンドラー
@@ -289,7 +306,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
       <header style={briefingStyles.header}>
         <div style={briefingStyles.logoGroup}>
           <div style={briefingStyles.logoCircle}></div>
-          <h1 style={briefingStyles.logoText}>沖縄e-log</h1>
+          <h1 style={briefingStyles.logoText}>沖縄県elogシステム</h1>
         </div>
       </header>
 
@@ -525,26 +542,27 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             {/* メモエリア */}
             <div style={{ marginTop: '20px', paddingTop: '0px' }}>
               <div style={briefingStyles.field}>
-                <label style={briefingStyles.label}>申し送りメモ（申し送り事項に反映する内容を記載）</label>
+                <label style={briefingStyles.label}>メモ</label>
                 <textarea
                   placeholder="100字以内"
                   style={briefingStyles.textarea}
-                  value={data.handoverMemo}
+                  value={data.noteMemo}
                   maxLength={100}
-                  onChange={e => setData({...data, handoverMemo: e.target.value})} />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                  onChange={e => setData({...data, noteMemo: e.target.value})} />
+                {/* 文字数カウンターを表示 */}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
                   fontSize: '11px',
-                  color: data.handoverMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-                  fontWeight: data.handoverMemo.length >= 100 ? 'bold' : 'normal',
+                  color: data.noteMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+                  fontWeight: data.noteMemo.length >= 100 ? 'bold' : 'normal',
                   userSelect: 'none',
                   textAlign: 'right'
                   }}>
-                  {data.handoverMemo.length} / 100
+                  {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              {/* 画面定義書20250617で削除
               <div style={briefingStyles.field}>
                 <label style={briefingStyles.label}>特記メモ（特記事項に反映する内容を記載）</label>
                 <textarea
@@ -554,7 +572,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   maxLength={100}
                   onChange={e => setData({...data, noteMemo: e.target.value})}
                 />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                {/* 文字数カウンターを表示 */}
+                {/*}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
@@ -567,6 +586,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              */}
             </div>
 
             <button type="submit" style={briefingStyles.startButton}>開始する</button>
@@ -711,13 +731,17 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 </div>
 
                 <div style={briefingStyles.tableBody}>
+                    {/*console.log('currentHandovers:', currentHandovers)*/}
                   {currentHandovers.length > 0 ? (
                     currentHandovers.map((item, idx) => {
                       const memberArray = Array.isArray(item.members) 
                         ? item.members 
                         : (item.members ? [item.members] : []);
-                      const displayMembers = memberArray.slice(0, 2);
-                      const memberNamesArray = displayMembers.map(m => m.user_id);
+                      const displayMembers = memberArray.slice(0, 1);
+                      //const memberNamesArray = displayMembers.map(m => m.user_id);
+                      const baseMemberNames = displayMembers.map(m => m.user_id);
+                      const memberNamesArray = [item.login_user, ...baseMemberNames];
+//                      const memberNamesArray = [currentHandovers.login_user, ...displayMembers.map(m => m.user_id)];
                       return (
                         <div key={idx} style={briefingStyles.tableRow}>
 

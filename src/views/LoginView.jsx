@@ -89,7 +89,7 @@ function LoginView() {
       <header style={loginStyles.header}>
         <div style={loginStyles.logoGroup}>
           <div style={loginStyles.logoCircle}></div>
-          <h1 style={loginStyles.logoText}>沖縄e-log</h1>
+          <h1 style={loginStyles.logoText}>沖縄県elogシステム</h1>
         </div>
       </header>
 

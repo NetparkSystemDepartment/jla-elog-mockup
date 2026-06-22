@@ -75,3 +75,27 @@ export function useBeachInfo(areaNo) {
 
   return beachInfo;
 }
+
+// ビーチ名を返す
+export function getNameByBeachNo(areaNo, beachNo) {
+  const saved = localStorage.getItem('auth_data');
+  if (!saved) return '';
+
+  try {
+    const parsed = JSON.parse(saved);
+    const rawAreaInfo = parsed.master_info?.area_info || [];
+
+    // エリア番号で検索
+    const targetArea = rawAreaInfo.find(item => item.no === areaNo);
+    if (!targetArea || !targetArea.beach_info) return '';
+
+    // そのエリアの中で、さらにビーチ番号が一致するものを検索
+    const targetBeach = targetArea.beach_info.find(beach => beach.no === beachNo);
+
+    // 見つかれば beach メンバ（元のデータのプロパティ名）を返す
+    return targetBeach ? targetBeach.beach : '';
+  } catch (e) {
+    console.error('Failed to parse auth_data', e);
+    return '';
+  }
+}

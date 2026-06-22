@@ -9,51 +9,29 @@ import { toast } from 'sonner';
 function HomeView({ user, onNavigate }) {
   const { logout } = useAuth();
 
-//  const showConfirm = () => {
-//    toast('ログアウトしますか？', {
-//      action: {
-//        label: '実行',
-//        onClick: () => {
-//          logout();
-//        },
-//      },
-//      cancel: {
-//        label: 'キャンセル',
-//        onClick: () => console.log('キャンセルされました'),
-//      },
-//    });
-//  };
+  const showConfirm = async () => {
+    // 未送信データがあるかどうかをチェック
+    const hasUnsynced = await hasUnsyncedRecords();
 
-const showConfirm = async () => {
-  // 未送信データがあるかどうかをチェック
-  const hasUnsynced = await hasUnsyncedRecords();
+    // 条件によってメッセージを切り替える
+    const message = hasUnsynced
+      ? <div>未送信のデータがあります。<br />本当にログアウトしてもよいですか？</div>
+      : 'ログアウトしますか？';
 
-  // 条件によってメッセージを切り替える
-  const message = hasUnsynced
-    ? <div>未送信のデータがあります。<br />本当にログアウトしてもよいですか？</div>
-    : 'ログアウトしますか？';
-
-  // 3. トーストを表示
-  toast(message, {
-    action: {
-      label: '実行',
-      onClick: () => {
-        logout();
+    // トーストを表示
+    toast(message, {
+      action: {
+        label: '実行',
+        onClick: () => {
+          logout();
+        },
       },
-    },
-    cancel: {
-      label: 'キャンセル',
-      onClick: () => console.log('キャンセルされました'),
-    },
-  });
-};
-
-//  const handleLogout = () => {
-//    console.log("Logout clicked");
-//    if (logout) {
-//      logout();
-//    }
-//  };
+      cancel: {
+        label: 'キャンセル',
+        onClick: () => console.log('キャンセルされました'),
+      },
+    });
+  };
 
   return (
     <div style={styles.wrapper}>
@@ -62,7 +40,7 @@ const showConfirm = async () => {
         <Menu color="white" size={28} />
         <div style={styles.logoGroup}>
           <div style={styles.logoCircle}></div>
-          <h1 style={styles.logoText}>沖縄e-log</h1>
+          <h1 style={styles.logoText}>沖縄県elogシステム</h1>
         </div>
         <div style={{ width: 28 }}></div> {/* バランス調整用空要素 */}
       </header>
@@ -133,8 +111,3 @@ const styles = {
 };
 
 export default HomeView;
-
-//        <button onClick={() => onNavigate('list')} style={styles.navItemMain}>
-//          <div style={styles.mainCircle}><PencilLine size={28} /></div>
-//          <span style={{marginTop: '40px'}}>新規登録</span>
-//        </button>

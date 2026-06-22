@@ -103,6 +103,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
             const isExpanded = isMatched && beaches.length > 0;
 
             // 未送信のビーチを抽出する
+//console.log('savedRecords:', savedRecords);
             const unsyncedBeaches = savedRecords
 //            const unsyncedBeaches = localWeeklyData
 //              .filter(record => !record.isSynced)

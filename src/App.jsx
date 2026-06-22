@@ -12,6 +12,8 @@ import { useAuth } from './contexts/authContext';
 import { supabase } from './supabaseClient';
 import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
+import { getNameByBeachNo } from './useAreaInfo';
+
 
 import { ONNA_BEACHES } from './constantsPublic';
 
@@ -80,7 +82,7 @@ function App() {
       return {
         ...record, // 元のデータをそのままコピー
 //        startDate: record.startDate,
-        beach: getNameByBeachId(record.beach) // beach部分だけ名前（文字列）に置き換え
+        beach: getNameByBeachNo(record.area, record.beach) // beach部分だけ名前（文字列）に置き換え
       };
     });
 
@@ -312,7 +314,7 @@ console.log('formData', formData);
       windSpeed: data.windSpeed,
       warn: data.warn,
       alert: data.alert,
-      handover: data.handoverMemo,
+      handover: "",
       note: data.noteMemo,
       members: data.members,
       carType: data.carType,
@@ -374,6 +376,8 @@ console.log('formData', formData);
 
     case 'list':
 //console.log('syncedRecords:', syncedRecords);
+//console.log('savedRecords:', savedRecords);
+
       return (
         <>
          <ListView 
@@ -398,7 +402,8 @@ console.log('formData', formData);
       );
 
     case 'edit':
-      const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach);
+      console.log('selectedBeach:', selectedBeach);
+      const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach.name);
       const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
 
       return (
@@ -415,7 +420,7 @@ console.log('formData', formData);
 //         existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
           existingData={(() => {
             // 選択したビーチのデータを取得
-            const foundRecord = savedRecords.find(r => r.beach === selectedBeach);
+            const foundRecord = savedRecords.find(r => r.beach === selectedBeach.name);
 
             // データがある場合、そのデータは送信済みか
             // 未送信ならそのデータを返す
