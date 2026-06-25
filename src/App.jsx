@@ -5,7 +5,7 @@ import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
-import { getAllRecords, saveRecord, getRecordsByDate } from './db';
+import { getAllRecords, saveRecord, getRecordsByDate, cleanupExpiredData } from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from './contexts/authContext';
@@ -36,6 +36,19 @@ function App() {
   });
 
   useEffect(() => {
+    const cleanupIndexedDB = async () => {
+      try {
+        // アプリ起動時にバックグラウンドで古いデータを掃除
+        await cleanupExpiredData();
+      } catch (error) {
+        console.error('indexedDB削除エラー:', error);
+      }
+    };
+
+    cleanupIndexedDB();
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       // ログアウト（userがnull）されたらステートをリセット
       setBriefingData({
@@ -59,6 +72,7 @@ function App() {
   const [baseDate, setBaseDate] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
   const [savedRecords, setSavedRecords] = useState([]);
+  const [targetRecords, setTargetRecords] = useState(null);
   const [recentHandovers, setRecentHandovers] = useState([]);
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
@@ -119,25 +133,23 @@ function App() {
 
 //console.log('syncedRecords:', syncedRecords);
 
-
-
-
   };
 
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
   const handleSave = async (formData) => {
-console.log('formData', formData);
+//console.log('formData', formData);
     const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
     const beachName = selectedBeach;
   
   // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
-  // 2026.6.5 user_idは挿入しない
+  // 2026.6.5 user_idは挿入しない 
     const updatedFormData = {
       ...formData,
 //      members: [user.id, ...formData.members]
     };
 
+    // 6/E版 user_idを別に持つ
     const record = { 
       ...updatedFormData, 
 //      beach: beachName, 
@@ -145,8 +157,9 @@ console.log('formData', formData);
 //      isSynced: false, // サーバー未送信フラグ
       isSynced: 0, // サーバー未送信フラグ
 //      timestamp: Date.now() 
-      token: user.token,
-    };
+//      token: user.token,
+      loginId: user.id,
+};
 //console.log('record', record);
     try {
         const id = await saveRecord(record);
@@ -211,7 +224,7 @@ console.log('formData', formData);
       // axiosInstance が共通でヘッダー（Authorizationなど）を処理する設計、
       // またはサーバー側がセッション/POST内のデータで認証する設計であれば、そのまま record を渡します。
  
-      const { date, id, timestamp, isSynced, 
+      const { date, id, timestamp, isSynced, seq, token,
         ...cleanRecord } = record;
 
 //console.log('cleanRecord:', cleanRecord);
@@ -227,6 +240,31 @@ console.log('formData', formData);
 //console.log('payload:', payload);
       // recordApi.js のデータ登録APIを実行
       const result = await setinfoApi(payload);
+
+      // トークンの有効期限切れ、再ログイン
+      if (result.result === false) {
+        toast.dismiss(toastId);
+        if (result.error_no === 1004) {
+          toast.warning(
+            <div>ログインの有効期限が切れました。<br />再度ログインしてください。</div>
+          );  
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(
+            <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+          );  
+          return;
+        }
+        else {
+          toast.error(
+            <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+          );  
+          return;
+        }
+      }
+
       console.log('サーバー登録成功:', result);
 
       // 4. 送信が成功したら、IndexedDB の該当データを「送信済み(isSynced: true)」に上書き更新
@@ -245,6 +283,9 @@ console.log('formData', formData);
       toast.success('サーバーへ送信・登録しました！', { id: toastId });
 
     } catch (error) {
+
+
+
       console.error('サーバー送信失敗:', error);
 
       // Background Sync を登録する
@@ -284,25 +325,37 @@ console.log('formData', formData);
 //    }
 //  };
 
-  // 
+  // 「ビーチを選択」のハンドラー 
   const handleSelectBeach = (beach) => {
   
-    // 6/E版で全エリア全ビーチ対応
-    //const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
-    //if (targetBeaches.includes(beachName)) {
-      setSelectedBeach(beach);
-      setView('edit');
-    //}
+    // seqインクリメント処理をここで行う
+    const foundRecord = savedRecords.find(r => r.beach === beach.name);
+
+    if (foundRecord) {
+      const updated = { ...foundRecord };
+
+      if (foundRecord.loginId !== user.id) {
+        updated.members = briefingData.members.length === 0
+          ? []
+          : briefingData.members;
+      }
+
+      if (foundRecord.isSynced !== 0) {
+        updated.seq = (Number(foundRecord.seq) || 0) + 1;
+      }
+
+      setTargetRecords(updated);
+    }
+    else {
+      setTargetRecords([]);
+    }
+
+    setSelectedBeach(beach);
+    setView('edit');
   };
 
-  // 開始
+  // ブリーフィング画面「開始」ボタンハンドラー
   const handleBriefingComplete = (data) => {
-//    if (data.handoverMemo === null || data.handoverMemo ==="") {
-//      data.handoverMemo = "なし";
-//    }
-//    if (data.noteMemo === null || data.noteMemo ==="") {
-//      data.noteMemo = "なし";
-//    }
     const mappedData = {
       // EditView.jsx の initialFormData のキーに合わせる
       tide: data.tide,
@@ -370,10 +423,10 @@ console.log('formData', formData);
           user={user} 
           onComplete={handleBriefingComplete} 
           recentHandovers={recentHandovers}
-          profileList={profileList}
         />
       );
 
+    // ---- 新規登録画面 ---- 
     case 'list':
 //console.log('syncedRecords:', syncedRecords);
 //console.log('savedRecords:', savedRecords);
@@ -401,8 +454,12 @@ console.log('formData', formData);
         />
       );
 
+    // ---- ログ入力画面 ---- 
     case 'edit':
-      console.log('selectedBeach:', selectedBeach);
+//      console.log('selectedBeach:', selectedBeach);
+//      console.log('savedRecords:', savedRecords);
+//      console.log('syncedRecords:', syncedRecords);
+//      console.log('targetRecords:', targetRecords);
       const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach.name);
       const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
 
@@ -412,40 +469,23 @@ console.log('formData', formData);
           selectedCoast={selectedCoast} 
           selectedBeach={selectedBeach}
           selectedDate={format(selectedDate, 'yyyy-MM-dd')}
-//          selectedDate={selectedDate} 
           onSave={handleSave}
           onSubmit={handleSubmit}
           onBack={() => setView('list')}
-          // --- 重要: 既存データがない場合、ブリーフィングデータを初期値として渡す ---
-//         existingData={savedRecords.find(r => r.beach === selectedBeach) || briefingData}
           existingData={(() => {
-            // 選択したビーチのデータを取得
-            const foundRecord = savedRecords.find(r => r.beach === selectedBeach.name);
-
-            // データがある場合、そのデータは送信済みか
-            // 未送信ならそのデータを返す
-//            if (foundRecord && !foundRecord.isSynced) {
-            if (foundRecord && foundRecord.isSynced === 0) {
-              return foundRecord;
+            if (Object.keys(targetRecords).length > 0) {
+              return targetRecords;
             }
-
-            // データがない、または送信済みの場合
-            // 新規データ扱いにする
-            // データがあればそのseqに+1、なければ1にする
-//            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1;
-            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1 + syncedRecoredSeq;
-
-            return {
-              ...briefingData,
-                seq: nextSeq,
-                unpatrolled: false,      // undefined対策
-                id: undefined,           // IndexedDBで別レコードとして新規保存させるため、IDをクリアする
-//                isSynced: false          // 新しいレコードなので未送信にする
-                isSynced: 0          // 新しいレコードなので未送信にする
-            };
-          })()}
-          profileList={profileList}
-          seq={1}
+            else {            
+              // データがない場合
+              return {
+                ...briefingData,
+                  seq: 1,
+                  unpatrolled: false,   // undefined対策
+                  id: undefined,        // IndexedDBで別レコードとして新規保存させるため、IDをクリアする
+                  isSynced: 0           // 新しいレコードなので未送信にする
+              };
+          }})()}
         />
       );
 

@@ -12,12 +12,14 @@ import { toast } from 'sonner';
 import Select from 'react-select';
 import { loadWeeklyRecords } from '../api';
 import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
+import oslLogo from '../assets/ola-S.png';
+
 
 
 // for phase1
 //const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
+function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
   const { logout } = useAuth();
   
@@ -58,7 +60,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   // 申し送りデータの取得
   useEffect(() => {
-console.log('申し送りデータの取得', selectedArea);
+//console.log('申し送りデータの取得', selectedArea);
     if (!selectedArea) return;
 
     const requestBody = {
@@ -74,11 +76,26 @@ console.log('申し送りデータの取得', selectedArea);
 //console.log('resData:', resData);      
 
         // トークンの有効期限切れ、利用時間外、再ログイン
-        if (resData.result === false &&
-          (resData.error_no === 1002 || resData.error_no === 1004 || resData.error_no === 1005) 
-        ) {
-          toast.warning('再度ログインしてください。');
-          logout();
+        if (resData.result === false) {
+          if (resData.error_no === 1004) {
+            toast.warning(
+              <div>ログインの有効期限が切れました。<br />再度ログインしてください。</div>
+            );  
+            logout();
+            return;
+          }
+          if (resData.error_no === 1005) {
+            toast.warning(
+              <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+            );  
+            return;
+          }
+          else {
+            toast.error(
+              <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+            );  
+            return;
+          }
         }
 
         if (resData && resData.data) {
@@ -250,13 +267,11 @@ console.log('申し送りデータの取得', selectedArea);
   // 開始ボタン
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('data:', data);
     const briefingData = {
       ...data,
       id: user.id,
       timestamp: Date.now() 
     }
-    console.log('briefingData:', briefingData);
     localStorage.setItem('briefing_data', JSON.stringify(briefingData));
     onComplete(briefingData);
   };
@@ -305,7 +320,7 @@ console.log('申し送りデータの取得', selectedArea);
       {/* 統一ヘッダー */}
       <header style={briefingStyles.header}>
         <div style={briefingStyles.logoGroup}>
-          <div style={briefingStyles.logoCircle}></div>
+          <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           <h1 style={briefingStyles.logoText}>沖縄県elogシステム</h1>
         </div>
       </header>
@@ -322,7 +337,7 @@ console.log('申し送りデータの取得', selectedArea);
               <div style={briefingStyles.column}>
                 {/* ログイン者（記録担当者）を追加 2026.5.18 */}
                 <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>ログイン者（記録担当者）</label>
+                  <label style={briefingStyles.label}>ログインユーザー（記録担当者）</label>
                   <input
                     type="text"
                     value={(user.id + user.name) || ''}
@@ -643,23 +658,6 @@ console.log('申し送りデータの取得', selectedArea);
           </div>
         </div>
 
-        {/* ★ selectedArea の有無で表示を切り替える */}
-        {!selectedArea ? (
-          // 【初期表示：エリアが選ばれていない場合】
-          <div style={{ 
-            padding: '40px 20px', 
-            textAlign: 'center', 
-            color: '#64748b', 
-            backgroundColor: '#f8fafc', 
-            borderRadius: '8px',
-            border: '1px dashed #cbd5e1',
-            fontSize: '14px'
-          }}>
-            <span>エリアを選択してください。</span>
-          </div>
-        ) : (
-          // 【エリアが選択された場合：一覧とページネーターを表示】
-          <>
             <div style={briefingStyles.table}>
                 <div style={briefingStyles.tableHeader}>
 
@@ -729,7 +727,24 @@ console.log('申し送りデータの取得', selectedArea);
                   <div style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>申し送り事項</div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>パトロールメンバー</div>
                 </div>
-
+                  </div>
+        {/* ★ selectedArea の有無で表示を切り替える */}
+        {!selectedArea ? (
+          // 【初期表示：エリアが選ばれていない場合】
+          <div style={{ 
+            padding: '40px 20px', 
+            textAlign: 'center', 
+            color: '#64748b', 
+            backgroundColor: '#f8fafc', 
+            borderRadius: '8px',
+            border: '1px dashed #cbd5e1',
+            fontSize: '14px'
+          }}>
+            <span>エリアを選択してください。</span>
+          </div>
+        ) : (
+          // 【エリアが選択された場合：一覧とページネーターを表示】
+          <>
                 <div style={briefingStyles.tableBody}>
                     {/*console.log('currentHandovers:', currentHandovers)*/}
                   {currentHandovers.length > 0 ? (
@@ -795,7 +810,6 @@ console.log('申し送りデータの取得', selectedArea);
                     </div>
                   )}
                 </div>
-              </div>
 
               {/* ページネーターもエリア選択時のみ一緒に表示する */}
               <div style={briefingStyles.pagination}>
@@ -835,7 +849,7 @@ const briefingStyles = {
   },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '4px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   

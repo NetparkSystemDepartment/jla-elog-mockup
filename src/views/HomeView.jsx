@@ -6,6 +6,9 @@ import { hasUnsyncedRecords } from '../db';
 
 import { toast } from 'sonner';
 
+import oslLogo from '../assets/ola-S.png';
+import oslBigLogo from '../assets/ola.png';
+
 function HomeView({ user, onNavigate }) {
   const { logout } = useAuth();
 
@@ -39,22 +42,26 @@ function HomeView({ user, onNavigate }) {
       <header style={styles.header}>
         <Menu color="white" size={28} />
         <div style={styles.logoGroup}>
-          <div style={styles.logoCircle}></div>
+          <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           <h1 style={styles.logoText}>沖縄県elogシステム</h1>
         </div>
         <div style={{ width: 28 }}></div> {/* バランス調整用空要素 */}
       </header>
 
       <main style={styles.main}>
-        {/* お知らせPickUp */}
-        <section style={styles.pickupCard}>
-          {/*<h2 style={styles.cardTitle}>お知らせPickUp</h2>*/}
-        </section>
 
-        {/* 集計データ領域 */}
-        <section style={styles.statsCard}>
-        </section>
+        {/* スペーサー */}
+        <div style={{ flex: 1 }} />
 
+        {/* ロゴ表示エリア */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <img src={oslBigLogo} alt="OLS logo" style={{ width: '400px', height: 'auto' }} />
+        </div>
+
+        {/* スペーサー */}
+        <div style={{ flex: 1 }} />
+
+        {/* ログアウトボタン */}
         <button onClick={showConfirm} style={styles.logoutButton}>
           <span>ログアウト</span>
         </button>
@@ -77,7 +84,7 @@ function HomeView({ user, onNavigate }) {
         </button>
         {/*<button onClick={() => onNavigate('records')} style={styles.navItem}>*/}
         <button style={styles.navItem}>
-          <FileText size={24} /><span>記録一覧</span>
+          <FileText size={24} /><span>ログデータ</span>
         </button>
         <button style={styles.navItem}>
           <Megaphone size={24} /><span>お知らせ</span>
@@ -92,10 +99,10 @@ const styles = {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '4px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: 'white', fontSize: '20px', fontWeight: 'bold' },
-  main: { padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '100px', overflowY: 'auto',
+  main: { padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '20px', overflowY: 'auto',
   },
   pickupCard: { backgroundColor: 'white', borderRadius: '24px 24px 24px 24px', padding: '20px', minHeight: '150px' },
   statsCard: { backgroundColor: 'white', borderRadius: '24px', padding: '20px', flex: 1 },

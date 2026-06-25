@@ -140,11 +140,12 @@ export function AuthProvider({ children }) {
     // ローカルストレージを削除
     //localStorage.removeItem('token');
     localStorage.removeItem('auth_data');
-    localStorage.removeItem('briefing_data');
+    //localStorage.removeItem('briefing_data');
     localStorage.removeItem('weeklyBeachData');
 
     // indexedDBを削除
-    deleteRecords();
+    // indexedDBは7日間保存する
+    //deleteRecords();
 
     setUser(null);
     setCarInfo([]);

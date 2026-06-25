@@ -13,7 +13,7 @@ import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Construction, Calendar } from 'lucide-react';
 import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
-  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS } from '../constants';
+  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS, FEATURE_OPTIONS } from '../constants';
 import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
 // useNetworkState	ブラウザのネットワーク接続の状態を追跡する
 import { useNetworkState } from 'react-use';
@@ -25,7 +25,7 @@ import { useSafeMembers } from '../useSafeMembers';
 // 車種名
 import { useSafeCarInfo } from '../useSafeCarInfo';
 
-const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
+//const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 
 const initialFormData = {
   startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', windSpeedDetail: '', tide: '', 
@@ -35,13 +35,11 @@ const initialFormData = {
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList, seq}) => {
-//  const [formData, setFormData] = useState({startDate: selectedDate}, initialFormData);
-//console.log('selectedDate:', selectedDate);
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
   startDate: selectedDate,
-  seq: seq,
+  seq: existingData.seq,
 });
 
   // ネットワーク状態
@@ -142,11 +140,6 @@ useEffect(() => {
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
   
-  // 海岸名からidを返す
-  const getCoastIdByName = (name) => COAST_DATA.find((c) => c.name === name)?.id;
-  // ビーチ名からidを返す
-  const getBeachIdByName = (name) => ONNA_BEACHES.find((c) => c.name === name)?.id;
-
   // 必須入力のチェック
   const isFormValid = () => {
     // メンバーは共通必須
@@ -206,8 +199,6 @@ useEffect(() => {
     const newErrors = {};
 
     formData.startDate = selectedDate;
-//    formData.area = getCoastIdByName(selectedCoast);
-//    formData.beach = getBeachIdByName(selectedBeach);
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
     // 保存（indexedDB）処理
@@ -217,11 +208,9 @@ useEffect(() => {
     // 「送信」ボタン
   const handleSendClick = () => {
     formData.startDate = selectedDate;
-//    formData.area = getCoastIdByName(selectedCoast);
     formData.area = selectedCoast.no;
-    console.log('selectedBeach:', selectedBeach);
     formData.beach = selectedBeach.no;
-    console.log('formData:', formData);
+//    console.log('formData:', formData);
     // 保存（indexedDB）処理
     onSubmit(formData);
   }
@@ -646,7 +635,7 @@ useEffect(() => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, feature: nextMembers });
             }}                      
-            placeholder="特徴"
+            placeholder=""
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
@@ -801,7 +790,7 @@ useEffect(() => {
             </div>                  
         </InputTile>
 
-        <InputTile label="申し送り事項" icon={HandHelping} isExpandable={true}>
+        <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}>
           <textarea
             value={formData.handover}
             maxLength={100}
@@ -863,8 +852,8 @@ useEffect(() => {
 
         {/* パトロール終了時刻 */}
         <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...inputStyle, ...(errors.endTime ? errorInput : {})}}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
               value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
           </div>
         </InputTile>
