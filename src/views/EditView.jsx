@@ -839,7 +839,7 @@ useEffect(() => {
         </InputTile>
 
         {/* 空欄（位置合わせ） */}
-        <InputTile isExpandable={true}>
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
         </InputTile>
 
         {/* 画像のアップロード */}
@@ -847,7 +847,7 @@ useEffect(() => {
         </InputTile>
 
         {/* 空欄（位置合わせ） */}
-        <InputTile isExpandable={true}>
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
         </InputTile>
 
         {/* パトロール終了時刻 */}

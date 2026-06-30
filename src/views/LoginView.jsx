@@ -214,7 +214,7 @@ function LoginView() {
 
           <p style={loginStyles.contactText}>
             ログインIDに関するお問い合わせは、沖縄LS協会e-log担当<br />
-            (090-0000-0000)までご連絡ください。
+            (098-800-2574)までご連絡ください。
           </p>
 
           <div style={loginStyles.footer}>
