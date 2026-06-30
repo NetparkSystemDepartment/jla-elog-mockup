@@ -59,3 +59,5 @@ export const PRIORITY_OPTIONS = [
   { id: 1, label: '中' },
   { id: 2, label: '低' },
 ];
+
+export const FEATURE_OPTIONS = ['遊泳', 'ビーチ', 'スノーケル', '釣り', '磯遊び', 'SUP', 'カヤック', 'ダイビング', 'サーフィン', 'その他'];

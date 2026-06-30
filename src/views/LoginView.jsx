@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { User, Lock, AlertCircle } from 'lucide-react';
+import { User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 // Context API を使用する
 import { useAuth } from '../contexts/authContext';
 import { getinfoApi } from '../api/recordApi';
+import oslLogo from '../assets/ola-S.png';
 
 function LoginView() {
   //const { login } = useAuth(); // Contextからlogin関数を取り出す
@@ -11,6 +12,8 @@ function LoginView() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(''); // エラーメッセージ用の状態
+  // パスワードマスク状態
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +41,48 @@ function LoginView() {
       setError(result.message);
     }
     else {
+      // Local Strageのブリーフィングデータ
+      // 昨日以前の日付ならば削除
+      // 当日でもログイン者
+      const savedData = localStorage.getItem('briefing_data');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+
+          // 今日の日付かどうか判断
+          const isExist = Boolean(parsed.timestamp);
+          let isToday = false;
+          if (isExist) {
+            const savedTimestamp = Number(parsed.timestamp);
+            const savedDate = new Date(savedTimestamp);
+            const today = new Date();
+
+            isToday = 
+              savedDate.getFullYear() === today.getFullYear() &&
+              savedDate.getMonth() === today.getMonth() &&
+              savedDate.getDate() === today.getDate();
+          }
+          if (isExist) {
+            if (!isToday) {
+              // Local Strageを削除
+              localStorage.removeItem('briefing_data');
+              console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
+            }
+
+            const savedLogin = parsed.id || []; 
+            if ( savedLogin !== loginId) {
+              parsed.id = "" 
+              parsed.members = [];
+              localStorage.setItem('briefing_data', JSON.stringify(parsed));
+      
+              console.log('Local Storageのbriefing_dataのidとmembersをクリアしました（ログイン者違い）');              
+            }  
+          }
+        } catch (e) {
+          console.error('ローカルストレージのデータ解析に失敗:', e);
+        }
+      }
+
 //console.log('１週分のデータをローカルストレージへ');
       const requestBody = {
         type: 2,
@@ -88,8 +133,8 @@ function LoginView() {
     <div style={loginStyles.wrapper}>
       <header style={loginStyles.header}>
         <div style={loginStyles.logoGroup}>
-          <div style={loginStyles.logoCircle}></div>
-          <h1 style={loginStyles.logoText}>沖縄e-log</h1>
+          <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+          <h1 style={loginStyles.logoText}>沖縄県elogシステム</h1>
         </div>
       </header>
 
@@ -99,7 +144,7 @@ function LoginView() {
           <form onSubmit={handleSubmit}>
             <div style={loginStyles.inputContainer}>
               <label style={loginStyles.label}>
-                ユーザーID{isAdmin ? '' : '（記録担当者）'}
+                ログインID（記録担当者）
               </label>
               <div style={loginStyles.inputWrapper}>
                 <User size={18} style={loginStyles.icon} />
@@ -107,7 +152,7 @@ function LoginView() {
                   type="text"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  placeholder="ユーザーID"
+                  placeholder="ログインID"
                   style={loginStyles.input}
                 />
               </div>
@@ -119,12 +164,22 @@ function LoginView() {
                 <div style={loginStyles.inputWrapper}>
                   <Lock size={18} style={loginStyles.icon} />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="パスワード"
-                    style={loginStyles.input}
+                    style={{
+                      ...loginStyles.input,
+                      paddingRight: '40px' // アイコンと文字が重ならないように右側に余白を作ります
+                    }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={loginStyles.eyeButton}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             )}
@@ -158,8 +213,8 @@ function LoginView() {
           </form>
 
           <p style={loginStyles.contactText}>
-            ユーザーIDに関するお問い合わせは、沖縄LS協会e-log担当<br />
-            (090-0000-0000)までご連絡ください。
+            ログインIDに関するお問い合わせは、沖縄LS協会e-log担当<br />
+            (098-800-2574)までご連絡ください。
           </p>
 
           <div style={loginStyles.footer}>
@@ -186,7 +241,7 @@ const loginStyles = {
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
   },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '4px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   container: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', 
@@ -217,7 +272,9 @@ const loginStyles = {
   loginButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', marginBottom: '30px' },
   contactText: { fontSize: '11px', color: '#4b5563', textAlign: 'center', lineHeight: '1.6', marginBottom: '25px' },
   footer: { borderTop: '1px solid #f3f4f6', paddingTop: '20px', textAlign: 'center' },
-  switchButton: { background: 'none', border: 'none', color: '#1d4ed8', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer' }
+  switchButton: { background: 'none', border: 'none', color: '#1d4ed8', fontSize: '13px', textDecoration: 'underline', cursor: 'pointer' },
+  eyeButton: { position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', color: '#666', padding: '4px', outline: 'none', },
 };
 
 export default LoginView;

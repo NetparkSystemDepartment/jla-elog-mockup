@@ -13,7 +13,7 @@ import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Construction, Calendar } from 'lucide-react';
 import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
-  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS } from '../constants';
+  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS, FEATURE_OPTIONS } from '../constants';
 import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
 // useNetworkState	ブラウザのネットワーク接続の状態を追跡する
 import { useNetworkState } from 'react-use';
@@ -25,23 +25,21 @@ import { useSafeMembers } from '../useSafeMembers';
 // 車種名
 import { useSafeCarInfo } from '../useSafeCarInfo';
 
-const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
+//const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
 
 const initialFormData = {
-  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', tide: '', 
+  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', windSpeedDetail: '', tide: '', 
   highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '', 
   wave: '', warn: '', alert: '', visitors: '', feature: '', 
   jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: '',
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList, seq}) => {
-//  const [formData, setFormData] = useState({startDate: selectedDate}, initialFormData);
-//console.log('selectedDate:', selectedDate);
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
   startDate: selectedDate,
-  seq: seq,
+  seq: existingData.seq,
 });
 
   // ネットワーク状態
@@ -78,16 +76,6 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   
   // 車両名
   const safeCarInfo = useSafeCarInfo();
-  //console.log('safeCarInfo:', safeCarInfo);
-  
-  //  const handleToggle = () => {
-//    const nextStatus = !isUnpatrolled;
-//    setIsUnpatrolled(nextStatus);
-//
-//    // エラーオブジェクトをクリア
-//    setErrors({});
-//    
-//  }; 
 
   //
   const handleToggle = () => {
@@ -131,13 +119,6 @@ useEffect(() => {
   }
 }, [existingData]);
 
-// useEffect(() => {
-//  setFormData(prev => ({
-//    ...prev,
-//    startDate: selectedDate
-//  }));
-//}, [selectedDate]);
-
   // 全ての入力を削除（モックアップのみ）
   const handleClear = () => {
     toast.warning('入力内容をすべて消去しますか？', {
@@ -159,58 +140,56 @@ useEffect(() => {
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
   
-  // 海岸名からidを返す
-  const getCoastIdByName = (name) => COAST_DATA.find((c) => c.name === name)?.id;
-  // ビーチ名からidを返す
-  const getBeachIdByName = (name) => ONNA_BEACHES.find((c) => c.name === name)?.id;
-
+  // 必須入力のチェック
   const isFormValid = () => {
-  // メンバーは共通必須
-  const hasMembers = formData.members?.length > 0;
+    // メンバーは共通必須
+    const hasMembers = formData.members?.length > 0;
 
-  if (unpatrolled === true) {
-    return (
-      hasMembers &&
-      !!formData.note?.trim()
-    );
-  }
+    // Unpatroll時はメモのみ必須
+    if (unpatrolled === true) {
+      return (
+//        hasMembers &&
+        !!formData.note?.trim()
+      );
+    }
 
-  // 数値フィールド（0 を有効値として許容）
-  const numericFields = [
-    formData.weather,
-    formData.current,
-    formData.waveOuter,
-    formData.wave,
-    formData.tide,
-    formData.windSpeed,
-    formData.visitors,
-    formData.jpWarning,
-    formData.forWarning,
-    formData.jpTourist,
-    formData.forTourist,
-  ].every(v => v != null && v !== '');
+    // 数値フィールド（0 を有効値として許容）
+    const numericFields = [
+      formData.weather,
+      formData.current,
+      formData.waveOuter,
+      formData.wave,
+      formData.tide,
+      formData.windSpeed,
+      formData.windSpeedDetail,
+      formData.visitors,
+      formData.jpWarning,
+      formData.forWarning,
+      formData.jpTourist,
+      formData.forTourist,
+    ].every(v => v != null && v !== '');
 
-  // 文字列・時刻フィールド（空文字を弾く）
-  const textFields = [
-    formData.startTime,
-    formData.endTime,
-    formData.highTideTime,
-    formData.highTide,   // ← 数値なら上のnumericFieldsへ移動
-    formData.lowTideTime,
-    formData.lowTide,    // ← 同上
-    formData.windDir,
-    formData.windDirDetail,
-    formData.warn,
-    formData.feature,
-    formData.alert,
-    formData.carType,
-    formData.carNo,
-    formData.handover,
-    formData.note,
-  ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
+    // 文字列・時刻フィールド（空文字を弾く）
+    const textFields = [
+      formData.startTime,
+      formData.endTime,
+      formData.highTideTime,
+      formData.highTide,   // ← 数値なら上のnumericFieldsへ移動
+      formData.lowTideTime,
+      formData.lowTide,    // ← 同上
+      formData.windDir,
+      formData.windDirDetail,
+      formData.warn,
+      formData.feature,
+      formData.alert,
+      formData.carType,
+      formData.carNo,
+      formData.handover,
+      formData.note,
+    ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
 
-  return hasMembers && numericFields && textFields;
-};
+    return hasMembers && numericFields && textFields;
+  };
 
   const isValid = isFormValid();
 //console.log('isValid:', isValid);
@@ -219,14 +198,7 @@ useEffect(() => {
   const handleSaveClick = () => {
     const newErrors = {};
 
-  //  setFormData((prev) => ({
-  //    ...prev,
-  //    members: [user.id, ...prev.members]
-  //  }));
-
     formData.startDate = selectedDate;
-//    formData.area = getCoastIdByName(selectedCoast);
-//    formData.beach = getBeachIdByName(selectedBeach);
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
     // 保存（indexedDB）処理
@@ -236,10 +208,9 @@ useEffect(() => {
     // 「送信」ボタン
   const handleSendClick = () => {
     formData.startDate = selectedDate;
-//    formData.area = getCoastIdByName(selectedCoast);
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
-    console.log('formData:', formData);
+//    console.log('formData:', formData);
     // 保存（indexedDB）処理
     onSubmit(formData);
   }
@@ -264,7 +235,7 @@ useEffect(() => {
         }}
         readOnly // 文字入力を防ぎ、クリックでカレンダーを開くようにする
       />
-      {/* ★2. アイコンを絶対配置 */}
+      {/* アイコンを絶対配置 */}
       <Calendar 
         size={20}
         style={{
@@ -283,11 +254,6 @@ useEffect(() => {
   const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
   //const dailySeq = 1
 
-// label="パトロール開始時刻　パトロール終了時刻" icon={Clock}
-//            <div className={styles.labelBaseStyle}>
-//              <Clock size={12} style={{ marginRight: 4 }} /><label>パトロール終了時刻</label>
-//            </div>
-
   const isDisabled = !Boolean(isValid) || !netState.online;
 //console.log('isDisabled:', isDisabled);
 
@@ -299,7 +265,7 @@ useEffect(() => {
         <div style={headerTopStyle}>
           {/*<div className={styles.dummyStyle} ></div>*/}
           <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
-          <span style={logoTextStyle}>記録入力</span>
+          <span style={logoTextStyle}>ログ入力</span>
           <span></span>
         </div>
         <div style={headerMiddleStyle}>{selectedCoast.name}</div>
@@ -359,17 +325,11 @@ useEffect(() => {
 
         </InputTile>
 
-        {/* パトロール開始時刻、終了時刻、天候 */}
-        <InputTile isExpandable={true}>
-          <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
-            <Clock size={12} style={{ marginRight: 4 }} /><label style={{...labelLeftyStyle, fontSize: '12px' }}>パトロール開始時刻</label>
-            <Clock size={12} style={{ marginRight: 4 }} /><label style={{...labelLeftyStyle, fontSize: '12px' }}>パトロール終了時刻</label>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...inputStyle, ...(errors.startTime ? errorInput : {})}}
+        {/* パトロール開始時刻、終了時刻、天候　→　終了時刻は画面最下部へ移動 */}
+        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
               value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
-            <input type="time" style={{...inputStyle, ...(errors.endTime ? errorInput : {})}}
-              value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
           </div>
           <div style={labelBaseStyle}>
             <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
@@ -598,16 +558,30 @@ useEffect(() => {
           </div>
         </InputTile>
 
-        {/* 利用者数 */}
-        <InputTile label="利用者数" icon={Users}>
-          <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
-              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
-            <label style={unitTextStyle}>名</label>
+        {/* 風速（現地） */}
+        <InputTile label="風速（現地）" icon={Gauge}>
+          <div style={radioFlexStyle}>
+            {WIND_SPEED_OPTIONS.map(opt => (
+              <button 
+                key={opt.id} // keyには一意のidを指定
+                type="button" // フォームの意図しない送信を防ぐために明示
+                onClick={() => {
+                  // idを状態（formData）に保存
+                  setFormData({ ...formData, windSpeedDetail: opt.id });
+                  if (errors.windSpeedDetail) {
+                    setErrors({ ...errors, windSpeedDetail: null });
+                  }
+                }} 
+                style={{
+                  ...radioBtnStyle, 
+                  borderColor: errors.windSpeedDetail ? '#ef4444' : (formData.windSpeedDetail === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.windSpeedDetail === opt.id ? '#e0f2fe' : '#fff', 
+                  color: formData.windSpeedDetail === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label} {/* 画面表示はlabelを使用 */}
+              </button>
+            ))}
           </div>
         </InputTile>
 
@@ -661,7 +635,7 @@ useEffect(() => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, feature: nextMembers });
             }}                      
-            placeholder="特徴"
+            placeholder=""
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
@@ -749,8 +723,8 @@ useEffect(() => {
           </div>
         </InputTile>
 
-        {/* 車両情報、申し送り事項 */}
-        <InputTile label="車両情報" icon={Car} isExpandable={true}>
+        {/* 車両情報、申し送り事項　→　使用車両に変更 */}
+        <InputTile label="使用車両" icon={Car} isExpandable={true}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <select 
                 style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
@@ -778,8 +752,21 @@ useEffect(() => {
           </div>
         </InputTile>
           
-        {/* 特記事項（応急手当・救助・その他） */}
-          <InputTile label="特記事項（応急手当・救助・その他）" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'} >
+        {/* 利用者数 */}
+        <InputTile label="利用者数" icon={Users}>
+          <div style={inputFlexStyle}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
+              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+        </InputTile>
+
+        {/* 特記事項（応急手当・救助・その他）　→　メモに変更 */}
+          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'} >
           <textarea
             value={formData.note}
             maxLength={100}
@@ -803,7 +790,7 @@ useEffect(() => {
             </div>                  
         </InputTile>
 
-        <InputTile label="申し送り事項" icon={HandHelping} isExpandable={true}>
+        <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}>
           <textarea
             value={formData.handover}
             maxLength={100}
@@ -851,8 +838,24 @@ useEffect(() => {
           </div>
         </InputTile>
 
-        {/* 特記事項（応急手当・救助・その他） */}
-        <InputTile label="画像のアップロード）" icon={FileUp} isExpandable={true}>
+        {/* 空欄（位置合わせ） */}
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
+        </InputTile>
+
+        {/* 画像のアップロード */}
+        <InputTile label="画像のアップロード" icon={FileUp} isExpandable={true}>
+        </InputTile>
+
+        {/* 空欄（位置合わせ） */}
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
+        </InputTile>
+
+        {/* パトロール終了時刻 */}
+        <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
+              value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
+          </div>
         </InputTile>
 
       </main>
@@ -896,7 +899,7 @@ const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyConten
 const inputMultiStyle = { padding: '4px', borderRadius: '4px', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6' };
 const inputNumericStyle = { width: '80%', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6', textAlign: 'right' };
 const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
-const inputNoteStyle = { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '24px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
+const inputNoteStyle = { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '60px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
 const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' };
 const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 //const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '4px' };

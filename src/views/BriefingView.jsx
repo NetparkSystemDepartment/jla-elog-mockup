@@ -12,19 +12,21 @@ import { toast } from 'sonner';
 import Select from 'react-select';
 import { loadWeeklyRecords } from '../api';
 import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
+import oslLogo from '../assets/ola-S.png';
+
 
 
 // for phase1
 //const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
+function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
   const { logout } = useAuth();
   
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
 
-  // 🛠️ ローカルストレージから既存データを読み込む初期化関数
+  // ローカルストレージから既存データを読み込む初期化関数
   const [data, setData] = useState(() => {
     const savedData = localStorage.getItem('briefing_data');
     if (savedData) {
@@ -50,15 +52,21 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // サーバーのBody部に渡すパラメーター（Payload）
-  const requestBody = {
-    type: 1,
-// debug only    
-// key: 59,
-  };
+//   const requestBody = {
+//     type: 1,
+// // debug only    
+// // key: 59,
+//   };
 
   // 申し送りデータの取得
   useEffect(() => {
-//console.log('申し送りデータの取得', requestBody);
+//console.log('申し送りデータの取得', selectedArea);
+    if (!selectedArea) return;
+
+    const requestBody = {
+      type: 1,
+      areaNo: Number(selectedArea),
+    };
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
@@ -68,11 +76,26 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 //console.log('resData:', resData);      
 
         // トークンの有効期限切れ、利用時間外、再ログイン
-        if (resData.result === false &&
-          (resData.error_no === 1002 || resData.error_no === 1004 || resData.error_no === 1005) 
-        ) {
-          toast.warning('再度ログインしてください。');
-          logout();
+        if (resData.result === false) {
+          if (resData.error_no === 1004) {
+            toast.warning(
+              <div>ログインの有効期限が切れました。<br />再度ログインしてください。</div>
+            );  
+            logout();
+            return;
+          }
+          if (resData.error_no === 1005) {
+            toast.warning(
+              <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+            );  
+            return;
+          }
+          else {
+            toast.error(
+              <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+            );  
+            return;
+          }
         }
 
         if (resData && resData.data) {
@@ -84,7 +107,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             }
 
             // 除外したいキーワードのリスト
-            const excludeKeywords = ["なし", "特になし"];
+            // 画面定義書_20250618で「特になし」はキーワードから削除
+            //const excludeKeywords = ["なし", "特になし"];
+            const excludeKeywords = ["なし"];
 
             // 前後の空白を削除した上で、リストに含まれていれば除外
             if (excludeKeywords.includes(String(item.handover).trim())) {
@@ -226,7 +251,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // 表示する分だけを切り出す
+// console.log('sortedNotices:', sortedNotices);  
   const currentHandovers = sortedNotices.slice(indexOfFirstItem, indexOfLastItem);
+// console.log('currentHandovers:', currentHandovers);  
   // ページ変更ハンドラー
   const handlePrev = () => {
     setCurrentPage(prev => Math.max(1, prev - 1));
@@ -240,8 +267,13 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   // 開始ボタン
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('briefing_data', JSON.stringify(data));
-    onComplete(data);
+    const briefingData = {
+      ...data,
+      id: user.id,
+      timestamp: Date.now() 
+    }
+    localStorage.setItem('briefing_data', JSON.stringify(briefingData));
+    onComplete(briefingData);
   };
 
   // ソートボタンのハンドラー
@@ -288,8 +320,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
       {/* 統一ヘッダー */}
       <header style={briefingStyles.header}>
         <div style={briefingStyles.logoGroup}>
-          <div style={briefingStyles.logoCircle}></div>
-          <h1 style={briefingStyles.logoText}>沖縄e-log</h1>
+          <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+          <h1 style={briefingStyles.logoText}>沖縄県elogシステム</h1>
         </div>
       </header>
 
@@ -305,7 +337,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
               <div style={briefingStyles.column}>
                 {/* ログイン者（記録担当者）を追加 2026.5.18 */}
                 <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>ログイン者（記録担当者）</label>
+                  <label style={briefingStyles.label}>ログインユーザー（記録担当者）</label>
                   <input
                     type="text"
                     value={(user.id + user.name) || ''}
@@ -525,26 +557,27 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             {/* メモエリア */}
             <div style={{ marginTop: '20px', paddingTop: '0px' }}>
               <div style={briefingStyles.field}>
-                <label style={briefingStyles.label}>申し送りメモ（申し送り事項に反映する内容を記載）</label>
+                <label style={briefingStyles.label}>メモ</label>
                 <textarea
                   placeholder="100字以内"
                   style={briefingStyles.textarea}
-                  value={data.handoverMemo}
+                  value={data.noteMemo}
                   maxLength={100}
-                  onChange={e => setData({...data, handoverMemo: e.target.value})} />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                  onChange={e => setData({...data, noteMemo: e.target.value})} />
+                {/* 文字数カウンターを表示 */}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
                   fontSize: '11px',
-                  color: data.handoverMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-                  fontWeight: data.handoverMemo.length >= 100 ? 'bold' : 'normal',
+                  color: data.noteMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+                  fontWeight: data.noteMemo.length >= 100 ? 'bold' : 'normal',
                   userSelect: 'none',
                   textAlign: 'right'
                   }}>
-                  {data.handoverMemo.length} / 100
+                  {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              {/* 画面定義書20250617で削除
               <div style={briefingStyles.field}>
                 <label style={briefingStyles.label}>特記メモ（特記事項に反映する内容を記載）</label>
                 <textarea
@@ -554,7 +587,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   maxLength={100}
                   onChange={e => setData({...data, noteMemo: e.target.value})}
                 />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                {/* 文字数カウンターを表示 */}
+                {/*}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
@@ -567,6 +601,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              */}
             </div>
 
             <button type="submit" style={briefingStyles.startButton}>開始する</button>
@@ -623,23 +658,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
           </div>
         </div>
 
-        {/* ★ selectedArea の有無で表示を切り替える */}
-        {!selectedArea ? (
-          // 【初期表示：エリアが選ばれていない場合】
-          <div style={{ 
-            padding: '40px 20px', 
-            textAlign: 'center', 
-            color: '#64748b', 
-            backgroundColor: '#f8fafc', 
-            borderRadius: '8px',
-            border: '1px dashed #cbd5e1',
-            fontSize: '14px'
-          }}>
-            <span>エリアを選択してください。</span>
-          </div>
-        ) : (
-          // 【エリアが選択された場合：一覧とページネーターを表示】
-          <>
             <div style={briefingStyles.table}>
                 <div style={briefingStyles.tableHeader}>
 
@@ -709,15 +727,36 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   <div style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>申し送り事項</div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>パトロールメンバー</div>
                 </div>
-
+                  </div>
+        {/* ★ selectedArea の有無で表示を切り替える */}
+        {!selectedArea ? (
+          // 【初期表示：エリアが選ばれていない場合】
+          <div style={{ 
+            padding: '40px 20px', 
+            textAlign: 'center', 
+            color: '#64748b', 
+            backgroundColor: '#f8fafc', 
+            borderRadius: '8px',
+            border: '1px dashed #cbd5e1',
+            fontSize: '14px'
+          }}>
+            <span>エリアを選択してください。</span>
+          </div>
+        ) : (
+          // 【エリアが選択された場合：一覧とページネーターを表示】
+          <>
                 <div style={briefingStyles.tableBody}>
+                    {/*console.log('currentHandovers:', currentHandovers)*/}
                   {currentHandovers.length > 0 ? (
                     currentHandovers.map((item, idx) => {
                       const memberArray = Array.isArray(item.members) 
                         ? item.members 
                         : (item.members ? [item.members] : []);
-                      const displayMembers = memberArray.slice(0, 2);
-                      const memberNamesArray = displayMembers.map(m => m.user_id);
+                      const displayMembers = memberArray.slice(0, 1);
+                      //const memberNamesArray = displayMembers.map(m => m.user_id);
+                      const baseMemberNames = displayMembers.map(m => m.user_id);
+                      const memberNamesArray = [item.login_user, ...baseMemberNames];
+//                      const memberNamesArray = [currentHandovers.login_user, ...displayMembers.map(m => m.user_id)];
                       return (
                         <div key={idx} style={briefingStyles.tableRow}>
 
@@ -771,7 +810,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                     </div>
                   )}
                 </div>
-              </div>
 
               {/* ページネーターもエリア選択時のみ一緒に表示する */}
               <div style={briefingStyles.pagination}>
@@ -811,7 +849,7 @@ const briefingStyles = {
   },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '4px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   

@@ -103,6 +103,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
             const isExpanded = isMatched && beaches.length > 0;
 
             // 未送信のビーチを抽出する
+//console.log('savedRecords:', savedRecords);
             const unsyncedBeaches = savedRecords
 //            const unsyncedBeaches = localWeeklyData
 //              .filter(record => !record.isSynced)
@@ -207,9 +208,9 @@ const dateRowStyle = { display: 'flex', overflowX: 'auto', gap: '8px', padding: 
 //const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 //const cardStyle = { backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px' };
 const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '4px' };
-const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
-//const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px',
-//  maxHeight: '135px', overflowY: 'auto' };
+//const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
+const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px',
+  maxHeight: '135px', overflowY: 'auto' };
 const coastNameTextStyle = { fontSize: '16px', fontWeight: 'bold', color: '#1e293b', flex: '1' };
 const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' };
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };
