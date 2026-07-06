@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 import oslLogo from '../assets/ola-S.png';
 import oslBigLogo from '../assets/ola.png';
+import okinawaLogo from '../assets/okinawa.png';
 
 function HomeView({ user, onNavigate }) {
   const { logout } = useAuth();
@@ -44,6 +45,7 @@ function HomeView({ user, onNavigate }) {
         <div style={styles.logoGroup}>
           <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           <h1 style={styles.logoText}>沖縄県elogシステム</h1>
+          <img src={okinawaLogo} alt="Okinawa prefecture logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
         </div>
         <div style={{ width: 28 }}></div> {/* バランス調整用空要素 */}
       </header>

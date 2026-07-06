@@ -13,6 +13,7 @@ import Select from 'react-select';
 import { loadWeeklyRecords } from '../api';
 import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
 import oslLogo from '../assets/ola-S.png';
+import okinawaLogo from '../assets/okinawa.png';
 
 
 
@@ -322,6 +323,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
         <div style={briefingStyles.logoGroup}>
           <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           <h1 style={briefingStyles.logoText}>沖縄県elogシステム</h1>
+          <img src={okinawaLogo} alt="Okinawa prefecture logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
         </div>
       </header>
 
