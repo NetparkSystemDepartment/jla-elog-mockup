@@ -4,6 +4,7 @@ import { User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/authContext';
 import { getinfoApi } from '../api/recordApi';
 import oslLogo from '../assets/ola-S.png';
+import okinawaLogo from '../assets/okinawa.png';
 
 function LoginView() {
   //const { login } = useAuth(); // Contextからlogin関数を取り出す
@@ -135,6 +136,7 @@ function LoginView() {
         <div style={loginStyles.logoGroup}>
           <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
           <h1 style={loginStyles.logoText}>沖縄県elogシステム</h1>
+          <img src={okinawaLogo} alt="Okinawa prefecture logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
         </div>
       </header>
 
