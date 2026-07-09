@@ -13,29 +13,44 @@ registerLocale('ja', ja);
 import '../Overwrite.css';
 import { toast } from 'sonner';
 import { COAST_DATA, ONNA_BEACHES } from '../constantsPublic';
-
-//const COAST_DATA = [
-//  { id: 1, name: '本島北部(西)', kind: 1 }, { id: 2, name: '本島北部(東)', kind: 1 },
-//  { id: 3, name: '恩納村', kind: 1 }, { id: 4, name: '東海岸中部', kind: 1 },
-//  { id: 5, name: '本島中部', kind: 1 }, { id: 6, name: '本島南部', kind: 1 }, { id: 7, name: '座間味村', kind: 2 },
-//  { id: 8, name: '渡嘉敷村', kind: 2 }
-//];
-//const ONNA_BEACHES = ['裏真栄田ビーチ', '仲泊ビーチ', '冨着ビーチ', '谷茶ビーチ', 'アボガマ', 'ダイヤモンドビーチ', 'なかゆくい', '安富祖ビーチ'];
-//const ONNA_BEACHES = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
+import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
 
 const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, savedRecords, syncedRecords,
   onSelectBeach, onSelectCoast, onNavigate }) => {
+  // 選択されたエリア
+  const [selectedArea, setSelectedArea] = useState({ no: null, name: '' });
+  // エリア内のビーチを取得
+  const beaches = useBeachInfo(selectedArea.no);
+//console.log('beaches:', beaches);
+  
   const [isEnrolledExpanded, setIsEnrolledExpanded] = useState(false);
   const totalVisitors = 0; 
   const UNREGISTEREDBEACH = 3; 
   const today = startOfDay(new Date());
 
+  // 「ビーチを選択」ボタン  
   const handleSelect = (coast) => {
-    onSelectCoast(coast.name);
 
-    // 恩納村なら、ビーチメニューを開閉
-    if (coast.name === '恩納村') {
-      setIsEnrolledExpanded(!isEnrolledExpanded);
+    if (coast.no === selectedArea.no) {
+      setSelectedArea({no: null, name: ''});
+    }
+    else {
+      onSelectCoast(coast);
+
+    // // 恩納村なら、ビーチメニューを開閉 --- phase1 5/E版
+    // if (coast.name === '恩納村') {
+    //   setIsEnrolledExpanded(!isEnrolledExpanded);
+    // }
+
+      // ビーチを取得
+      const targetArea = filteredCoasts.find(item => item.name === coast.name);
+      if (targetArea) {
+        setSelectedArea({
+          no: targetArea.no,
+          name: targetArea.name
+        });
+        setIsEnrolledExpanded(!isEnrolledExpanded);
+      }      
     }
   };
 
@@ -43,47 +58,9 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
     <button onClick={onClick} ref={ref} style={iconBtnStyle}><CalendarIcon size={22} color="#38bdf8" /></button>
   ));
 
-  // // // ローカルストレージから１週間分のデータを読む
-  // const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  // // //const [weeklyRecords, setWeeklyRecords] = useState(savedRecords);  
-  // console.log('savedRecords:', savedRecords);
-
-  // let localWeeklyData = [];
-  // const weeklyString = localStorage.getItem('weeklyBeachData');
-  // console.log('weeklyString:', weeklyString);
-
-  // if (weeklyString) {
-  //   try {
-  //     const allWeeklyData = JSON.parse(weeklyString);
-
-  //     const stringifiedItems = allWeeklyData.map(item => JSON.stringify(item));
-
-  //     const uniqueStrings = [...new Set(stringifiedItems)];
-
-  //     const WeeklyData = uniqueStrings.map(item => JSON.parse(item));
-    
-  //     if (Array.isArray(WeeklyData)) {
-  //       localWeeklyData = WeeklyData.filter(item => item.startDate === dateStr);
-  //     }
-  //   } catch (error) {
-  //     console.error('ローカルストレージのデータ解析に失敗:', error);
-  //   }
-  // }
-
-  // const weeklyRecords = (localWeeklyData || []);
-
-
-//  console.log('user', user);
-//  const filteredCoasts = user.kind === 1
-//    ? COAST_DATA.filter((coast) => coast.kind === 1)
-//    : COAST_DATA
-  let filteredCoasts = COAST_DATA;  
-  if (user.kind === 1) {
-    filteredCoasts = COAST_DATA.filter((coast) => coast.kind === 1);
-  } else if (user.kind === 2) {
-    filteredCoasts = COAST_DATA.filter((coast) => coast.kind === 2);
-  }
-//  console.log('filteredCoasts:', filteredCoasts);
+  // エリアを取得
+  const filteredCoasts = useAreaInfo(user.kind);
+//console.log('filteredCoasts:', filteredCoasts);
 
   return (
     <div style={container}>
@@ -120,10 +97,13 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {filteredCoasts.map((coast) => {
 
-            const isOnna = coast.name === '恩納村';
-            const isExpanded = isOnna && isEnrolledExpanded;
+//            const isOnna = coast.name === '恩納村';
+//            const isExpanded = isOnna && isEnrolledExpanded;
+            const isMatched = coast.name === selectedArea.name;
+            const isExpanded = isMatched && beaches.length > 0;
 
             // 未送信のビーチを抽出する
+//console.log('savedRecords:', savedRecords);
             const unsyncedBeaches = savedRecords
 //            const unsyncedBeaches = localWeeklyData
 //              .filter(record => !record.isSynced)
@@ -134,9 +114,14 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
 //            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - savedRecords.length) : UNREGISTEREDBEACH;
 //            const syncedCount = syncedRecords.filter(record => record.isSynced).length;
 //console.log('syncedRecords:', syncedRecords);
+//console.log('coast.name:', coast.name)
 
-            const syncedCount = syncedRecords.length;
-            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - syncedCount) : UNREGISTEREDBEACH;
+            //const syncedCount = syncedRecords.length;
+            const syncedCount = syncedRecords.filter(item => item.area === coast.name).length;
+//console.log('syncedCount:', syncedCount);            
+//console.log('coast.count:', coast.count);            
+//            const unregisteredCount = isOnna ? (UNREGISTEREDBEACH - syncedCount) : UNREGISTEREDBEACH;
+            const unregisteredCount = (coast.count - syncedCount);
             // 選択されているのは今日か
             const isToday = format(today, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
@@ -157,12 +142,14 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
                 </div>
                 {isExpanded && (
                   <div style={beachListStyle}>
-                    {ONNA_BEACHES.map(beach => {
+                    {beaches.map(beach => {
 //                      const isDone = savedRecords.some(r => r.beach === beach.name);
                       const isDone = unsyncedBeaches.includes(beach.name);
+//                      const isDone = syncedRecords.includes(beach.name);
+                      const isSynced = syncedRecords.some(item => item.beach === beach.name);
 
                       return (
-                        <button key={beach.name} onClick={() => onSelectBeach(beach.name)} style={{...beachOptionStyle, backgroundColor: isDone ? '#f1f5f9' : '#f0f9ff'}}>
+                        <button key={beach.name} onClick={() => onSelectBeach(beach)} style={{...beachOptionStyle, backgroundColor: isSynced ? '#e5e7eb' : '#f0f9ff'}}>
                           <span style={{flex:1, textAlign:'left'}}>{beach.name}</span>
                           {isDone && (
   <                         div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -199,7 +186,9 @@ const dateRowStyle = { display: 'flex', overflowX: 'auto', gap: '8px', padding: 
 //const dateBtnBaseStyle = { flex: '0 0 42px', height: '42px', borderRadius: '10px', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' };
 //const cardStyle = { backgroundColor: '#fff', padding: '12px', borderRadius: '12px', height: '58px' };
 const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '4px' };
-const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
+//const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' };
+const beachListStyle = { marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '10px',
+  maxHeight: '135px', overflowY: 'auto' };
 const coastNameTextStyle = { fontSize: '16px', fontWeight: 'bold', color: '#1e293b', flex: '1' };
 const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '12px' };
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };

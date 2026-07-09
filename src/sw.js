@@ -26,7 +26,7 @@ async function syncUnsentReports() {
       };
 
 //console.log('embededToken:', embededToken);  
-      const response = await fetch('https://d-elog.ripcurrent.org/v1', {
+      const response = await fetch('https://d-elog.ripcurrent.org/v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json',
           'Authorization': `Bearer ${embededToken}`

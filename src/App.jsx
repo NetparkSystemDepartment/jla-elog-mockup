@@ -7,7 +7,7 @@ import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
 import RecordDetailView from './views/RecordDetailView';
-import { getAllRecords, saveRecord, getRecordsByDate } from './db';
+import { getAllRecords, saveRecord, getRecordsByDate, cleanupExpiredData } from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from './contexts/authContext';
@@ -15,6 +15,7 @@ import { supabase } from './supabaseClient';
 import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone } from 'lucide-react';
+import { getNameByBeachNo } from './useAreaInfo';
 
 import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
@@ -97,6 +98,19 @@ function App() {
   });
 
   useEffect(() => {
+    const cleanupIndexedDB = async () => {
+      try {
+        // アプリ起動時にバックグラウンドで古いデータを掃除
+        await cleanupExpiredData();
+      } catch (error) {
+        console.error('indexedDB削除エラー:', error);
+      }
+    };
+
+    cleanupIndexedDB();
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       // ログアウト（userがnull）されたらステートをリセット
       setBriefingData({
@@ -120,6 +134,7 @@ function App() {
   const [baseDate, setBaseDate] = useState(today);
   const [selectedDate, setSelectedDate] = useState(today);
   const [savedRecords, setSavedRecords] = useState([]);
+  const [targetRecords, setTargetRecords] = useState(null);
   const [recentHandovers, setRecentHandovers] = useState([]);
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
@@ -145,7 +160,7 @@ function App() {
       return {
         ...record, // 元のデータをそのままコピー
 //        startDate: record.startDate,
-        beach: getNameByBeachId(record.beach) // beach部分だけ名前（文字列）に置き換え
+        beach: getNameByBeachNo(record.area, record.beach) // beach部分だけ名前（文字列）に置き換え
       };
     });
 
@@ -182,23 +197,23 @@ function App() {
 
 //console.log('syncedRecords:', syncedRecords);
 
-
-
-
   };
 
   // 保存処理（子から呼ばれる）
   // ローカル保存（indexedDB）
   const handleSave = async (formData) => {
+//console.log('formData', formData);
     const formattedDate = format(formData.startDate, 'yyyy-MM-dd');
     const beachName = selectedBeach;
   
   // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
+  // 2026.6.5 user_idは挿入しない 
     const updatedFormData = {
       ...formData,
-      members: [user.id, ...formData.members]
+//      members: [user.id, ...formData.members]
     };
 
+    // 6/E版 user_idを別に持つ
     const record = { 
       ...updatedFormData, 
 //      beach: beachName, 
@@ -206,8 +221,9 @@ function App() {
 //      isSynced: false, // サーバー未送信フラグ
       isSynced: 0, // サーバー未送信フラグ
 //      timestamp: Date.now() 
-      token: user.token,
-    };
+//      token: user.token,
+      loginId: user.id,
+};
 //console.log('record', record);
     try {
         const id = await saveRecord(record);
@@ -240,7 +256,7 @@ function App() {
     // 送信用に、先頭にuser_idを挿入した新しいオブジェクトを作成
     const updatedFormData = {
       ...formData,
-      members: [user.id, ...formData.members]
+//      members: [user.id, ...formData.members]
     };
 
     // 1. まずは「未送信状態(isSynced: false)」としてオブジェクトを作成
@@ -290,6 +306,38 @@ function App() {
 //console.log('payload:', payload);
       // recordApi.js のデータ登録APIを実行
       const result = await setinfoApi(payload);
+
+      // トークンの有効期限切れ、再ログイン
+      if (result.result === false) {
+        toast.dismiss(toastId);
+        if (result.error_no === 1002) {
+          toast.warning(
+            <div>ログイン情報が不正です。<br />再ログインして再度送信してください。</div>
+          );  
+          logout();
+          return;
+        }
+        if (result.error_no === 1004) {
+          toast.warning(
+            <div>ログインの有効期限が切れました。<br />再ログインして再度送信してください。</div>
+          );  
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(
+            <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+          );  
+          return;
+        }
+        else {
+          toast.error(
+            <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+          );  
+          return;
+        }
+      }
+
       console.log('サーバー登録成功:', result);
 
       // 4. 送信が成功したら、IndexedDB の該当データを「送信済み(isSynced: true)」に上書き更新
@@ -308,6 +356,9 @@ function App() {
       toast.success('サーバーへ送信・登録しました！', { id: toastId });
 
     } catch (error) {
+
+
+
       console.error('サーバー送信失敗:', error);
 
       // Background Sync を登録する
@@ -398,23 +449,37 @@ function App() {
     }
   };
 
-  //
-  const handleSelectBeach = (beachName) => {
-    const targetBeaches = ['裏真栄田ビーチ', 'アボガマ', '希望ヶ丘ビーチ'];
-    if (targetBeaches.includes(beachName)) {
-      setSelectedBeach(beachName);
-      setView('edit');
+  // 「ビーチを選択」のハンドラー
+  const handleSelectBeach = (beach) => {
+
+    // seqインクリメント処理をここで行う
+    const foundRecord = savedRecords.find(r => r.beach === beach.name);
+
+    if (foundRecord) {
+      const updated = { ...foundRecord };
+
+      if (foundRecord.loginId !== user.id) {
+        updated.members = briefingData.members.length === 0
+          ? []
+          : briefingData.members;
+      }
+
+      if (foundRecord.isSynced !== 0) {
+        updated.seq = (Number(foundRecord.seq) || 0) + 1;
+      }
+
+      setTargetRecords(updated);
     }
+    else {
+      setTargetRecords([]);
+    }
+
+    setSelectedBeach(beach);
+    setView('edit');
   };
 
-  // 開始
+  // ブリーフィング画面「開始」ボタンハンドラー
   const handleBriefingComplete = (data) => {
-//    if (data.handoverMemo === null || data.handoverMemo ==="") {
-//      data.handoverMemo = "なし";
-//    }
-//    if (data.noteMemo === null || data.noteMemo ==="") {
-//      data.noteMemo = "なし";
-//    }
     const mappedData = {
       // EditView.jsx の initialFormData のキーに合わせる
       tide: data.tide,
@@ -426,7 +491,7 @@ function App() {
       windSpeed: data.windSpeed,
       warn: data.warn,
       alert: data.alert,
-      handover: data.handoverMemo,
+      handover: "",
       note: data.noteMemo,
       members: data.members,
       carType: data.carType,
@@ -482,12 +547,14 @@ function App() {
           user={user} 
           onComplete={handleBriefingComplete} 
           recentHandovers={recentHandovers}
-          profileList={profileList}
         />
       );
 
+    // ---- 新規登録画面 ---- 
     case 'list':
 //console.log('syncedRecords:', syncedRecords);
+//console.log('savedRecords:', savedRecords);
+
       return (
         <>
          <ListView 
@@ -522,14 +589,14 @@ function App() {
         />
       );
 
+    // ---- ログ入力画面 ---- 
     case 'edit':
- // console.log('selectedDate:', selectedDate);
-//console.log('savedRecords:', savedRecords);
-//console.log('syncedRecords:', syncedRecords);
-      const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach);
+//      console.log('selectedBeach:', selectedBeach);
+//      console.log('savedRecords:', savedRecords);
+//      console.log('syncedRecords:', syncedRecords);
+//      console.log('targetRecords:', targetRecords);
+      const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach.name);
       const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
-//console.log('foundSyncedRecord:', foundSyncedRecord);
-//console.log('syncedRecoredSeq:', syncedRecoredSeq);
 
       return (
         <EditView
@@ -543,9 +610,10 @@ function App() {
           isEdit={!!editingRecord}
           onUpdate={handleUpdate}
           existingData={editingRecord || (() => {
-            const foundRecord = savedRecords.find(r => r.beach === selectedBeach);
-            if (foundRecord && foundRecord.isSynced === 0) return foundRecord;
-            const nextSeq = foundRecord ? (Number(foundRecord.seq) || 0) + 1 : 1 + syncedRecoredSeq;
+            if (targetRecords && Object.keys(targetRecords).length > 0) {
+              return targetRecords;
+            }
+            const nextSeq = 1 + syncedRecoredSeq;
             return {
               ...briefingData,
               seq: nextSeq,

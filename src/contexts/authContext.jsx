@@ -41,6 +41,8 @@ export function AuthProvider({ children }) {
             kind: authData.kind,
             area: authData.area,
             token: authData.token,
+            name: authData.login_name,
+            user_id: authData.id + authData.login_name,
           });
 
           setMembers(authData.members || []);
@@ -96,6 +98,8 @@ export function AuthProvider({ children }) {
           kind: data.kind,
           area: data.area,
           token: data.token,
+          name: data.login_name,
+          user_id: credentials.id + data.login_name,
         });
 
 //        // tokenをindexedDBに書き込む
@@ -103,14 +107,13 @@ export function AuthProvider({ children }) {
 
         setMembers(data.members || []);
         setCarInfo(data.carInfo?.length > 0 ? data.carInfo : data.master_info?.car_info || []);
-// console.log('carInfo;', carInfo);
 
         //// LoginView.jsx が期待する形式（{ success: true }）で返す
         //return { success: true };
         return { 
           success: true, 
           user: user, 
-          carInfo: data.carInfo || [] 
+          carInfo: data.master_info.car_info || [] 
         };
       }
       else {
@@ -123,7 +126,7 @@ export function AuthProvider({ children }) {
       
       const errorMessage = 
         error.response?.data?.message || 
-        'ログインに失敗しました。ユーザーIDまたはパスワードを確認してください。';
+        'ログインに失敗しました。';
       
       // LoginView.jsx が期待する形式（{ success: false, message: ... }）で返す
       return { success: false, message: errorMessage };
@@ -135,13 +138,14 @@ export function AuthProvider({ children }) {
    */
   const logout = () => {
     // ローカルストレージを削除
-    localStorage.removeItem('token');
+    //localStorage.removeItem('token');
     localStorage.removeItem('auth_data');
-    localStorage.removeItem('briefing_data');
+    //localStorage.removeItem('briefing_data');
     localStorage.removeItem('weeklyBeachData');
 
     // indexedDBを削除
-    deleteRecords();
+    // indexedDBは7日間保存する
+    //deleteRecords();
 
     setUser(null);
     setCarInfo([]);

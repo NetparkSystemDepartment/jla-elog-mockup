@@ -3,7 +3,8 @@ import { getinfoApi } from './api/recordApi';
 export const loadWeeklyRecords = async () => {
 
   const requestBody = {
-    type: 1,
+    type: 2,
+  //  key: 62,
   };
 
   const resData = await getinfoApi(requestBody);
@@ -27,6 +28,7 @@ export const loadWeeklyRecords = async () => {
     const weeklyData = weeklyFilteredData.map(item => ({
       startDate: item.startDate,
       detail_key: item.detail_key,
+      area: item.area,
       beach: item.beach
     }));
 

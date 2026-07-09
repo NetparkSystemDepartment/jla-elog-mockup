@@ -4,6 +4,8 @@ const DB_NAME = 'e-log_p1_r03';
 const STORE_NAME = 'records';
 
 import Dexie from 'dexie';
+import { format, subDays } from 'date-fns';
+
 
 // データベースの定義
 export const db = new Dexie(DB_NAME);
@@ -12,8 +14,8 @@ export const db = new Dexie(DB_NAME);
 //  records: '[date+beach+seq]'
 //});
 
-db.version(3).stores({
-  records: '[date+beach+seq], isSynced',
+db.version(4).stores({
+  records: '[date+beach+seq], isSynced, date',
   auth: 'key'
 });
 
@@ -29,7 +31,7 @@ export const saveRecord = async (record) => {
 };
 
 export const getRecordsByDate = async (dateStr) => {
-  console.log("検索開始（全ビーチ分）:", dateStr);
+  //console.log("検索開始（全ビーチ分）:", dateStr);
 
   // 1. 指定された日付のデータをすべて取得（全ビーチ、全seqが混ざった状態）
   const allResults = await db.records
@@ -58,7 +60,7 @@ export const getRecordsByDate = async (dateStr) => {
   // 3. 連想配列（Map）の値を、通常の配列に戻して返す
   const finalResults = Object.values(latestRecordsMap);
 
-  console.log("各ビーチの最新レコード一覧:", finalResults);
+  //console.log("各ビーチの最新レコード一覧:", finalResults);
   return finalResults; // 配列が返ります
 };
 
@@ -140,3 +142,24 @@ export const getUnsentRecordsFromIndexedDB = async () => {
 //     return [];
 //   }
 // };
+
+// 1週間より前のデータを削除
+export const cleanupExpiredData = async () => {
+  const oneWeekAgoStr = format(subDays(new Date(), 6), 'yyyy-MM-dd');
+  try {
+    if (!db.isOpen()) {
+      await db.open();
+    }
+
+    const deletedCount = await db.records
+      .where('date')
+      .below(oneWeekAgoStr)
+      .delete();
+
+    if (deletedCount > 0) {
+      console.log(`[DBクレンジング] ${oneWeekAgoStr} より前の古いデータを ${deletedCount} 件削除しました。`);
+    }
+  } catch (error) {
+    console.error('[DBクレンジング] エラーが発生しました:', error);
+  }
+};

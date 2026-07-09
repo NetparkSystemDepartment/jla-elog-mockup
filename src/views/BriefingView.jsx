@@ -11,21 +11,55 @@ import { useSafeCarInfo } from '../useSafeCarInfo';
 import { toast } from 'sonner';
 import Select from 'react-select';
 import { loadWeeklyRecords } from '../api';
+import { useAreaInfo, useBeachInfo } from '../useAreaInfo';
+import oslLogo from '../assets/ola-S.png';
+import okinawaLogo from '../assets/okinawa.png';
+
 
 
 // for phase1
-const HANDOVERAREA = ['恩納村'];
+//const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
+function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
   const { logout } = useAuth();
   
-  // 🛠️ ローカルストレージから既存データを読み込む初期化関数
+  // エリアを取得
+  const filteredCoasts = useAreaInfo(user.kind);
+
+  // ローカルストレージから既存データを読み込む初期化関数
   const [data, setData] = useState(() => {
     const savedData = localStorage.getItem('briefing_data');
+
     if (savedData) {
       try {
-        return JSON.parse(savedData);
+        //return JSON.parse(savedData);
+
+          const parsed = JSON.parse(savedData);
+
+          // 今日の日付かどうか判断
+          const isExist = Boolean(parsed.timestamp);
+          let isToday = false;
+          if (isExist) {
+            const savedTimestamp = Number(parsed.timestamp);
+            const savedDate = new Date(savedTimestamp);
+            const today = new Date();
+
+            isToday = 
+              savedDate.getFullYear() === today.getFullYear() &&
+              savedDate.getMonth() === today.getMonth() &&
+              savedDate.getDate() === today.getDate();
+          }
+          if (isExist) {
+            if (!isToday) {
+              // Local Strageを削除
+              localStorage.removeItem('briefing_data');
+              console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
+            }
+            else {
+                return parsed;
+            }
+          }
       } catch (e) {
         console.error('ローカルストレージのデータ解析に失敗:', e);
       }
@@ -42,31 +76,60 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
   const [noticeList, setNoticeList] = useState([]);
   const [isInfoLoading, setIsInfoLoading] = useState(true);
+  // 申し送り一覧のエリア
+  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // サーバーのBody部に渡すパラメーター（Payload）
-  const requestBody = {
-    type: 1,
-// debug only    
-//    key: 1,
-  };
+//   const requestBody = {
+//     type: 1,
+// // debug only    
+// // key: 59,
+//   };
 
   // 申し送りデータの取得
   useEffect(() => {
-//console.log('申し送りデータの取得', requestBody);
+//console.log('申し送りデータの取得', selectedArea);
+    if (!selectedArea) return;
+
+    const requestBody = {
+      type: 1,
+      areaNo: Number(selectedArea),
+    };
     const fetchNoticeData = async () => {
       try {
         setIsInfoLoading(true);
         
         // 共通関数を呼び出し
         const resData = await getinfoApi(requestBody);
-//console.log('resData:', resData);      
 
         // トークンの有効期限切れ、利用時間外、再ログイン
-        if (resData.result === false &&
-          (resData.error_no === 1002 || resData.error_no === 1004 || resData.error_no === 1005) 
-        ) {
-          toast.warning('再度ログインしてください。');
-          logout();
+        if (resData.result === false) {
+          if (resData.error_no === 1002) {
+            toast.warning(
+              <div>ログイン情報が不正です。<br />再ログインしてください。</div>
+            );  
+            logout();
+            return;
+          }
+          if (resData.error_no === 1004) {
+            toast.warning(
+              <div>ログインの有効期限が切れました。<br />再ログインしてください。</div>
+            );  
+            logout();
+            return;
+          }
+          if (resData.error_no === 1005) {
+            toast.warning(
+              <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+            );  
+            return;
+          }
+          else {
+            toast.error(
+              <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+            );  
+            return;
+          }
         }
 
         if (resData && resData.data) {
@@ -78,7 +141,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             }
 
             // 除外したいキーワードのリスト
-            const excludeKeywords = ["なし", "特になし"];
+            // 画面定義書_20250618で「特になし」はキーワードから削除
+            //const excludeKeywords = ["なし", "特になし"];
+            const excludeKeywords = ["なし"];
 
             // 前後の空白を削除した上で、リストに含まれていれば除外
             if (excludeKeywords.includes(String(item.handover).trim())) {
@@ -87,6 +152,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
 
             return true;
           });
+
+//console.log('filteredData:', filteredData);
 
           // 最優先: priority(昇順) ➔ key(降順) ➔ detail_key(降順)
           const initialSortedData = filteredData.sort((a, b) => {
@@ -139,7 +206,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
     };
 
     fetchNoticeData();
-  }, []);
+  }, [selectedArea]);
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
@@ -170,9 +237,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   //  value: item.order,
   //  label: item.carType
   //}));
-
-  // 申し送り一覧のエリア
-  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
 
   // チェックされた行のインデックスを保持
   const [selectedRows, setSelectedRows] = useState([]); 
@@ -218,23 +282,30 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   // 表示する分だけを切り出す
+// console.log('sortedNotices:', sortedNotices);  
   const currentHandovers = sortedNotices.slice(indexOfFirstItem, indexOfLastItem);
-
+// console.log('currentHandovers:', currentHandovers);  
   // ページ変更ハンドラー
   const handlePrev = () => {
     setCurrentPage(prev => Math.max(1, prev - 1));
-    setSelectedRows([]); // ページを切り替えたら選択をクリア
+  //  setSelectedRows([]); // ページを切り替えたら選択をクリア
   };
   const handleNext = () => {
     setCurrentPage(prev => Math.min(totalPages, prev + 1));
-    setSelectedRows([]); // ページを切り替えたら選択をクリア
+  //  setSelectedRows([]); // ページを切り替えたら選択をクリア
   };
 
   // 開始ボタン
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('briefing_data', JSON.stringify(data));
-    onComplete(data);
+    const briefingData = {
+      ...data,
+      id: user.id,
+      timestamp: Date.now() 
+      //timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)
+    }
+    localStorage.setItem('briefing_data', JSON.stringify(briefingData));
+    onComplete(briefingData);
   };
 
   // ソートボタンのハンドラー
@@ -256,7 +327,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
     if (e.target.checked) {
       // 現在のページに表示されている行の item.key をすべて集めてStateに入れる
       // ※ item.key が存在しない場合を考慮して item.detail_key などをフォールバックにしています
-      const allCurrentKeys = currentHandovers.map(item => item.key || item.detail_key || item.id);
+      //const allCurrentKeys = currentHandovers.map(item => item.key || item.detail_key || item.id);
+      const allCurrentKeys = sortedNotices.map(item => item.key || item.detail_key || item.id);
       setSelectedRows(allCurrentKeys);
     } else {
       // チェックが外されたら、完全に空にして全解除
@@ -280,8 +352,9 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
       {/* 統一ヘッダー */}
       <header style={briefingStyles.header}>
         <div style={briefingStyles.logoGroup}>
-          <div style={briefingStyles.logoCircle}></div>
-          <h1 style={briefingStyles.logoText}>沖縄e-log</h1>
+          <img src={oslLogo} alt="OLA logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+          <h1 style={briefingStyles.logoText}>沖縄県elogシステム</h1>
+          <img src={okinawaLogo} alt="Okinawa prefecture logo" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
         </div>
       </header>
 
@@ -297,10 +370,10 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
               <div style={briefingStyles.column}>
                 {/* ログイン者（記録担当者）を追加 2026.5.18 */}
                 <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>ログイン者（記録担当者）</label>
+                  <label style={briefingStyles.label}>ログインユーザー（記録担当者）</label>
                   <input
                     type="text"
-                    value={user.id || ''}
+                    value={(user.id + user.name) || ''}
                     disabled
                     style={briefingStyles.disabledInput}
                   />
@@ -308,15 +381,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={{...briefingStyles.field, minHeight: '96px'}}>
                   <label style={briefingStyles.label}>自分以外のパトロールメンバー</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-{/*}
-                    <MultiSelectInput
-                      options={exceptLogin}
-                      value={data.members || []}
-                      onChange={(next) => setData({ ...data, members: next })}
-                      inputStyle={briefingStyles.inputMultiStyle}
-                      placeholder="ユーザーID"
-                    />
-*/}
                     <Select
                       isMulti
                       isSearchable
@@ -360,22 +424,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       ))}
                     </select>
                     
-                    {/*
-                    <div style={{ width: '200px' }}>
-                    <Select
-                      isMulti={false}       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
-                      options={carTypeOptions}
-                      value={carTypeOptions.find(option => option.value === data.carType) || null}
-                      onChange={(selectedOption) => {
-                        const nextCarType = selectedOption ? selectedOption.value : null;
-                        setData({ ...data, carType: nextCarType })}}
-                      placeholder="車種名を選択"
-                      noOptionsMessage={() => "見つかりません"}
-                      styles={customSelectStyles}
-                    />
-                    </div>
-                    */}
                     <input type="text" placeholder="No." style={{...briefingStyles.input, width: '50%'}} maxLength={4} inputMode="numeric"
                       value={data.carNo}
                       onChange={e => setData({...data, carNo: e.target.value.replace(/[^0-9]/g, '')})} />
@@ -385,25 +433,37 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>注意報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-                  {/*}
-                  <MultiSelectInput
-                    options={WARNING_OPTIONS}
-                    value={data.warn || []}
-                    onChange={(next) => setData({ ...data, warn: next })}
-                    inputStyle={briefingStyles.inputMultiStyle}
-                    placeholder="注意報を選択"
-                  />
-                  */}
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
+                      isSearchable={false}
                       options={warningOptions}
                       value={(data.warn || []).map(item => ({ value: item, label: item }))}
+//                      onChange={(selectedOptions) => {
+//                        const nextMembers = (selectedOptions || []).map(option => option.value);
+//                        setData({ ...data, warn: nextMembers });
+//                      }} 
+                      // 6月末版で変更                     
                       onChange={(selectedOptions) => {
-                        const nextMembers = (selectedOptions || []).map(option => option.value);
-                        setData({ ...data, warn: nextMembers });
+                        // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+                        const currentValues = (selectedOptions || []).map(option => option.value);
+  
+                        let updatedValues = currentValues;
+
+                        // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+                        const prevValues = data.warn || [];
+                        const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+                        if (addedValue === 'なし') {
+                          // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                          updatedValues = ['なし'];
+                        } else if (currentValues.includes('なし') && currentValues.length > 1) {
+                          // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                          updatedValues = currentValues.filter(val => val !== 'なし');
+                        }
+
+                        setData({ ...data, warn: updatedValues });
                       }}                      
-                      placeholder="注意報を選択"
+                      placeholder="注意報"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
                     />
@@ -413,25 +473,37 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 <div style={briefingStyles.field}>
                   <label style={briefingStyles.label}>警報</label>
                   <div style={briefingStyles.inputMultiSelect}> 
-                  {/*
-                  <MultiSelectInput
-                    options={ALERT_OPTIONS}
-                    value={data.alert || []}
-                    onChange={(next) => setData({ ...data, alert: next })}
-                    inputStyle={briefingStyles.inputMultiStyle}
-                    placeholder="警報を選択"
-                  />
-                  */}
                     <Select
                       isMulti       // 複数選択可能（マルチセレクト）
                       isSearchable={false}  // サジェスト検索有効
                       options={alertOptions}
                       value={(data.alert || []).map(item => ({ value: item, label: item }))}
+                      // onChange={(selectedOptions) => {
+                      //   const nextMembers = (selectedOptions || []).map(option => option.value);
+                      //   setData({ ...data, alert: nextMembers });
+                      // }}                      
+                      // 6月末版で変更                     
                       onChange={(selectedOptions) => {
-                        const nextMembers = (selectedOptions || []).map(option => option.value);
-                        setData({ ...data, alert: nextMembers });
+                        // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
+                        const currentValues = (selectedOptions || []).map(option => option.value);
+  
+                        let updatedValues = currentValues;
+
+                        // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
+                        const prevValues = data.alert || [];
+                        const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+                        if (addedValue === 'なし') {
+                          // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
+                          updatedValues = ['なし'];
+                        } else if (currentValues.includes('なし') && currentValues.length > 1) {
+                          // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
+                          updatedValues = currentValues.filter(val => val !== 'なし');
+                        }
+
+                        setData({ ...data, alert: updatedValues });
                       }}                      
-                      placeholder="警報を選択"
+                      placeholder="警報"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
                     />
@@ -476,7 +548,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                 </div>
 
                 <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>風向（方位）</label>
+                  <label style={briefingStyles.label}>風向（天気予報）</label>
                   
                   <select 
                     style={briefingStyles.input} 
@@ -494,20 +566,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                       </option>
                     ))}
                   </select>
-                  {/*
-                    <Select
-                      isMulti={false}       // 複数選択可能（マルチセレクト）
-                      isSearchable={false}  // サジェスト検索有効
-                      options={directionOptions}
-                      value={directionOptions.find(option => option.value === data.windDir) || null}
-                      onChange={(selectedOption) => {
-                        const nextCarType = selectedOption ? selectedOption.value : null;
-                        setData({ ...data, windDir: nextCarType })}}
-                      placeholder="風向を選択"
-                      noOptionsMessage={() => "見つかりません"}
-                      styles={customSelectStyles}
-                    />
-                  */}
                 </div>
 
                 <div style={briefingStyles.field}>
@@ -529,26 +587,27 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
             {/* メモエリア */}
             <div style={{ marginTop: '20px', paddingTop: '0px' }}>
               <div style={briefingStyles.field}>
-                <label style={briefingStyles.label}>申し送りメモ（申し送り事項に反映する内容を記載）</label>
+                <label style={briefingStyles.label}>メモ</label>
                 <textarea
                   placeholder="100字以内"
                   style={briefingStyles.textarea}
-                  value={data.handoverMemo}
+                  value={data.noteMemo}
                   maxLength={100}
-                  onChange={e => setData({...data, handoverMemo: e.target.value})} />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                  onChange={e => setData({...data, noteMemo: e.target.value})} />
+                {/* 文字数カウンターを表示 */}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
                   fontSize: '11px',
-                  color: data.handoverMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-                  fontWeight: data.handoverMemo.length >= 100 ? 'bold' : 'normal',
+                  color: data.noteMemo.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+                  fontWeight: data.noteMemo.length >= 100 ? 'bold' : 'normal',
                   userSelect: 'none',
                   textAlign: 'right'
                   }}>
-                  {data.handoverMemo.length} / 100
+                  {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              {/* 画面定義書20250617で削除
               <div style={briefingStyles.field}>
                 <label style={briefingStyles.label}>特記メモ（特記事項に反映する内容を記載）</label>
                 <textarea
@@ -558,7 +617,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   maxLength={100}
                   onChange={e => setData({...data, noteMemo: e.target.value})}
                 />
-                {/* 🛠️ 文字数カウンターを表示 */}
+                {/* 文字数カウンターを表示 */}
+                {/*}
                 <div style={{
                   right: '12px',
                   bottom: '8px',
@@ -571,6 +631,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   {data.noteMemo.length} / 100
                 </div>                  
               </div>
+              */}
             </div>
 
             <button type="submit" style={briefingStyles.startButton}>開始する</button>
@@ -594,8 +655,10 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   onChange={(e) => setSelectedArea(e.target.value)}
                 >
                   <option value="">エリア</option>
-                  {HANDOVERAREA.map((area, idx) => (
-                    <option key={idx} value={area}>{area}</option>
+                  {filteredCoasts.map((area) => (
+                  <option key={area.no} value={area.no}>
+                    {area.name}
+                  </option>
                   ))}
                 </select>
                 <ChevronDown size={18} style={briefingStyles.selectIcon} />
@@ -625,23 +688,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
           </div>
         </div>
 
-        {/* ★ selectedArea の有無で表示を切り替える */}
-        {!selectedArea ? (
-          // 【初期表示：エリアが選ばれていない場合】
-          <div style={{ 
-            padding: '40px 20px', 
-            textAlign: 'center', 
-            color: '#64748b', 
-            backgroundColor: '#f8fafc', 
-            borderRadius: '8px',
-            border: '1px dashed #cbd5e1',
-            fontSize: '14px'
-          }}>
-            <span>エリアを選択してください。</span>
-          </div>
-        ) : (
-          // 【エリアが選択された場合：一覧とページネーターを表示】
-          <>
             <div style={briefingStyles.table}>
                 <div style={briefingStyles.tableHeader}>
 
@@ -711,15 +757,36 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                   <div style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>申し送り事項</div>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>パトロールメンバー</div>
                 </div>
-
+                  </div>
+        {/* ★ selectedArea の有無で表示を切り替える */}
+        {!selectedArea ? (
+          // 【初期表示：エリアが選ばれていない場合】
+          <div style={{ 
+            padding: '40px 20px', 
+            textAlign: 'center', 
+            color: '#64748b', 
+            backgroundColor: '#f8fafc', 
+            borderRadius: '8px',
+            border: '1px dashed #cbd5e1',
+            fontSize: '14px'
+          }}>
+            <span>エリアを選択してください。</span>
+          </div>
+        ) : (
+          // 【エリアが選択された場合：一覧とページネーターを表示】
+          <>
                 <div style={briefingStyles.tableBody}>
+                    {/*console.log('currentHandovers:', currentHandovers)*/}
                   {currentHandovers.length > 0 ? (
                     currentHandovers.map((item, idx) => {
                       const memberArray = Array.isArray(item.members) 
                         ? item.members 
                         : (item.members ? [item.members] : []);
-                      const displayMembers = memberArray.slice(0, 2);
-
+                      const displayMembers = memberArray.slice(0, 1);
+                      //const memberNamesArray = displayMembers.map(m => m.user_id);
+                      const baseMemberNames = displayMembers.map(m => m.user_id);
+                      const memberNamesArray = [item.login_user, ...baseMemberNames];
+//                      const memberNamesArray = [currentHandovers.login_user, ...displayMembers.map(m => m.user_id)];
                       return (
                         <div key={idx} style={briefingStyles.tableRow}>
 
@@ -756,8 +823,8 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                             flex: 1, display: 'flex', flexDirection: 'column', 
                             justifyContent: 'center', fontSize: '12px', lineHeight: '1.4' 
                           }}>
-                            {displayMembers.length > 0 ? (
-                              displayMembers.map((member, mIdx) => (
+                            {memberNamesArray.length > 0 ? (
+                              memberNamesArray.map((member, mIdx) => (
                                 <div key={mIdx}>{member}</div>
                               ))
                             ) : (
@@ -773,7 +840,6 @@ function BriefingView({ user, onComplete, recentHandovers = [], profileList }) {
                     </div>
                   )}
                 </div>
-              </div>
 
               {/* ページネーターもエリア選択時のみ一緒に表示する */}
               <div style={briefingStyles.pagination}>
@@ -813,7 +879,7 @@ const briefingStyles = {
   },
   header: { backgroundColor: '#08172A', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  logoGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
+  logoGroup: { display: 'flex', alignItems: 'center', gap: '4px' },
   logoCircle: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#6b7280' },
   logoText: { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' },
   
@@ -832,7 +898,9 @@ const briefingStyles = {
   input: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
-  disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' },
+  disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
+    webkitTextFillColor: '#000000', opacity: '1'
+   },
   textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '64px', resize: 'none', marginTop: '8px' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 

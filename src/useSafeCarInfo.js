@@ -4,7 +4,6 @@ import { useAuth } from './contexts/authContext';
 
 export function useSafeCarInfo() {
   const { carInfo } = useAuth();
-
   const safeCarInfo = React.useMemo(() => {
     if (carInfo && carInfo.length > 0) return carInfo;
     const saved = localStorage.getItem('auth_data');
