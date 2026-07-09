@@ -44,7 +44,7 @@ function LoginView() {
     else {
       // Local Strageのブリーフィングデータ
       // 昨日以前の日付ならば削除
-      // 当日でもログイン者
+      // 当日でもログイン者が違えばmembers削除
       const savedData = localStorage.getItem('briefing_data');
       if (savedData) {
         try {

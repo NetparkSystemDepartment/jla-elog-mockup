@@ -60,4 +60,4 @@ export const PRIORITY_OPTIONS = [
   { id: 2, label: '低' },
 ];
 
-export const FEATURE_OPTIONS = ['遊泳', 'ビーチ', 'スノーケル', '釣り', '磯遊び', 'SUP', 'カヤック', 'ダイビング', 'サーフィン', 'その他'];
+export const FEATURE_OPTIONS = ['利用なし', '遊泳', 'ビーチ', 'スノーケル', '釣り', '磯遊び', 'SUP', 'カヤック', 'ダイビング', 'サーフィン', 'その他'];

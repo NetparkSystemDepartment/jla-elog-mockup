@@ -244,9 +244,16 @@ function App() {
       // トークンの有効期限切れ、再ログイン
       if (result.result === false) {
         toast.dismiss(toastId);
+        if (result.error_no === 1002) {
+          toast.warning(
+            <div>ログイン情報が不正です。<br />再ログインして再度送信してください。</div>
+          );  
+          logout();
+          return;
+        }
         if (result.error_no === 1004) {
           toast.warning(
-            <div>ログインの有効期限が切れました。<br />再度ログインしてください。</div>
+            <div>ログインの有効期限が切れました。<br />再ログインして再度送信してください。</div>
           );  
           logout();
           return;
