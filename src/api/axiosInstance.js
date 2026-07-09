@@ -13,20 +13,13 @@ const axiosInstance = axios.create({
   },
 });
 
-// リクエスト・インターセプター
 axiosInstance.interceptors.request.use(
   (config) => {
-    // ローカルストレージからログイン結果を丸ごと取得
     const savedAuth = localStorage.getItem('auth_data');
-//console.log('リクエスト・インターセプト:', savedAuth);
-    
     if (savedAuth) {
       try {
         const authData = JSON.parse(savedAuth);
-        
-        // authDataの "token" を取得
         if (authData && authData.token) {
-          // ヘッダーに自動添付 (Bearer形式)
           config.headers['Authorization'] = `Bearer ${authData.token}`;
         }
       } catch (e) {
@@ -35,7 +28,25 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
+  (error) => Promise.reject(error)
+);
+
+const SESSION_ERROR_CODES = [1002, 1004, 1005];
+
+const forceLogout = () => {
+  localStorage.removeItem('auth_data');
+  localStorage.removeItem('briefing_data');
+  localStorage.removeItem('weeklyBeachData');
+  window.location.reload();
+};
+
+axiosInstance.interceptors.response.use(
+  (response) => {
+    if (SESSION_ERROR_CODES.includes(response.data?.error_no)) forceLogout();
+    return response;
+  },
   (error) => {
+    if (SESSION_ERROR_CODES.includes(error.response?.data?.error_no)) forceLogout();
     return Promise.reject(error);
   }
 );

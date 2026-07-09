@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, LifeBuoy, PencilLine, FileText, Megaphone, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 import { useAuth } from '../contexts/authContext';
 import { hasUnsyncedRecords } from '../db';
@@ -83,28 +83,6 @@ const showConfirm = async () => {
 
       </main>
 
-      {/* ナビゲーションフッター */}
-      <nav style={styles.footer}>
-        <button onClick={() => onNavigate('home')} style={styles.navItem}>
-          <Home size={24} /><span>ホーム</span>
-        </button>
-        <button style={styles.navItem}>
-          <LifeBuoy size={24} /><span>救助登録</span>
-        </button>
-        <button onClick={() => onNavigate('list')} style={styles.navItem}>
-          <div style={styles.mainCircle}>
-            <PencilLine size={24} />
-            <span style={{ fontSize: '10px', marginTop: '2px' }}>新規登録</span>
-          </div>
-        </button>
-        {/*<button onClick={() => onNavigate('records')} style={styles.navItem}>*/}
-        <button style={styles.navItem}>
-          <FileText size={24} /><span>記録一覧</span>
-        </button>
-        <button style={styles.navItem}>
-          <Megaphone size={24} /><span>お知らせ</span>
-        </button>
-      </nav>
     </div>
   );
 }

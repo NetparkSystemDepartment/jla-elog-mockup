@@ -11,7 +11,8 @@ export function useSafeCarInfo() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.carInfo || [];
+        if (parsed.carInfo?.length > 0) return parsed.carInfo;
+        return parsed.master_info?.car_info || [];
       } catch (e) {
         return [];
       }
