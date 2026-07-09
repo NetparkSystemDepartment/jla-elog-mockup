@@ -18,6 +18,7 @@ import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
 // useNetworkState	ブラウザのネットワーク接続の状態を追跡する
 import { useNetworkState } from 'react-use';
 import Select from 'react-select';
+import { useConfirm } from '../components/ConfirmDialogContext';
 
 
 // パトロールメンバー
@@ -78,7 +79,37 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   const safeCarInfo = useSafeCarInfo();
 
   //
-  const handleToggle = () => {
+  const confirm = useConfirm(); 
+  const handleToggle = async() => {
+
+    if (!unpatrolled) {
+      const ok = await confirm({
+        title: "確認",
+        message: "このビーチにおける未送信のパトロールログは削除されます。パトロール未実施ですか？",
+        okText: "パトロール未実施",
+        cancelText: "もどる",
+      });
+
+      if (!ok) return;
+
+      formData.startTime = '';
+      formData.weather = '';
+      formData.current = '';
+      formData.waveOuter = '';
+      formData.wave = '';
+      formData.windDirDetail = '';
+      formData.windSpeedDetail = '';
+      formData.feature = '';
+      formData.jpWarning = '';
+      formData.forWarning = '';
+      formData.jpTourist = '';
+      formData.forTourist = '';
+      formData.visitors = '';
+      formData.handover = 'なし';
+      formData.priority = '';
+      formData.endTime = '';
+    }
+
     setFormData(prev => ({
       ...prev,
       unpatrolled: !prev.unpatrolled
@@ -853,7 +884,7 @@ useEffect(() => {
         {/* パトロール終了時刻 */}
         <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.endTime ? errorInput : {})}}
               value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
           </div>
         </InputTile>
@@ -900,7 +931,9 @@ const inputMultiStyle = { padding: '4px', borderRadius: '4px', fontSize: '12px',
 const inputNumericStyle = { width: '80%', borderRadius: '4px', border: 'none', fontSize: '12px', height: '24px', backgroundColor: '#f3f4f6', textAlign: 'right' };
 const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
 const inputNoteStyle = { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '60px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
-const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' };
+const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
+    webkitTextFillColor: '#000000', opacity: '1'
+   };
 const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 //const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '4px' };
 const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px' };

@@ -30,9 +30,36 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
   // ローカルストレージから既存データを読み込む初期化関数
   const [data, setData] = useState(() => {
     const savedData = localStorage.getItem('briefing_data');
+
     if (savedData) {
       try {
-        return JSON.parse(savedData);
+        //return JSON.parse(savedData);
+
+          const parsed = JSON.parse(savedData);
+
+          // 今日の日付かどうか判断
+          const isExist = Boolean(parsed.timestamp);
+          let isToday = false;
+          if (isExist) {
+            const savedTimestamp = Number(parsed.timestamp);
+            const savedDate = new Date(savedTimestamp);
+            const today = new Date();
+
+            isToday = 
+              savedDate.getFullYear() === today.getFullYear() &&
+              savedDate.getMonth() === today.getMonth() &&
+              savedDate.getDate() === today.getDate();
+          }
+          if (isExist) {
+            if (!isToday) {
+              // Local Strageを削除
+              localStorage.removeItem('briefing_data');
+              console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
+            }
+            else {
+                return parsed;
+            }
+          }
       } catch (e) {
         console.error('ローカルストレージのデータ解析に失敗:', e);
       }
@@ -74,13 +101,19 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
         
         // 共通関数を呼び出し
         const resData = await getinfoApi(requestBody);
-//console.log('resData:', resData);      
 
         // トークンの有効期限切れ、利用時間外、再ログイン
         if (resData.result === false) {
+          if (resData.error_no === 1002) {
+            toast.warning(
+              <div>ログイン情報が不正です。<br />再ログインしてください。</div>
+            );  
+            logout();
+            return;
+          }
           if (resData.error_no === 1004) {
             toast.warning(
-              <div>ログインの有効期限が切れました。<br />再度ログインしてください。</div>
+              <div>ログインの有効期限が切れました。<br />再ログインしてください。</div>
             );  
             logout();
             return;
@@ -272,6 +305,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
       ...data,
       id: user.id,
       timestamp: Date.now() 
+      //timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)
     }
     localStorage.setItem('briefing_data', JSON.stringify(briefingData));
     onComplete(briefingData);
@@ -520,7 +554,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                 </div>
 
                 <div style={briefingStyles.field}>
-                  <label style={briefingStyles.label}>風向（方位）</label>
+                  <label style={briefingStyles.label}>風向（天気予報）</label>
                   
                   <select 
                     style={briefingStyles.input} 
@@ -870,7 +904,9 @@ const briefingStyles = {
   input: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
-  disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', color: '#6b7280', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed' },
+  disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
+    webkitTextFillColor: '#000000', opacity: '1'
+   },
   textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '64px', resize: 'none', marginTop: '8px' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
 
