@@ -31,6 +31,9 @@ dist-ssr
 .claude/
 .claudeignore
 
+#other
+issue/
+
 # Credentials & secrets
 .env
 .env.*

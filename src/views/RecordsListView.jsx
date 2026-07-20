@@ -3,7 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Filter, Download, Menu } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { getinfoApi } from '../api/recordApi';
+import Select from 'react-select';
+import { getinfoApi, getCsvApi } from '../api/recordApi';
+import { useSafeMembers } from '../useSafeMembers';
 
 const PAGE_SIZE = 20;
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -14,6 +16,17 @@ const getMasterInfo = () => {
   } catch {
     return {};
   }
+};
+
+const rowKey = (r) => `${r.key}-${r.detail_key}`;
+
+// startDateは "yyyy/mm/dd" 形式で返ってくるため、<input type="date"> の "yyyy-mm-dd" と
+// 区切り文字が異なる。区切り文字違いのまま文字列比較すると常に真/偽に倒れてしまうため、
+// 区切り文字を揃えた比較用キーに正規化する。
+const startDateKey = (r) => {
+  if (!r.startDate) return '';
+  const d = new Date(`${String(r.startDate).slice(0, 10).replaceAll('/', '-')}T00:00:00`);
+  return isNaN(d.getTime()) ? '' : format(d, 'yyyy-MM-dd');
 };
 
 const areaLabel = (areaId, areaList) => {
@@ -27,7 +40,7 @@ const beachLabel = (beachId, areaId, areaList) => {
   return beach?.beach ?? String(beachId);
 };
 
-function RecordsListView({ user, onBack, onSelectRecord }) {
+function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelectedKeys }) {
   const isAdmin      = user.kind === 0;
   const canCsvSelect = user.kind <= 2; // admin / patrol / tower
 
@@ -35,11 +48,10 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo]     = useState('');
   const [filterDow, setFilterDow]           = useState('');
-  const [filterMember, setFilterMember]     = useState('');
+  const [filterMembers, setFilterMembers]   = useState([]);
   const [sortCol, setSortCol]               = useState('startDate');
   const [sortDir, setSortDir]               = useState('desc');
   const [currentPage, setCurrentPage]       = useState(1);
-  const [selectedKeys, setSelectedKeys]     = useState(new Set());
   const [showCancelled, setShowCancelled]   = useState(false);
 
   const masterInfo  = useMemo(() => getMasterInfo(), []);
@@ -54,6 +66,12 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
     return allAreaList;
   }, [allAreaList, user.kind]);
 
+  const safeMembers = useSafeMembers();
+  const memberOptions = useMemo(() => safeMembers.map(item => {
+    const uid = item?.user_id ?? String(item);
+    return { value: uid, label: uid };
+  }), [safeMembers]);
+
   const { data: apiData, isLoading, error } = useQuery({
     queryKey: ['records-list'],
     queryFn: () => getinfoApi({ type: 2 }),
@@ -66,11 +84,12 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
       .filter(r => !filterArea || String(r.area) === String(filterArea))
-      .filter(r => !filterDateFrom || r.startDate >= filterDateFrom)
-      .filter(r => !filterDateTo   || r.startDate <= filterDateTo)
+      .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
+      .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
       .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow)
-      .filter(r => !filterMember || (r.members || []).some(m => (m?.user_id ?? String(m)).includes(filterMember)));
-  }, [allRecords, showCancelled, filterArea, filterDateFrom, filterDateTo, filterDow, filterMember]);
+      .filter(r => filterMembers.length === 0 ||
+        (r.members || []).some(m => filterMembers.includes(m?.user_id ?? String(m))));
+  }, [allRecords, showCancelled, filterArea, filterDateFrom, filterDateTo, filterDow, filterMembers]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return filtered;
@@ -97,12 +116,12 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
     return sortDir === 'asc' ? ' ↑' : ' ↓';
   };
 
-  const isPageAllSelected = paged.length > 0 && paged.every(r => selectedKeys.has(r.key));
+  const isPageAllSelected = paged.length > 0 && paged.every(r => selectedKeys.has(rowKey(r)));
 
   const handleSelectAll = (checked) => {
     setSelectedKeys(prev => {
       const next = new Set(prev);
-      paged.forEach(r => checked ? next.add(r.key) : next.delete(r.key));
+      paged.forEach(r => checked ? next.add(rowKey(r)) : next.delete(rowKey(r)));
       return next;
     });
   };
@@ -115,34 +134,40 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
     });
   };
 
-  const handleCsvDownload = () => {
-    const targets = selectedKeys.size > 0
-      ? sorted.filter(r => selectedKeys.has(r.key))
-      : sorted;
+  const handleCsvDownload = async () => {
+    if (selectedKeys.size === 0) {
+      alert('CSV出力する記録にチェックを入れてください');
+      return;
+    }
 
-    const rows = [
-      ['エリア', 'ビーチ', '日付', 'パトロールメンバー'],
-      ...targets.map(r => [
-        areaLabel(r.area, allAreaList),
-        beachLabel(r.beach, r.area, allAreaList),
-        r.startDate,
-        (r.members || []).map(m => m?.user_id ?? String(m)).join(' / '),
-      ]),
-    ];
-    const csv = rows.map(row =>
-      row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
-    ).join('\n');
+    try {
+      const targets = sorted.filter(r => selectedKeys.has(rowKey(r)));
+      const data = targets.map(r => ({ key: r.key, detail_key: r.detail_key }));
+      const blob = await getCsvApi({ type: 4, data });
 
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      // aタグのdownload属性でその場でダウンロードさせる。
+      // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e.message || 'CSV出力に失敗しました');
+    }
   };
 
   const resetPage = () => setCurrentPage(1);
+
+  const handleClearFilters = () => {
+    setFilterArea('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterDow('');
+    setFilterMembers([]);
+    resetPage();
+  };
 
   return (
     <div style={s.wrapper}>
@@ -164,17 +189,28 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
             >
               <option value="">全エリア</option>
               {areaOptions.map(a => (
-                <option key={a.no} value={a.no}>{a.area}</option>
+                <option key={a.no} value={a.area}>{a.area}</option>
               ))}
             </select>
-            <input
-              type="text"
-              placeholder="パトロールメンバー"
-              value={filterMember}
-              onChange={e => setFilterMember(e.target.value)}
-              style={s.inputMember}
-            />
+            <div style={s.inputMember}>
+              <Select
+                isMulti
+                isSearchable
+                options={memberOptions}
+                value={memberOptions.filter(o => filterMembers.includes(o.value))}
+                onChange={(selected) => {
+                  setFilterMembers((selected || []).map(o => o.value));
+                  resetPage();
+                }}
+                placeholder="パトロールメンバー"
+                noOptionsMessage={() => "見つかりません"}
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+              />
+            </div>
             <button onClick={resetPage} style={s.searchBtn}>絞り込み</button>
+            <button onClick={handleClearFilters} style={s.clearBtn}>クリア</button>
           </div>
 
           <div style={s.filterRow}>
@@ -251,8 +287,8 @@ function RecordsListView({ user, onBack, onSelectRecord }) {
               <div style={s.checkCell} onClick={e => e.stopPropagation()}>
                 <input
                   type="checkbox"
-                  checked={selectedKeys.has(record.key)}
-                  onChange={e => handleSelectRow(record.key, e.target.checked)}
+                  checked={selectedKeys.has(rowKey(record))}
+                  onChange={e => handleSelectRow(rowKey(record), e.target.checked)}
                 />
               </div>
             )}
@@ -335,12 +371,14 @@ const s = {
     border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
     fontSize: '13px', backgroundColor: '#f8fafc', minWidth: '60px',
   },
-  inputMember: {
-    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 10px',
-    fontSize: '13px', flex: 1, backgroundColor: '#f1f5f9',
-  },
+  inputMember: { flex: 1, minWidth: '160px' },
   searchBtn: {
     backgroundColor: '#0f172a', color: 'white', border: 'none',
+    borderRadius: '20px', padding: '6px 16px', fontSize: '13px',
+    fontWeight: 'bold', cursor: 'pointer',
+  },
+  clearBtn: {
+    backgroundColor: '#fff', color: '#475569', border: '1px solid #cbd5e1',
     borderRadius: '20px', padding: '6px 16px', fontSize: '13px',
     fontWeight: 'bold', cursor: 'pointer',
   },
@@ -380,6 +418,58 @@ const s = {
     background: 'none', border: 'none', color: '#475569',
     fontSize: '12px', textDecoration: 'underline', cursor: 'pointer',
   },
+};
+
+const customSelectStyles = {
+  // 入力エリア全体（コントロール）のスタイル
+  control: (provided) => ({
+    ...provided,
+    backgroundColor: '#f1f5f9',
+    border: '1px solid #cbd5e1',
+    boxShadow: 'none',
+    '&:hover': {
+      border: '1px solid #cbd5e1',
+    },
+    borderRadius: '8px',
+    minHeight: 'auto',
+  }),
+  // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
+  multiValue: (provided) => ({
+    ...provided,
+    backgroundColor: '#e0e0e0',
+    borderRadius: '9999px',
+    paddingLeft: '6px',
+    paddingRight: '2px',
+    border: '1px solid #e5e7eb',
+    fontSize: '13px',
+  }),
+  // バッジの中の「文字」のスタイル
+  multiValueLabel: (provided) => ({
+    ...provided,
+    color: '#1f2937',
+    paddingRight: '4px',
+  }),
+  // バッジの右側にある「×ボタン」のスタイル
+  multiValueRemove: (provided) => ({
+    ...provided,
+    borderRadius: '0 9999px 9999px 0',
+    color: '#9ca3af',
+    '&:hover': {
+      backgroundColor: '#fee2e2',
+      color: '#ef4444',
+    },
+  }),
+  // プレースホルダーのスタイル
+  placeholder: (provided) => ({
+    ...provided,
+    fontSize: '13px',
+    color: '#9ca3af',
+  }),
+  // 選択肢（オプション）のスタイル
+  option: (provided) => ({
+    ...provided,
+    fontSize: '14px',
+  }),
 };
 
 export default RecordsListView;

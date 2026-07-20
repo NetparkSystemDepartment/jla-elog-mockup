@@ -140,6 +140,7 @@ function App() {
   const [syncedRecords, setSyncedRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
 
   // idからビーチ名を返す
   const getNameByBeachId = (name) => ONNA_BEACHES.find((c) => c.id === name)?.name;
@@ -576,6 +577,8 @@ function App() {
           user={user}
           onBack={() => setView('home')}
           onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
+          selectedKeys={recordsCsvSelectedKeys}
+          setSelectedKeys={setRecordsCsvSelectedKeys}
         />
       );
 

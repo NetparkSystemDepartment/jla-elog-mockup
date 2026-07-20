@@ -34,9 +34,9 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-const SESSION_ERROR_CODES = [1002, 1004, 1005];
+export const SESSION_ERROR_CODES = [1002, 1004, 1005];
 
-const forceLogout = () => {
+export const forceLogout = () => {
   localStorage.removeItem('auth_data');
   localStorage.removeItem('briefing_data');
   localStorage.removeItem('weeklyBeachData');
