@@ -10,7 +10,8 @@ export function useSafeCarInfo() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.master_info.car_info || [];
+        if (parsed.carInfo?.length > 0) return parsed.carInfo;
+        return parsed.master_info?.car_info || [];
       } catch (e) {
         return [];
       }

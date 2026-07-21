@@ -210,17 +210,14 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
-//console.log('safeMembers:', safeMembers);
-  // ログイン者を除く
-//console.log('user.user_id:', user.user_id);
-  //const exceptLogin = safeMembers.filter((member, index) => (member !== user.user_id));
-  const exceptLogin = safeMembers.filter(item => item.user_id !== user.user_id);
-//console.log('exceptLogin:', exceptLogin);
-  // react-selectで使えるように
-  const loginOptions = exceptLogin.map(item => ({
-    value: item,
-    label: item.user_id,
-  }));
+  // ログイン者を除く（members は { id, user_id } オブジェクトの配列）
+  const exceptLogin = safeMembers.filter(member =>
+    (member?.user_id ?? member) !== user.id
+  );
+  const loginOptions = exceptLogin.map(item => {
+    const uid = item?.user_id ?? String(item);
+    return { value: uid, label: uid };
+  });
   const warningOptions = WARNING_OPTIONS.map(item => ({
     value: item,
     label: item
@@ -385,25 +382,22 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                   <label style={briefingStyles.label}>自分以外のパトロールメンバー</label>
                   <div style={briefingStyles.inputMultiSelect}> 
                     <Select
-                      isMulti       // 複数選択可能（マルチセレクト）
-                      isSearchable  // サジェスト検索有効
-                      hideSelectedOptions={true}
+                      isMulti
+                      isSearchable
                       options={loginOptions}
-                      value={(data.members || []).map(item => ({ value: item, label: item.user_id }))}
+                      value={(Array.isArray(data.members) ? data.members : []).map(item => {
+                        const uid = item?.user_id ?? String(item);
+                        return { value: uid, label: uid };
+                      })}
                       onChange={(selectedOptions) => {
                         const nextMembers = (selectedOptions || []).map(option => option.value);
                         setData({ ...data, members: nextMembers });
-                      }}  
-                      isOptionSelected={(option, selectedValues) => {
-                        return selectedValues.some(selectedValue => {
-                          const optionId = option.value.id || option.value['id '];
-                          const selectedId = selectedValue.value.id || selectedValue.value['id '];
-                          return optionId === selectedId;
-                        });
-                      }}                    
+                      }}
                       placeholder="ユーザーID"
                       noOptionsMessage={() => "見つかりません"}
                       styles={customSelectStyles}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
                     />
 
                   </div>
@@ -432,7 +426,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                     
                     <input type="text" placeholder="No." style={{...briefingStyles.input, width: '50%'}} maxLength={4} inputMode="numeric"
                       value={data.carNo}
-                      onChange={e => setData({...data, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")})} />
+                      onChange={e => setData({...data, carNo: e.target.value.replace(/[^0-9]/g, '')})} />
                   </div>
                 </div>
 

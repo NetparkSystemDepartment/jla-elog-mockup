@@ -26,17 +26,15 @@ import { useSafeMembers } from '../useSafeMembers';
 // 車種名
 import { useSafeCarInfo } from '../useSafeCarInfo';
 
-//const FEATURE_OPTIONS = ['海水浴', 'マリンスポーツ', 'ビーチスポーツ', 'BBQ', '散策', '遊具遊び', 'イベント'];
-
 const initialFormData = {
-  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', windSpeedDetail: '', tide: '', 
-  highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '', 
-  wave: '', warn: '', alert: '', visitors: '', feature: '', 
+  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', windSpeedDetail: '',
+  tide: '', highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '',
+  windDir: '', windDirDetail: '', wave: '', warn: '', alert: '', visitors: '', feature: '',
   jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: '',
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList, seq, isEdit = false, onUpdate }) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
   startDate: selectedDate,
@@ -52,15 +50,14 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
-  //console.log('safeMembers:', safeMembers);
-  // ログイン者を除く
-  // const exceptLogin = safeMembers.filter((member, index) => (member !== user.id));;
-  const exceptLogin = safeMembers.filter(item => item.user_id !== user.user_id);
-// react-selectで使えるように
-  const loginOptions = exceptLogin.map(item => ({
-    value: item,
-    label: item.user_id
-  }));
+  // ログイン者を除く（members は { id, user_id } オブジェクトの配列）
+  const exceptLogin = safeMembers.filter(member =>
+    (member?.user_id ?? member) !== user.id
+  );
+  const loginOptions = exceptLogin.map(item => {
+    const uid = item?.user_id ?? String(item);
+    return { value: uid, label: uid };
+  });
   const warningOptions = WARNING_OPTIONS.map(item => ({
     value: item,
     label: item
@@ -232,8 +229,11 @@ useEffect(() => {
     formData.startDate = selectedDate;
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
-    // 保存（indexedDB）処理
-    onSave(formData);
+    if (isEdit) {
+      onUpdate(formData);
+    } else {
+      onSave(formData);
+    }
   };
 
     // 「送信」ボタン
@@ -296,7 +296,7 @@ useEffect(() => {
         <div style={headerTopStyle}>
           {/*<div className={styles.dummyStyle} ></div>*/}
           <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
-          <span style={logoTextStyle}>ログ入力</span>
+          <span style={logoTextStyle}>{isEdit ? '記録編集' : '記録入力'}</span>
           <span></span>
         </div>
         <div style={headerMiddleStyle}>{selectedCoast.name}</div>
@@ -333,25 +333,22 @@ useEffect(() => {
             <Users size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
           <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable  // サジェスト検索有効
-            hideSelectedOptions={true}
+            isMulti
+            isSearchable
             options={loginOptions}
-            value={(formData.members || []).map(item => ({ value: item, label: item.user_id }))}
+            value={(Array.isArray(formData.members) ? formData.members : []).map(item => {
+              const uid = item?.user_id ?? String(item);
+              return { value: uid, label: uid };
+            })}
             onChange={(selectedOptions) => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, members: nextMembers });
-            }}                      
-            isOptionSelected={(option, selectedValues) => {
-              return selectedValues.some(selectedValue => {
-                const optionId = option.value.id || option.value['id '];
-                const selectedId = selectedValue.value.id || selectedValue.value['id '];
-                return optionId === selectedId;
-              });
-            }}                    
+            }}
             placeholder="ユーザーID"
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
           />
 
         </InputTile>
@@ -560,6 +557,27 @@ useEffect(() => {
                 </option>
               ))}
           </select> 
+        </InputTile>
+
+        {/* 風速（現地） */}
+        <InputTile label="風速（現地）" icon={Gauge}>
+          <div style={radioFlexStyle}>
+            {WIND_SPEED_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setFormData({ ...formData, windSpeedDetail: opt.id })}
+                style={{
+                  ...radioBtnStyle,
+                  borderColor: formData.windSpeedDetail === opt.id ? '#38bdf8' : '#e2e8f0',
+                  backgroundColor: formData.windSpeedDetail === opt.id ? '#e0f2fe' : '#fff',
+                  color: formData.windSpeedDetail === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </InputTile>
 
         {/* 風速（天気予報） */}
@@ -778,8 +796,11 @@ useEffect(() => {
              </select>
              <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
               value={formData.carNo}
-              onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
-                if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
+              onChange={e => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setFormData({...formData, carNo: val});
+                if (errors.carNo) setErrors({ ...errors, carNo: null });
+              }} />
           </div>
         </InputTile>
           
@@ -894,25 +915,29 @@ useEffect(() => {
       <footer>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
 
-          <button
-            type="button"
-            onClick={handleToggle}
-            style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
-            Unpatrolled
-          </button>
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={handleToggle}
+              style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
+              Unpatrolled
+            </button>
+          )}
 
-          <button 
-            onClick={() => handleSendClick(formData)} 
-            disabled={isDisabled}
-            style={{
-              ...sendBtnStyle,
-              //backgroundColor: isValid ? '#44445A' : '#777777',
-              cursor: isDisabled ? 'not-allowed' : 'pointer' ,
-              opacity: isDisabled ? 0.5 : 1,
-            }}
-          >
-          <span style={{ marginTop: 4}}>{isDisabled ? ( <Ban size={14} style={{ marginRight: 8}} />) : ('')}</span>            
-          <span>送信</span></button>
+          {!isEdit && (
+            <button
+              onClick={() => handleSendClick(formData)}
+              disabled={isDisabled}
+              style={{
+                ...sendBtnStyle,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                opacity: isDisabled ? 0.5 : 1,
+              }}
+            >
+              <span style={{ marginTop: 4}}>{isDisabled ? (<Ban size={14} style={{ marginRight: 8}} />) : ('')}</span>
+              <span>送信</span>
+            </button>
+          )}
         </div>
       </footer>
 

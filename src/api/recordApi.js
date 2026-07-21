@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance, { SESSION_ERROR_CODES, forceLogout } from './axiosInstance';
 
 /**
  * 1. ログインAPI
@@ -31,4 +31,24 @@ export const getinfoApi = async (payload) => {
   // ログインと同じ axiosInstance ＆ 同じスラッシュから始まるURLにするのが超重要です！
   const { data } = await axiosInstance.post('/getinfo.php', payload);
   return data;
+};
+
+/**
+ * 4. CSV出力API（選択されたレコードをサーバーでCSV化してもらう）
+ * @param {Object} payload - { type: 4, data: [{ key: 'xxxx', detail_key: 'xxxx' }, ...] }
+ * @returns {Promise<Blob>} - CSVバイナリ（text/csv）
+ */
+export const getCsvApi = async (payload) => {
+  const response = await axiosInstance.post('/getinfo.php', payload, { responseType: 'blob' });
+  const blob = response.data;
+
+  // responseType: 'blob' はレスポンスインターセプターのerror_noチェックを素通りしてしまうため、
+  // ここで個別にエラーレスポンス（JSON）かどうかを判定する
+  if (blob.type && blob.type.includes('json')) {
+    const json = JSON.parse(await blob.text());
+    if (SESSION_ERROR_CODES.includes(json.error_no)) forceLogout();
+    throw new Error(json.error_msg || 'CSV出力に失敗しました');
+  }
+
+  return blob;
 };

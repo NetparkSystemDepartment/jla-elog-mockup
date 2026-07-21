@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import ListView from './views/ListView';
 import EditView from './views/EditView';
 import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
+import RecordDetailView from './views/RecordDetailView';
 import { getAllRecords, saveRecord, getRecordsByDate, cleanupExpiredData } from './db';
 import { startOfDay, format } from 'date-fns';
 import { toast, Toaster } from 'sonner';
@@ -12,15 +14,75 @@ import { useAuth } from './contexts/authContext';
 import { supabase } from './supabaseClient';
 import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
+import { Home, LifeBuoy, PencilLine, FileText, Megaphone } from 'lucide-react';
 import { getNameByBeachNo } from './useAreaInfo';
 
-
-import { ONNA_BEACHES } from './constantsPublic';
+import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
 const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
+const getMasterAreaBeachNos = (coastName, beachName) => {
+  try {
+    const masterInfo = JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
+    const allAreaList = (masterInfo.area_info || []).filter(a => Number(a.delete_flg) !== 1);
+    const areaObj = allAreaList.find(a => a.area === coastName);
+    const beachObj = (areaObj?.beach_info || []).find(b => b.beach === beachName);
+    return { area: areaObj?.no ?? null, beach: beachObj?.no ?? null };
+  } catch {
+    return { area: null, beach: null };
+  }
+};
+
+const FOOTER_VIEWS = ['home', 'list', 'records', 'recordDetail'];
+
+function GlobalFooter({ onNavigate }) {
+  return (
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200 }}>
+      <nav style={gfStyles.footer}>
+        <button onClick={() => onNavigate('home')} style={gfStyles.navItem}>
+          <Home size={24} /><span>ホーム</span>
+        </button>
+        <button style={gfStyles.navItem}>
+          <LifeBuoy size={24} /><span>救助登録</span>
+        </button>
+        <button onClick={() => onNavigate('list')} style={gfStyles.navItem}>
+          <div style={gfStyles.mainCircle}>
+            <PencilLine size={24} />
+            <span style={{ fontSize: '10px', marginTop: '2px' }}>新規登録</span>
+          </div>
+        </button>
+        <button onClick={() => onNavigate('records')} style={gfStyles.navItem}>
+          <FileText size={24} /><span>ログデータ</span>
+        </button>
+        <button style={gfStyles.navItem}>
+          <Megaphone size={24} /><span>お知らせ</span>
+        </button>
+      </nav>
+    </div>
+  );
+}
+
+const gfStyles = {
+  footer: {
+    backgroundColor: '#08172A', height: '80px',
+    display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+    color: 'white', maxWidth: '820px', margin: '0 auto',
+  },
+  navItem: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: '4px', background: 'none', border: 'none', color: 'white',
+    fontSize: '10px', cursor: 'pointer',
+  },
+  mainCircle: {
+    width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#08172A',
+    border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', flexDirection: 'column',
+  },
+};
+
 function App() {
-  const { user, login, logout, isLoading  } = useAuth(); // Contextから取得
+  const { user, login, logout, isLoading  } = useAuth();
+  const queryClient = useQueryClient();
   const [loginId, setLoginId] = useState('');
   const [view, setView] = useState('briefing'); // デフォルトをhomeに
   
@@ -76,6 +138,9 @@ function App() {
   const [recentHandovers, setRecentHandovers] = useState([]);
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
 
   // idからビーチ名を返す
   const getNameByBeachId = (name) => ONNA_BEACHES.find((c) => c.id === name)?.name;
@@ -224,15 +289,17 @@ function App() {
       // axiosInstance が共通でヘッダー（Authorizationなど）を処理する設計、
       // またはサーバー側がセッション/POST内のデータで認証する設計であれば、そのまま record を渡します。
  
-      const { date, id, timestamp, isSynced, seq, token,
+      const { date, id, timestamp, isSynced, area: _a, beach: _b,
         ...cleanRecord } = record;
 
-//console.log('cleanRecord:', cleanRecord);
+      const { area: masterArea, beach: masterBeach } = getMasterAreaBeachNos(selectedCoast, selectedBeach);
 
       const payload = {
         type: 1,
         data: {
           ...cleanRecord,
+          area: masterArea,
+          beach: masterBeach,
           delete_flg: false,
         }
       };
@@ -332,9 +399,60 @@ function App() {
 //    }
 //  };
 
-  // 「ビーチを選択」のハンドラー 
+  // 記録詳細画面から「編集する」が押されたとき
+  const handleEditRecord = (fullRecord) => {
+    try {
+      const masterInfo = JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
+      const allAreaList = masterInfo.area_info || [];
+      const areaObj = allAreaList.find(a => String(a.no) === String(fullRecord.area));
+      const beachObj = (areaObj?.beach_info || []).find(b => String(b.no) === String(fullRecord.beach));
+      setSelectedCoast(areaObj?.area || '');
+      setSelectedBeach(beachObj?.beach || '');
+    } catch {
+      setSelectedCoast('');
+      setSelectedBeach('');
+    }
+    const d = new Date(String(fullRecord.startDate).slice(0, 10) + 'T00:00:00');
+    setSelectedDate(startOfDay(isNaN(d.getTime()) ? new Date() : d));
+    const normalizedRecord = fullRecord.end_time !== undefined && fullRecord.endTime === undefined
+      ? { ...fullRecord, endTime: fullRecord.end_time }
+      : fullRecord;
+    setEditingRecord(normalizedRecord);
+    setBriefingData(normalizedRecord);
+    setView('edit');
+  };
+
+  const handleUpdate = async (formData) => {
+    const toastId = toast.loading('更新中...');
+    try {
+      const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
+      const result = await setinfoApi({
+        type: 1,
+        data: {
+          ...rest,
+          members: (members || []).map(m => m?.user_id ?? String(m)),
+          key: editingRecord.key,
+          detail_key: editingRecord.detail_key,
+          area: editingRecord.area,
+          beach: editingRecord.beach,
+          startDate: editingRecord.startDate,
+          delete_flg: false,
+        },
+      });
+      if (!result?.result) throw new Error(result?.error_msg || '更新失敗');
+      await queryClient.invalidateQueries({ queryKey: ['records-list'] });
+      await queryClient.invalidateQueries({ queryKey: ['record-detail'] });
+      toast.success('更新しました', { id: toastId });
+      setEditingRecord(null);
+      setView('recordDetail');
+    } catch (e) {
+      toast.error(e?.message || '更新に失敗しました', { id: toastId });
+    }
+  };
+
+  // 「ビーチを選択」のハンドラー
   const handleSelectBeach = (beach) => {
-  
+
     // seqインクリメント処理をここで行う
     const foundRecord = savedRecords.find(r => r.beach === beach.name);
 
@@ -453,11 +571,24 @@ function App() {
         </>
       );
     
-    case 'records': // 記録一覧への遷移
+    case 'records':
       return (
-        <RecordsListView 
-         savedRecords={savedRecords} 
-         onBack={() => setView('home')} 
+        <RecordsListView
+          user={user}
+          onBack={() => setView('home')}
+          onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
+          selectedKeys={recordsCsvSelectedKeys}
+          setSelectedKeys={setRecordsCsvSelectedKeys}
+        />
+      );
+
+    case 'recordDetail':
+      return (
+        <RecordDetailView
+          user={user}
+          recordSummary={selectedRecord}
+          onBack={() => setView('records')}
+          onEdit={handleEditRecord}
         />
       );
 
@@ -473,26 +604,29 @@ function App() {
       return (
         <EditView
           user={user}
-          selectedCoast={selectedCoast} 
+          selectedCoast={selectedCoast}
           selectedBeach={selectedBeach}
           selectedDate={format(selectedDate, 'yyyy-MM-dd')}
           onSave={handleSave}
           onSubmit={handleSubmit}
-          onBack={() => setView('list')}
-          existingData={(() => {
-            if (Object.keys(targetRecords).length > 0) {
+          onBack={() => { setEditingRecord(null); setView(editingRecord ? 'recordDetail' : 'list'); }}
+          isEdit={!!editingRecord}
+          onUpdate={handleUpdate}
+          existingData={editingRecord || (() => {
+            if (targetRecords && Object.keys(targetRecords).length > 0) {
               return targetRecords;
             }
-            else {            
-              // データがない場合
-              return {
-                ...briefingData,
-                  seq: 1,
-                  unpatrolled: false,   // undefined対策
-                  id: undefined,        // IndexedDBで別レコードとして新規保存させるため、IDをクリアする
-                  isSynced: 0           // 新しいレコードなので未送信にする
-              };
-          }})()}
+            const nextSeq = 1 + syncedRecoredSeq;
+            return {
+              ...briefingData,
+              seq: nextSeq,
+              unpatrolled: false,
+              id: undefined,
+              isSynced: 0,
+            };
+          })()}
+          profileList={profileList}
+          seq={1}
         />
       );
 
@@ -504,6 +638,9 @@ function App() {
     <div>
       <Toaster richColors position="top-center" />
       {renderView()}
+      {user && FOOTER_VIEWS.includes(view) && (
+        <GlobalFooter onNavigate={setView} />
+      )}
     </div>
   );
 

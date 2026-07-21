@@ -167,28 +167,6 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
         </div>
       </main>
  
-      {/* ナビゲーションフッター */}
-      <nav style={footerStyles.footer}>
-        <button onClick={() => onNavigate('home')} style={footerStyles.navItem}>
-          <Home size={24} /><span>ホーム</span>
-        </button>
-        <button style={footerStyles.navItem}>
-          <LifeBuoy size={24} /><span>救助登録</span>
-        </button>
-        <button style={footerStyles.navItem}>
-          <div style={footerStyles.mainCircle}>
-            <PencilLine size={24} />
-            <span style={{ fontSize: '10px', marginTop: '2px' }}>新規登録</span>
-          </div>
-        </button>
-        <button style={footerStyles.navItem}>
-          <FileText size={24} /><span>記録一覧</span>
-        </button>
-        <button style={footerStyles.navItem}>
-          <Megaphone size={24} /><span>お知らせ</span>
-        </button>
-      </nav>
-
       </div>
 
 
@@ -216,7 +194,7 @@ const compactSelectBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', 
 const iconBtnStyle = { background: 'none', border: 'none', color: '#fff' };
 
 //const navTextStyle = { fontSize: '10px', fontWeight: '500' };
-const mainStyle = { padding: '12px', minHeight: '79vh',
+const mainStyle = { padding: '12px', minHeight: '79vh', paddingBottom: '88px',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
  };
 const infoTextStyle = { fontSize: '14px', color: '#64748b', marginTop: '4px' };

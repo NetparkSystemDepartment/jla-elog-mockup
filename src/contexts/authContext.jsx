@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
           });
 
           setMembers(authData.members || []);
-          setCarInfo(authData.carInfo || []);
+          setCarInfo(authData.carInfo?.length > 0 ? authData.carInfo : authData.master_info?.car_info || []);
         }         
         // ※必要であれば、Axiosの共通ヘッダーにトークンを仕込む処理もここで
         // axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${authData.token}`;
@@ -106,7 +106,7 @@ export function AuthProvider({ children }) {
 //        saveAuthTokenToIndexedDB(authData.token);
 
         setMembers(data.members || []);
-        setCarInfo(data.master_info.car_info || []);
+        setCarInfo(data.carInfo?.length > 0 ? data.carInfo : data.master_info?.car_info || []);
 
         //// LoginView.jsx が期待する形式（{ success: true }）で返す
         //return { success: true };
@@ -154,10 +154,12 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider 
-      value={{ 
-        login, 
+      value={{
+        login,
         logout,
         user,
+        members,
+        carInfo,
         // 送信中フラグ（isPending）も共有して、LoginViewで連打防止できるようにする
         isPending: loginMutation.isPending ,
         isLoading
