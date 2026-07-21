@@ -182,7 +182,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
           </div>
         </button>
         <button style={footerStyles.navItem}>
-          <FileText size={24} /><span>記録一覧</span>
+          <FileText size={24} /><span>ログデータ</span>
         </button>
         <button style={footerStyles.navItem}>
           <Megaphone size={24} /><span>お知らせ</span>

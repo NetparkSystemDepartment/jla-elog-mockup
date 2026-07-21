@@ -3,9 +3,9 @@ import axios from 'axios';
 const axiosInstance = axios.create({
   // 相対パスにすることで、開いている環境（プレリリース/本番）のドメインをブラウザが自動補完します
   // d-elog.ripcurrent.orgの開発環境にアップする場合
-  //baseURL: '/v2/', 
+  baseURL: '/v1/', 
   // それ以外
-  baseURL: '/api/', 
+  //baseURL: '/api/', 
   //baseURL: 'https://d-elog.ripcurrent.org/v1',
   
   // 5秒間サーバーから応答がない場合はタイムアウト（エラー）にする

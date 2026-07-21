@@ -4,9 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 //const baseConfig = process.env.VERCEL ? '/' : '/p2/';
 // d-elog.ripcurrent.orgの開発環境にアップする場合
-//const baseConfig = '/p2/';
+const baseConfig = '/p1/';
 // それ以外
-const baseConfig = '/';
+//const baseConfig = '/';
 
 export default defineConfig({
 
@@ -20,7 +20,7 @@ export default defineConfig({
       '/api': {
         target: 'https://d-elog.ripcurrent.org',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/v2')
+        rewrite: (path) => path.replace(/^\/api/, '/v1')
       }
     }
     // proxy: {
