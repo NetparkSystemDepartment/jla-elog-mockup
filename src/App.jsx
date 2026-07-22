@@ -67,6 +67,7 @@ const gfStyles = {
     backgroundColor: '#08172A', height: '80px',
     display: 'flex', justifyContent: 'space-around', alignItems: 'center',
     color: 'white', maxWidth: '820px', margin: '0 auto',
+    borderRadius: '20px 20px 0 0',
   },
   navItem: {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -294,12 +295,15 @@ function App() {
 
       const { area: masterArea, beach: masterBeach } = getMasterAreaBeachNos(selectedCoast, selectedBeach);
 
+      // members には記録担当者（自分）が含まれていないため先頭に追加する。
+      // getinfo には担当者用の専用フィールドが無く、ログ詳細画面は members[0] を記録担当者として表示するため必須
       const payload = {
         type: 1,
         data: {
           ...cleanRecord,
           area: masterArea,
           beach: masterBeach,
+          members: [user.user_id, ...(cleanRecord.members || [])],
           delete_flg: false,
         }
       };
@@ -404,19 +408,29 @@ function App() {
     try {
       const masterInfo = JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
       const allAreaList = masterInfo.area_info || [];
-      const areaObj = allAreaList.find(a => String(a.no) === String(fullRecord.area));
-      const beachObj = (areaObj?.beach_info || []).find(b => String(b.no) === String(fullRecord.beach));
-      setSelectedCoast(areaObj?.area || '');
-      setSelectedBeach(beachObj?.beach || '');
+      // getinfo（一覧・詳細取得）が返す area/beach はエリア番号ではなくエリア名の文字列のため、
+      // マスタとは名前で突き合わせる（setinfo登録時のarea/beachはエリア番号なので型が異なる点に注意）
+      const areaObj = allAreaList.find(a => a.area === fullRecord.area);
+      const beachObj = (areaObj?.beach_info || []).find(b => b.beach === fullRecord.beach);
+      // EditView は selectedCoast.no / selectedCoast.name の形（useAreaInfo と同じ形）を期待する
+      setSelectedCoast(areaObj ? { no: areaObj.no, name: areaObj.area } : '');
+      setSelectedBeach(beachObj ? { no: beachObj.no, name: beachObj.beach } : '');
     } catch {
       setSelectedCoast('');
       setSelectedBeach('');
     }
-    const d = new Date(String(fullRecord.startDate).slice(0, 10) + 'T00:00:00');
+    // startDateは "yyyy/mm/dd" 形式で返ってくるため、区切り文字をハイフンに揃えてから Date に渡す
+    // （揃えないと Invalid Date になり、記録日ではなく今日の日付にフォールバックしてしまう）
+    const normalizedDateStr = String(fullRecord.startDate).slice(0, 10).replaceAll('/', '-');
+    const d = new Date(normalizedDateStr + 'T00:00:00');
     setSelectedDate(startOfDay(isNaN(d.getTime()) ? new Date() : d));
     const normalizedRecord = fullRecord.end_time !== undefined && fullRecord.endTime === undefined
       ? { ...fullRecord, endTime: fullRecord.end_time }
       : fullRecord;
+    // getinfo の記録には seq が無く detail_key のみのため、ヘッダーの「#01」表示用に詰め替える
+    if (normalizedRecord.seq === undefined) {
+      normalizedRecord.seq = normalizedRecord.detail_key;
+    }
     setEditingRecord(normalizedRecord);
     setBriefingData(normalizedRecord);
     setView('edit');
@@ -426,11 +440,12 @@ function App() {
     const toastId = toast.loading('更新中...');
     try {
       const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
+      // members には記録担当者（自分）が含まれていないため先頭に追加する（handleSubmitと同様）
       const result = await setinfoApi({
         type: 1,
         data: {
           ...rest,
-          members: (members || []).map(m => m?.user_id ?? String(m)),
+          members: [user.user_id, ...(members || []).map(m => m?.user_id ?? String(m))],
           key: editingRecord.key,
           detail_key: editingRecord.detail_key,
           area: editingRecord.area,
