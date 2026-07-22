@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Filter, Download, Menu } from 'lucide-react';
-import { format, getDay } from 'date-fns';
+import { format, getDay, subDays } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import Select from 'react-select';
 import { getinfoApi, getCsvApi } from '../api/recordApi';
@@ -44,11 +44,25 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
   const isAdmin      = user.kind === 0;
   const canCsvSelect = user.kind <= 2; // admin / patrol / tower
 
-  const [filterArea, setFilterArea]         = useState('');
-  const [filterDateFrom, setFilterDateFrom] = useState('');
-  const [filterDateTo, setFilterDateTo]     = useState('');
+  // 初期表示時の絞り込み: 日付は3日前～当日、パトロールメンバーは現在のログイン者（アドミンは全員が対象のため対象外）
+  const initialDateFrom = () => format(subDays(new Date(), 3), 'yyyy-MM-dd');
+  const initialDateTo   = () => format(new Date(), 'yyyy-MM-dd');
+  const initialMembers  = () => (!isAdmin && user?.user_id) ? [user.user_id] : [];
+
+  // 実際に一覧の絞り込みに使われる「適用済み」の条件。「絞り込み」ボタン押下時にのみ更新する
+  const [filterAreas, setFilterAreas]       = useState([]);
+  const [filterDateFrom, setFilterDateFrom] = useState(initialDateFrom);
+  const [filterDateTo, setFilterDateTo]     = useState(initialDateTo);
   const [filterDow, setFilterDow]           = useState('');
-  const [filterMembers, setFilterMembers]   = useState([]);
+  const [filterMembers, setFilterMembers]   = useState(initialMembers);
+
+  // フィルターパネルの入力欄が保持する「未適用」の条件（選択しただけでは一覧に反映しない）
+  const [draftAreas, setDraftAreas]         = useState([]);
+  const [draftDateFrom, setDraftDateFrom]   = useState(initialDateFrom);
+  const [draftDateTo, setDraftDateTo]       = useState(initialDateTo);
+  const [draftDow, setDraftDow]             = useState('');
+  const [draftMembers, setDraftMembers]     = useState(initialMembers);
+
   const [sortCol, setSortCol]               = useState('startDate');
   const [sortDir, setSortDir]               = useState('desc');
   const [currentPage, setCurrentPage]       = useState(1);
@@ -66,15 +80,46 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
     return allAreaList;
   }, [allAreaList, user.kind]);
 
+  // getinfo API はレコードの area をエリア番号ではなくエリア名の文字列で返すため、
+  // 絞り込みもエリア名で一致させる（setinfo 登録時の area はエリア番号なので型が異なる点に注意）
+  const areaSelectOptions = useMemo(
+    () => areaOptions.map(a => ({ value: a.area, label: a.area })),
+    [areaOptions]
+  );
+
   const safeMembers = useSafeMembers();
   const memberOptions = useMemo(() => safeMembers.map(item => {
     const uid = item?.user_id ?? String(item);
     return { value: uid, label: uid };
   }), [safeMembers]);
 
+  // 検索キー（areas/start_date/end_date/weekday/delete_flg）をサーバーに渡し、
+  // 権限外エリアのデータまでブラウザに取得されないようにする。
+  // ※ members はログインAPIが「ID+姓」の文字列でしか返さず、getinfo が求める
+  //   [{id, user_id}] 形式を組み立てられないため、引き続きクライアント側で絞り込む。
+  const requestPayload = useMemo(() => {
+    const payload = { type: 2 };
+
+    if (filterAreas.length > 0) {
+      const areaNos = filterAreas
+        .map(name => allAreaList.find(a => a.area === name)?.no)
+        .filter(no => no !== undefined && no !== null);
+      if (areaNos.length > 0) payload.areas = areaNos;
+    }
+    if (filterDateFrom) payload.start_date = filterDateFrom;
+    if (filterDateTo) payload.end_date = filterDateTo;
+    if (filterDow !== '') {
+      // filterDow は JS の getDay 準拠（日=0～土=6）、API 側は月=0～日=6 のため変換する
+      payload.weekday = (Number(filterDow) + 6) % 7;
+    }
+    if (showCancelled) payload.delete_flg = true;
+
+    return payload;
+  }, [filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList]);
+
   const { data: apiData, isLoading, error } = useQuery({
-    queryKey: ['records-list'],
-    queryFn: () => getinfoApi({ type: 2 }),
+    queryKey: ['records-list', requestPayload],
+    queryFn: () => getinfoApi(requestPayload),
     staleTime: 60_000,
   });
 
@@ -83,13 +128,13 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
   const filtered = useMemo(() => {
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
-      .filter(r => !filterArea || String(r.area) === String(filterArea))
+      .filter(r => filterAreas.length === 0 || filterAreas.includes(String(r.area)))
       .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
       .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
       .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow)
       .filter(r => filterMembers.length === 0 ||
         (r.members || []).some(m => filterMembers.includes(m?.user_id ?? String(m))));
-  }, [allRecords, showCancelled, filterArea, filterDateFrom, filterDateTo, filterDow, filterMembers]);
+  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow, filterMembers]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return filtered;
@@ -160,12 +205,13 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
 
   const resetPage = () => setCurrentPage(1);
 
-  const handleClearFilters = () => {
-    setFilterArea('');
-    setFilterDateFrom('');
-    setFilterDateTo('');
-    setFilterDow('');
-    setFilterMembers([]);
+  // 「絞り込み」ボタン押下時にのみ、入力中の条件を実際のフィルターへ反映する
+  const handleSearch = () => {
+    setFilterAreas(draftAreas);
+    setFilterDateFrom(draftDateFrom);
+    setFilterDateTo(draftDateTo);
+    setFilterDow(draftDow);
+    setFilterMembers(draftMembers);
     resetPage();
   };
 
@@ -173,7 +219,7 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
     <div style={s.wrapper}>
       <header style={s.header}>
         <div style={s.menuBtn}><Menu color="white" size={22} /></div>
-        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴一覧' : 'ログデータ'}</h1>
+        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴一覧' : 'ログデータ一覧'}</h1>
         <div style={{ width: 40 }} />
       </header>
 
@@ -182,25 +228,30 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
         <div style={s.filterPanel}>
           <div style={s.filterRow}>
             <Filter size={16} color="#334155" />
-            <select
-              value={filterArea}
-              onChange={e => { setFilterArea(e.target.value); resetPage(); }}
-              style={s.select}
-            >
-              <option value="">全エリア</option>
-              {areaOptions.map(a => (
-                <option key={a.no} value={a.area}>{a.area}</option>
-              ))}
-            </select>
+            <div style={s.inputArea}>
+              <Select
+                isMulti
+                isSearchable
+                options={areaSelectOptions}
+                value={areaSelectOptions.filter(o => draftAreas.includes(o.value))}
+                onChange={(selected) => {
+                  setDraftAreas((selected || []).map(o => o.value));
+                }}
+                placeholder="全エリア"
+                noOptionsMessage={() => "見つかりません"}
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+              />
+            </div>
             <div style={s.inputMember}>
               <Select
                 isMulti
                 isSearchable
                 options={memberOptions}
-                value={memberOptions.filter(o => filterMembers.includes(o.value))}
+                value={memberOptions.filter(o => draftMembers.includes(o.value))}
                 onChange={(selected) => {
-                  setFilterMembers((selected || []).map(o => o.value));
-                  resetPage();
+                  setDraftMembers((selected || []).map(o => o.value));
                 }}
                 placeholder="パトロールメンバー"
                 noOptionsMessage={() => "見つかりません"}
@@ -209,27 +260,26 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
                 menuPosition="fixed"
               />
             </div>
-            <button onClick={resetPage} style={s.searchBtn}>絞り込み</button>
-            <button onClick={handleClearFilters} style={s.clearBtn}>クリア</button>
+            <button onClick={handleSearch} style={s.searchBtn}>絞り込み</button>
           </div>
 
           <div style={s.filterRow}>
             <input
               type="date"
-              value={filterDateFrom}
-              onChange={e => { setFilterDateFrom(e.target.value); resetPage(); }}
+              value={draftDateFrom}
+              onChange={e => setDraftDateFrom(e.target.value)}
               style={s.dateInput}
             />
             <span style={{ color: '#64748b' }}>～</span>
             <input
               type="date"
-              value={filterDateTo}
-              onChange={e => { setFilterDateTo(e.target.value); resetPage(); }}
+              value={draftDateTo}
+              onChange={e => setDraftDateTo(e.target.value)}
               style={s.dateInput}
             />
             <select
-              value={filterDow}
-              onChange={e => { setFilterDow(e.target.value); resetPage(); }}
+              value={draftDow}
+              onChange={e => setDraftDow(e.target.value)}
               style={s.selectSm}
             >
               <option value="">曜日</option>
@@ -363,22 +413,14 @@ const s = {
     display: 'flex', flexDirection: 'column', gap: '8px',
   },
   filterRow: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
-  select: {
-    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
-    fontSize: '13px', backgroundColor: '#f8fafc',
-  },
   selectSm: {
     border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
     fontSize: '13px', backgroundColor: '#f8fafc', minWidth: '60px',
   },
+  inputArea: { flex: 1, minWidth: '160px' },
   inputMember: { flex: 1, minWidth: '160px' },
   searchBtn: {
     backgroundColor: '#0f172a', color: 'white', border: 'none',
-    borderRadius: '20px', padding: '6px 16px', fontSize: '13px',
-    fontWeight: 'bold', cursor: 'pointer',
-  },
-  clearBtn: {
-    backgroundColor: '#fff', color: '#475569', border: '1px solid #cbd5e1',
     borderRadius: '20px', padding: '6px 16px', fontSize: '13px',
     fontWeight: 'bold', cursor: 'pointer',
   },

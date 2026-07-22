@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Clock, Cloud, Users, Gauge, Waves, User,
+  WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone,
+  NotebookPen, FileUp, Flag, HandHelping, Car, CircleAlert, TriangleAlert } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getinfoApi, setinfoApi } from '../api/recordApi';
+import InputTile from '../components/InputTile';
 import {
   WEATHER_OPTIONS, TIDE_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS,
   DIRECTIONS, WIND_SPEED_OPTIONS, WARNING_OPTIONS, ALERT_OPTIONS,
@@ -144,7 +147,7 @@ function HeaderBar({ onBack }) {
   return (
     <header style={ds.header}>
       <button onClick={onBack} style={ds.backBtn}><ChevronLeft color="white" size={24} /></button>
-      <h1 style={ds.headerTitle}>記録詳細</h1>
+      <h1 style={ds.headerTitle}>ログ詳細</h1>
       <div style={{ width: 40 }} />
     </header>
   );
@@ -276,103 +279,161 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
 
         <div style={ds.divider} />
 
-        {/* ── 2カラムフォーム ── */}
+        {/* ── ログ入力画面と同様のタイルレイアウト ── */}
         <div style={ds.grid}>
 
-          {/* 左カラム */}
-          <div style={ds.col}>
-            <FieldLabel label="パトロールメンバー" />
+          {/* パトロールメンバー */}
+          <InputTile label="パトロールメンバー" icon={User} isExpandable={true}>
             <ChipList items={memberItems} />
+          </InputTile>
 
-            <FieldLabel label="潮汐" />
+          {/* パトロール開始時刻、天候 */}
+          <InputTile label="パトロール開始時刻" icon={Clock} isExpandable={true}>
+            <ValBox value={record.startTime} />
+            <div style={fs.subLabel}>
+              <Cloud size={12} style={{ marginRight: 4 }} />天候
+            </div>
+            {hasValue(record.weather)
+              ? <RadioDisplay options={WEATHER_OPTIONS} value={record.weather} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
+
+          {/* 潮汐 */}
+          <InputTile label="潮汐" icon={Waves}>
             {hasValue(record.tide)
               ? <RadioDisplay options={TIDE_OPTIONS} value={record.tide} />
               : <span style={fs.placeholder}>---</span>}
+          </InputTile>
 
-            <FieldLabel label="満潮時刻・高さ [cm]" />
+          {/* 潮流 */}
+          <InputTile label="潮流" icon={TrendingUpDown}>
+            {hasValue(record.current)
+              ? <ToggleDisplay options={CURRENT_OPTIONS} value={record.current} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
+
+          {/* 満潮時刻・高さ */}
+          <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
             <TwoBox
               left={record.highTideTime}
               right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
             />
+          </InputTile>
 
-            <FieldLabel label="干潮時刻・高さ [cm]" />
+          {/* 波高（アウターリーフ）*/}
+          <InputTile label="波高（アウターリーフ）" icon={Activity}>
+            {hasValue(record.waveOuter)
+              ? <RadioDisplay options={WAVE_OPTIONS} value={record.waveOuter} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
+
+          {/* 干潮時刻・高さ */}
+          <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
             <TwoBox
               left={record.lowTideTime}
               right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
             />
+          </InputTile>
 
-            <FieldLabel label="風向（天気予報）" />
-            <SelectBox value={labelOf(DIRECTIONS, record.windDir)} />
-
-            <FieldLabel label="風速（天気予報）" />
-            {hasValue(record.windSpeed)
-              ? <RadioDisplay options={WIND_SPEED_OPTIONS} value={record.windSpeed} />
-              : <span style={fs.placeholder}>---</span>}
-
-            <FieldLabel label="注意報" />
-            <ChipList items={warnItems} />
-
-            <FieldLabel label="警報" />
-            <ChipList items={alertItems} />
-
-            <FieldLabel label="車両情報" />
-            <TwoBox left={record.carType} right={record.carNo} />
-
-            <FieldLabel label="申し送り事項" />
-            <TextAreaBox value={record.handover} />
-
-            <FieldLabel label="優先度" />
-            <SelectBox value={labelOf(PRIORITY_OPTIONS, record.priority)} />
-          </div>
-
-          {/* 右カラム */}
-          <div style={ds.col}>
-            <FieldLabel label="パトロール開始時刻" />
-            <ValBox value={record.startTime} />
-
-            <FieldLabel label="パトロール終了時刻" />
-            <ValBox value={record.endTime ?? record.end_time} />
-
-            <FieldLabel label="天候" />
-            {hasValue(record.weather)
-              ? <RadioDisplay options={WEATHER_OPTIONS} value={record.weather} />
-              : <span style={fs.placeholder}>---</span>}
-
-            <FieldLabel label="潮流" />
-            {hasValue(record.current)
-              ? <ToggleDisplay options={CURRENT_OPTIONS} value={record.current} />
-              : <span style={fs.placeholder}>---</span>}
-
-            <FieldLabel label="波高（アウターリーフ）" />
-            {hasValue(record.waveOuter)
-              ? <RadioDisplay options={WAVE_OPTIONS} value={record.waveOuter} />
-              : <span style={fs.placeholder}>---</span>}
-
-            <FieldLabel label="波高（ショアゾーン）" />
+          {/* 波高（ショアゾーン） */}
+          <InputTile label="波高（ショアゾーン）" icon={Activity}>
             {hasValue(record.wave)
               ? <RadioDisplay options={WAVE_OPTIONS} value={record.wave} />
               : <span style={fs.placeholder}>---</span>}
+          </InputTile>
 
-            <FieldLabel label="風向（現地）" />
+          {/* 風向（天気予報） */}
+          <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}>
+            <SelectBox value={labelOf(DIRECTIONS, record.windDir)} />
+          </InputTile>
+
+          {/* 風向（現地） */}
+          <InputTile label="風向（現地）" icon={Compass} isExpandable={true}>
             <SelectBox value={labelOf(DIRECTIONS, record.windDirDetail)} />
+          </InputTile>
 
-            <FieldLabel label="利用者数" />
-            <ValBox value={hasValue(record.visitors) ? `${record.visitors} 名` : null} />
+          {/* 風速（現地） */}
+          <InputTile label="風速（現地）" icon={Gauge}>
+            {hasValue(record.windSpeedDetail)
+              ? <RadioDisplay options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
 
-            <FieldLabel label="ビーチ利用の特徴" />
+          {/* 風速（天気予報） */}
+          <InputTile label="風速（天気予報）" icon={Gauge}>
+            {hasValue(record.windSpeed)
+              ? <RadioDisplay options={WIND_SPEED_OPTIONS} value={record.windSpeed} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
+
+          {/* 注意報 */}
+          <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}>
+            <ChipList items={warnItems} />
+          </InputTile>
+
+          {/* ビーチ利用の特徴 */}
+          <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
             <ChipList items={featureItems} />
+          </InputTile>
 
-            <FieldLabel label="注意喚起人数" />
+          {/* 警報 */}
+          <InputTile label="警報" icon={CircleAlert} isExpandable={true}>
+            <ChipList items={alertItems} />
+          </InputTile>
+
+          {/* 注意喚起人数 */}
+          <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}>
             <FourBox
               v1={hasValue(record.jpWarning)  ? `${record.jpWarning} 名`  : null}
               v2={hasValue(record.forWarning) ? `${record.forWarning} 名` : null}
               v3={hasValue(record.jpTourist)  ? `${record.jpTourist} 名`  : null}
               v4={hasValue(record.forTourist) ? `${record.forTourist} 名` : null}
             />
+          </InputTile>
 
-            <FieldLabel label="特記事項" />
+          {/* 使用車両 */}
+          <InputTile label="使用車両" icon={Car} isExpandable={true}>
+            <TwoBox left={record.carType} right={record.carNo} />
+          </InputTile>
+
+          {/* 利用者数 */}
+          <InputTile label="利用者数" icon={Users}>
+            <ValBox value={hasValue(record.visitors) ? `${record.visitors} 名` : null} />
+          </InputTile>
+
+          {/* メモ */}
+          <InputTile label="メモ" icon={NotebookPen} isExpandable={true}>
             <TextAreaBox value={record.note} />
-          </div>
+          </InputTile>
+
+          {/* 申し送り事項（応急手当・救助・その他） */}
+          <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}>
+            <TextAreaBox value={record.handover} />
+            <div style={fs.subLabel}>
+              <Flag size={12} style={{ marginRight: 4 }} />優先度
+            </div>
+            {hasValue(record.priority)
+              ? <RadioDisplay options={PRIORITY_OPTIONS} value={record.priority} />
+              : <span style={fs.placeholder}>---</span>}
+          </InputTile>
+
+          {/* 空欄（位置合わせ） */}
+          <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
+          </InputTile>
+
+          {/* アップロードされた画像 */}
+          <InputTile label="アップロードされた画像" icon={FileUp} isExpandable={true}>
+          </InputTile>
+
+          {/* 空欄（位置合わせ） */}
+          <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
+          </InputTile>
+
+          {/* パトロール終了時刻 */}
+          <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
+            <ValBox value={record.endTime ?? record.end_time} />
+          </InputTile>
+
         </div>
       </main>
 
@@ -432,6 +493,10 @@ const fs = {
     border: '1px solid #e2e8f0',
   },
   placeholder: { fontSize: '14px', color: '#94a3b8' },
+  subLabel: {
+    fontSize: '12px', fontWeight: 'bold', color: '#64748b',
+    display: 'flex', alignItems: 'center', marginTop: '4px',
+  },
   radioRow: {
     display: 'flex', flexWrap: 'wrap',
     gap: '6px 10px', padding: '6px 0', alignItems: 'center',
@@ -482,8 +547,7 @@ const ds = {
     padding: '6px 16px', fontSize: '13px', cursor: 'pointer',
   },
   divider: { height: '1px', backgroundColor: '#e2e8f0', margin: '0 16px 4px' },
-  grid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 14px', padding: '0 16px', alignItems: 'start' },
-  col:     { display: 'flex', flexDirection: 'column' },
+  grid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch' },
   message: { padding: '40px', textAlign: 'center', color: '#64748b' },
   overlay: {
     position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',

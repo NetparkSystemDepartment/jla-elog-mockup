@@ -296,7 +296,7 @@ useEffect(() => {
         <div style={headerTopStyle}>
           {/*<div className={styles.dummyStyle} ></div>*/}
           <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
-          <span style={logoTextStyle}>{isEdit ? '記録編集' : '記録入力'}</span>
+          <span style={logoTextStyle}>{isEdit ? 'ログ編集' : 'ログ入力'}</span>
           <span></span>
         </div>
         <div style={headerMiddleStyle}>{selectedCoast.name}</div>
@@ -557,27 +557,6 @@ useEffect(() => {
                 </option>
               ))}
           </select> 
-        </InputTile>
-
-        {/* 風速（現地） */}
-        <InputTile label="風速（現地）" icon={Gauge}>
-          <div style={radioFlexStyle}>
-            {WIND_SPEED_OPTIONS.map(opt => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setFormData({ ...formData, windSpeedDetail: opt.id })}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: formData.windSpeedDetail === opt.id ? '#38bdf8' : '#e2e8f0',
-                  backgroundColor: formData.windSpeedDetail === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.windSpeedDetail === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
         </InputTile>
 
         {/* 風速（天気予報） */}
