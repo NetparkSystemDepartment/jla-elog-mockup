@@ -278,19 +278,44 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
 
             <div />
             <div style={s.dateGroup}>
-              <input
-                type="date"
-                value={draftDateFrom}
-                onChange={e => setDraftDateFrom(e.target.value)}
-                style={s.dateInput}
-              />
+              <div style={s.dateInputWrap}>
+                <input
+                  type="date"
+                  value={draftDateFrom}
+                  onChange={e => setDraftDateFrom(e.target.value)}
+                  style={s.dateInput}
+                />
+                {/* iPadOS SafariのDate inputはネイティブのクリア(×)が無いため、独自にクリアボタンを用意する */}
+                {draftDateFrom && (
+                  <button
+                    type="button"
+                    onClick={() => setDraftDateFrom('')}
+                    style={s.dateClearBtn}
+                    aria-label="開始日をクリア"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               <span style={{ color: '#64748b' }}>～</span>
-              <input
-                type="date"
-                value={draftDateTo}
-                onChange={e => setDraftDateTo(e.target.value)}
-                style={s.dateInput}
-              />
+              <div style={s.dateInputWrap}>
+                <input
+                  type="date"
+                  value={draftDateTo}
+                  onChange={e => setDraftDateTo(e.target.value)}
+                  style={s.dateInput}
+                />
+                {draftDateTo && (
+                  <button
+                    type="button"
+                    onClick={() => setDraftDateTo('')}
+                    style={s.dateClearBtn}
+                    aria-label="終了日をクリア"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               <select
                 value={draftDow}
                 onChange={e => setDraftDow(e.target.value)}
@@ -454,6 +479,12 @@ const s = {
     border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
     fontSize: '13px', backgroundColor: '#f1f5f9', flex: 1, minWidth: 0,
   },
+  // iPadOS Safariのdate inputにはネイティブのクリア(×)が無いため、隣に独自のクリアボタンを置く
+  dateInputWrap: { display: 'flex', alignItems: 'center', gap: '2px', flex: 1, minWidth: 0 },
+  dateClearBtn: {
+    background: 'none', border: 'none', color: '#94a3b8', fontSize: '16px',
+    lineHeight: 1, cursor: 'pointer', padding: '2px 4px', flexShrink: 0,
+  },
   csvBtn: {
     background: 'none', border: 'none', display: 'flex', alignItems: 'center',
     gap: '4px', fontSize: '13px', cursor: 'pointer', color: '#334155', flexShrink: 0,
@@ -490,6 +521,13 @@ const s = {
 };
 
 const customSelectStyles = {
+  // menuPortalTarget={document.body} でメニューがDOMツリーの外（body直下）に描画されるため、
+  // 画面側のフォント指定を継承できずブラウザ既定フォント（明朝系）になってしまう。
+  // ポータルのルートで明示的に指定し、配下のメニュー/選択肢に継承させる
+  menuPortal: (provided) => ({
+    ...provided,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  }),
   // 入力エリア全体（コントロール）のスタイル
   control: (provided) => ({
     ...provided,
