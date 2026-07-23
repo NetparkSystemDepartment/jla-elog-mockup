@@ -295,65 +295,71 @@ useEffect(() => {
       left: {
         label: 'ログイン者（記録担当者）',
         content: (
-          <>
-            <input
-              type="text"
-              value={(user.id + user.name) || ''}
-              disabled
-              style={disabledInput}
-            />
-            <div style={labelBaseStyle}><label>自分以外のパトロールメンバー</label></div>
-            <Select
-              isMulti
-              isSearchable
-              options={loginOptions}
-              value={(Array.isArray(formData.members) ? formData.members : []).map(item => {
-                const uid = item?.user_id ?? String(item);
-                return { value: uid, label: uid };
-              })}
-              onChange={(selectedOptions) => {
-                const nextMembers = (selectedOptions || []).map(option => option.value);
-                setFormData({ ...formData, members: nextMembers });
-              }}
-              placeholder="ユーザーID"
-              noOptionsMessage={() => "見つかりません"}
-              styles={customSelectStyles}
-              menuPortalTarget={document.body}
-              menuPosition="fixed"
-            />
-          </>
+          <input
+            type="text"
+            value={(user.id + user.name) || ''}
+            disabled
+            style={disabledInput}
+          />
         ),
       },
       right: {
         label: 'パトロール開始時刻',
         content: (
-          <>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
-                value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
-            </div>
-            <div style={labelBaseStyle}><label>天候</label></div>
-            <div style={radioFlexStyle}>
-              {WEATHER_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => {
-                    setFormData({ ...formData, weather: opt.id });
-                    if (errors.weather) setErrors({ ...errors, weather: null });
-                  }}
-                  style={{
-                    ...radioBtnStyle,
-                    borderColor: errors.weather ? '#ef4444' : (formData.weather === opt.id ? '#38bdf8' : '#e2e8f0'),
-                    backgroundColor: formData.weather === opt.id ? '#e0f2fe' : '#fff',
-                    color: formData.weather === opt.id ? '#0369a1' : '#64748b'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
+              value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
+          </div>
+        ),
+      },
+    },
+    {
+      left: {
+        label: '自分以外のパトロールメンバー',
+        content: (
+          <Select
+            isMulti
+            isSearchable
+            options={loginOptions}
+            value={(Array.isArray(formData.members) ? formData.members : []).map(item => {
+              const uid = item?.user_id ?? String(item);
+              return { value: uid, label: uid };
+            })}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, members: nextMembers });
+            }}
+            placeholder="ユーザーID"
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+          />
+        ),
+      },
+      right: {
+        label: '天候',
+        content: (
+          <div style={radioFlexStyle}>
+            {WEATHER_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, weather: opt.id });
+                  if (errors.weather) setErrors({ ...errors, weather: null });
+                }}
+                style={{
+                  ...radioBtnStyle,
+                  borderColor: errors.weather ? '#ef4444' : (formData.weather === opt.id ? '#38bdf8' : '#e2e8f0'),
+                  backgroundColor: formData.weather === opt.id ? '#e0f2fe' : '#fff',
+                  color: formData.weather === opt.id ? '#0369a1' : '#64748b'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         ),
       },
     },
@@ -489,42 +495,6 @@ useEffect(() => {
     },
     {
       left: {
-        label: '風向（天気予報）',
-        content: (
-          <select
-            value={formData.windDir || ''}
-            onChange={e => {
-              const val = e.target.value;
-              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
-              if (errors.windDir) setErrors({ ...errors, windDir: null });
-            }}
-            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
-          >
-            <option value="">ー選択ー</option>
-            {DIRECTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
-          </select>
-        ),
-      },
-      right: {
-        label: '風向（現地）',
-        content: (
-          <select
-            value={formData.windDirDetail || ''}
-            onChange={e => {
-              const val = e.target.value;
-              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
-              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
-            }}
-            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
-          >
-            <option value="">ー選択ー</option>
-            {DIRECTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
-          </select>
-        ),
-      },
-    },
-    {
-      left: {
         label: '風速（天気予報）',
         content: (
           <div style={radioFlexStyle}>
@@ -577,6 +547,42 @@ useEffect(() => {
     },
     {
       left: {
+        label: '風向（天気予報）',
+        content: (
+          <select
+            value={formData.windDir || ''}
+            onChange={e => {
+              const val = e.target.value;
+              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
+              if (errors.windDir) setErrors({ ...errors, windDir: null });
+            }}
+            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
+          >
+            <option value="">ー選択ー</option>
+            {DIRECTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
+          </select>
+        ),
+      },
+      right: {
+        label: '風向（現地）',
+        content: (
+          <select
+            value={formData.windDirDetail || ''}
+            onChange={e => {
+              const val = e.target.value;
+              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
+              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
+            }}
+            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
+          >
+            <option value="">ー選択ー</option>
+            {DIRECTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
+          </select>
+        ),
+      },
+    },
+    {
+      left: {
         label: '注意報',
         content: (
           <Select
@@ -622,24 +628,6 @@ useEffect(() => {
     },
     {
       left: {
-        label: 'ビーチ利用の特徴',
-        content: (
-          <Select
-            isMulti
-            isSearchable={false}
-            options={featureOptions}
-            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
-            }}
-            placeholder=""
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
-        ),
-      },
-      right: {
         label: '警報',
         content: (
           <Select
@@ -665,9 +653,91 @@ useEffect(() => {
           />
         ),
       },
+      right: {
+        label: '利用者数',
+        content: (
+          <div style={inputFlexStyle}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors}
+              onChange={e => { const val = e.target.value; setFormData({...formData, visitors: val === '' ? '' : Number(val)}); if (errors.visitors) setErrors({ ...errors, visitors: null }); }} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+        ),
+      },
     },
     {
       left: {
+        label: '使用車両',
+        content: (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <select
+              style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
+              value={formData.carType || ''}
+              onChange={e => {
+                const val = e.target.value;
+                setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
+                if (errors.carType) setErrors({ ...errors, carType: null });
+              }}
+            >
+              <option value="">車種名</option>
+              {safeCarInfo.map(d => (<option key={d.order} value={d.order}>{d.carType}</option>))}
+            </select>
+            <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
+              value={formData.carNo}
+              onChange={e => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setFormData({...formData, carNo: val});
+                if (errors.carNo) setErrors({ ...errors, carNo: null });
+              }} />
+          </div>
+        ),
+      },
+      right: {
+        label: 'ビーチ利用の特徴',
+        content: (
+          <Select
+            isMulti
+            isSearchable={false}
+            options={featureOptions}
+            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, feature: nextMembers });
+            }}
+            placeholder=""
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
+        ),
+      },
+    },
+    {
+      left: {
+        label: 'メモ',
+        highlight: formData.unpatrolled,
+        content: (
+          <>
+            <textarea
+              value={formData.note}
+              maxLength={100}
+              onChange={(e) => {
+                setFormData({...formData, note: e.target.value});
+                if (errors.note) setErrors({ ...errors, note: null });
+              }}
+              style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
+            <div style={{
+              fontSize: '10px',
+              color: formData.note.length >= 100 ? '#ef4444' : '#64748b',
+              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
+              userSelect: 'none',
+              textAlign: 'right'
+            }}>
+              {formData.note.length} / 100
+            </div>
+          </>
+        ),
+      },
+      right: {
         label: '注意喚起人数',
         content: (
           <>
@@ -698,70 +768,6 @@ useEffect(() => {
                 value={formData.forTourist}
                 onChange={e => { const val = e.target.value; setFormData({...formData, forTourist: val === '' ? '' : Number(val)}); if (errors.forTourist) setErrors({ ...errors, forTourist: null }); }} />
               <label style={unitTextStyle}>名</label>
-            </div>
-          </>
-        ),
-      },
-      right: {
-        label: '使用車両',
-        content: (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select
-              style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
-              value={formData.carType || ''}
-              onChange={e => {
-                const val = e.target.value;
-                setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
-                if (errors.carType) setErrors({ ...errors, carType: null });
-              }}
-            >
-              <option value="">車種名</option>
-              {safeCarInfo.map(d => (<option key={d.order} value={d.order}>{d.carType}</option>))}
-            </select>
-            <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
-              value={formData.carNo}
-              onChange={e => {
-                const val = e.target.value.replace(/[^0-9]/g, '');
-                setFormData({...formData, carNo: val});
-                if (errors.carNo) setErrors({ ...errors, carNo: null });
-              }} />
-          </div>
-        ),
-      },
-    },
-    {
-      left: {
-        label: '利用者数',
-        content: (
-          <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors}
-              onChange={e => { const val = e.target.value; setFormData({...formData, visitors: val === '' ? '' : Number(val)}); if (errors.visitors) setErrors({ ...errors, visitors: null }); }} />
-            <label style={unitTextStyle}>名</label>
-          </div>
-        ),
-      },
-      right: {
-        label: 'メモ',
-        highlight: formData.unpatrolled,
-        content: (
-          <>
-            <textarea
-              value={formData.note}
-              maxLength={100}
-              onChange={(e) => {
-                setFormData({...formData, note: e.target.value});
-                if (errors.note) setErrors({ ...errors, note: null });
-              }}
-              style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
-            <div style={{
-              fontSize: '10px',
-              color: formData.note.length >= 100 ? '#ef4444' : '#64748b',
-              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
-              userSelect: 'none',
-              textAlign: 'right'
-            }}>
-              {formData.note.length} / 100
             </div>
           </>
         ),
@@ -933,7 +939,6 @@ const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px',
 const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
 const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#08172A', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', width: '128px', height: '36px', marginRight: '8px', textAlign: 'center' };
 const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
-const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
 
 // ログ入力画面はカード枠なしのグリッド。白背景に罫線区切り（ログ詳細画面と同じ構造で背景色のみ白）
