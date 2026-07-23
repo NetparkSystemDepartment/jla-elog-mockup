@@ -34,13 +34,18 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const SESSION_ERROR_CODES = [1002, 1004, 1005];
+// 1001(ヘッダー情報なし)は、auth_dataが壊れていてトークンを付けられなかった場合などにも発生し、
+// 1002/1004/1005と同様に再ログインが必要なため、セッションエラーとして扱う
+export const SESSION_ERROR_CODES = [1001, 1002, 1004, 1005];
 
 export const forceLogout = () => {
   localStorage.removeItem('auth_data');
   localStorage.removeItem('briefing_data');
   localStorage.removeItem('weeklyBeachData');
-  window.location.reload();
+  // 呼び出し元（App.jsx/BriefingView.jsxなど）がエラーコードに応じたトーストを表示してから
+  // logout()する設計のため、即リロードすると表示前に画面が消えてしまう。
+  // トーストが目に入るよう少し待ってからリロードする
+  setTimeout(() => window.location.reload(), 2000);
 };
 
 axiosInstance.interceptors.response.use(

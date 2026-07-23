@@ -48,6 +48,14 @@ export const DIRECTIONS = [
   { id: 16, label: '北北西' },
 ];
 
+export const WIND_SHORE_OPTIONS = [
+  { id: 0, label: 'オンショア' },
+  { id: 1, label: 'サイドオンショア' },
+  { id: 2, label: 'サイド' },
+  { id: 3, label: 'サイドオフショア' },
+  { id: 4, label: 'オフショア' },
+];
+
 export const WIND_SPEED_OPTIONS = [
   { id: 0, label: '0～4m/s' },
   { id: 1, label: '5～10m/s' },

@@ -1,17 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, Clock, Cloud, Users, Gauge, Waves, User,
-  WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone,
-  NotebookPen, FileUp, Flag, HandHelping, Car, CircleAlert, TriangleAlert } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getinfoApi, setinfoApi } from '../api/recordApi';
-import InputTile from '../components/InputTile';
 import {
   WEATHER_OPTIONS, TIDE_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS,
-  DIRECTIONS, WIND_SPEED_OPTIONS, WARNING_OPTIONS, ALERT_OPTIONS,
-  PRIORITY_OPTIONS, FEATURE_OPTIONS,
+  DIRECTIONS, WIND_SPEED_OPTIONS, PRIORITY_OPTIONS, FEATURE_OPTIONS, WIND_SHORE_OPTIONS,
 } from '../constants';
 
 /* ---------- マスター情報ヘルパー ---------- */
@@ -38,10 +34,7 @@ const labelOf = (options, id) => {
 };
 
 /* ---------- 表示パーツ ---------- */
-
-function FieldLabel({ label }) {
-  return <div style={fs.fieldLabel}>{label}</div>;
-}
+/* ログ入力画面(EditView)のボタン選択UIと同じ配色・形状で、非活性の選択済み表示として再現する */
 
 function ValBox({ value }) {
   const empty = value === null || value === undefined || value === '';
@@ -54,17 +47,9 @@ function ValBox({ value }) {
 
 function TwoBox({ left, right }) {
   return (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <ValBox value={left} /><ValBox value={right} />
-    </div>
-  );
-}
-
-function SelectBox({ value }) {
-  return (
-    <div style={fs.selectBox}>
-      <span>{value || <span style={fs.placeholder}>---</span>}</span>
-      <span style={{ color: '#94a3b8', fontSize: '16px' }}>›</span>
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={left} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={right} /></div>
     </div>
   );
 }
@@ -73,27 +58,27 @@ function TextAreaBox({ value }) {
   return <div style={fs.textAreaBox}>{value || 'なし'}</div>;
 }
 
-function ChipList({ items }) {
+function ChipList({ items, removable = true }) {
   const filtered = (items || []).filter(Boolean);
   if (filtered.length === 0) return <span style={fs.placeholder}>---</span>;
   return (
     <div style={fs.chipRow}>
       {filtered.map((item, i) => (
-        <span key={i} style={fs.chip}>{item}</span>
+        <span key={i} style={fs.chip}>{item}{removable && <span style={fs.chipX}>×</span>}</span>
       ))}
     </div>
   );
 }
 
-function RadioDisplay({ options, value }) {
+// EditView の radioBtnStyle（未選択/選択）と同じ配色のボタン群を、非活性表示として再現する
+function ButtonGroup({ options, value }) {
   const strVal = String(value);
   return (
-    <div style={fs.radioRow}>
+    <div style={fs.btnRow}>
       {options.map(opt => {
         const sel = String(opt.id) === strVal;
         return (
-          <span key={opt.id} style={fs.radioItem}>
-            <span style={{ ...fs.radioDot, ...(sel ? fs.radioDotSel : fs.radioDotEmp) }} />
+          <span key={opt.id} style={{ ...fs.btn, ...(sel ? fs.btnSel : {}) }}>
             {opt.label}
           </span>
         );
@@ -102,27 +87,21 @@ function RadioDisplay({ options, value }) {
   );
 }
 
-function ToggleDisplay({ options, value }) {
-  const strVal = String(value);
+// EditView の「input + 外側ラベル（例: 名）」の見た目に合わせ、単位を値の外側に表示する
+function UnitBox({ value, unit }) {
   return (
-    <div style={fs.toggleRow}>
-      {options.map(opt => {
-        const sel = String(opt.id) === strVal;
-        return (
-          <span key={opt.id} style={{ ...fs.toggleBtn, ...(sel ? fs.toggleSel : fs.toggleEmp) }}>
-            {opt.label}
-          </span>
-        );
-      })}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={value} /></div>
+      {unit && <span style={fs.unitLabel}>{unit}</span>}
     </div>
   );
 }
 
-function FourBox({ v1, v2, v3, v4 }) {
+function FourBox({ v1, v2, v3, v4, unit }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-      <ValBox value={v1} /><ValBox value={v2} />
-      <ValBox value={v3} /><ValBox value={v4} />
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      <UnitBox value={v1} unit={unit} /><UnitBox value={v2} unit={unit} />
+      <UnitBox value={v3} unit={unit} /><UnitBox value={v4} unit={unit} />
     </div>
   );
 }
@@ -250,19 +229,122 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     ? `# ${String(record.detail_key).padStart(2, '0')}`
     : '';
 
-  const memberItems = (record.members || []).map(m => m?.user_id ?? String(m));
-  const warnItems   = (Array.isArray(record.warn)    ? record.warn    : []).map(String).filter(s => s && s !== 'なし');
-  const alertItems  = (Array.isArray(record.alert)   ? record.alert   : []).map(String).filter(s => s && s !== 'なし');
+  // ログイン者（記録担当者）が先頭、それ以外のパトロールメンバーが続く（ログインAPI仕様の並び順）
+  const memberItems   = (record.members || []).map(m => m?.user_id ?? String(m));
+  const recordOwner   = memberItems[0] ?? null;
+  const otherMembers  = memberItems.slice(1);
+
+  const warnText  = (Array.isArray(record.warn)  ? record.warn  : []).map(String).join('、');
+  const alertText = (Array.isArray(record.alert) ? record.alert : []).map(String).join('、');
   const featureItems = (Array.isArray(record.feature) ? record.feature : []).map(f =>
     typeof f === 'number' ? (FEATURE_OPTIONS[f] ?? String(f)) : String(f)
   );
 
+  // upload_file_info の項目名はAPI仕様書で未確定のため、想定されるキー名をフォールバックで拾う
+  const uploadedFiles = (Array.isArray(record.upload_file_info) ? record.upload_file_info : []).map(f => ({
+    name: f?.fileName ?? f?.file_name ?? f?.name ?? '',
+    url: f?.url ?? f?.thumbnail_url ?? f?.path ?? null,
+  }));
+
+  // 左右を同じCSS Gridの行として並べることで、内容量が違っても罫線が段ごとに揃うようにする
+  // （独立した2本のflex columnだと、行ごとの高さが左右でズレて罫線が噛み合わなくなるため）
+  const rows = [
+    {
+      left:  { label: 'ログインユーザー（記録担当者）', content: <ValBox value={recordOwner} /> },
+      right: { label: 'パトロール開始時刻', content: <ValBox value={record.startTime} /> },
+    },
+    {
+      left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} /> },
+      right: { label: '天候', content: <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} /> },
+    },
+    {
+      left:  { label: '潮汐', content: <ButtonGroup options={TIDE_OPTIONS} value={record.tide} /> },
+      right: { label: '潮流', content: <ButtonGroup options={CURRENT_OPTIONS} value={record.current} /> },
+    },
+    {
+      left:  { label: '満潮時刻・高さ[cm]', content: <TwoBox
+        left={record.highTideTime}
+        right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
+      /> },
+      right: { label: '波高（アウターリーフ）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.waveOuter} /> },
+    },
+    {
+      left:  { label: '干潮時刻・高さ[cm]', content: <TwoBox
+        left={record.lowTideTime}
+        right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
+      /> },
+      right: { label: '波高（ショアゾーン）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.wave} /> },
+    },
+    {
+      left:  { label: '風速（天気予報）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeed} /> },
+      right: { label: '風速（現地）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} /> },
+    },
+    {
+      left:  { label: '風向（天気予報）', content: <ValBox value={labelOf(DIRECTIONS, record.windDir)} /> },
+      right: { label: '風向（現地）', content: <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} /> },
+    },
+    {
+      left:  { label: '注意報', content: <ValBox value={warnText || null} /> },
+      right: { label: 'ビーチに対しての風向', content: <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} /> },
+    },
+    {
+      left:  { label: '警報', content: <ValBox value={alertText || null} /> },
+      right: { label: '利用者数', content: <ValBox value={hasValue(record.visitors) ? `${record.visitors} 名` : null} /> },
+    },
+    {
+      left:  { label: '使用車両', content: <TwoBox left={record.carType} right={record.carNo} /> },
+      right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
+    },
+    {
+      left:  { label: 'メモ', content: <TextAreaBox value={record.note} /> },
+      right: { label: '注意喚起人数', content: <FourBox
+        v1={hasValue(record.jpWarning)  ? record.jpWarning  : null}
+        v2={hasValue(record.forWarning) ? record.forWarning : null}
+        v3={hasValue(record.jpTourist)  ? record.jpTourist  : null}
+        v4={hasValue(record.forTourist) ? record.forTourist : null}
+        unit="名"
+      /> },
+    },
+    {
+      left:  null,
+      right: { label: '申し送り事項（応急手当・救助・その他）', content: <TextAreaBox value={record.handover} /> },
+    },
+    {
+      left:  null,
+      right: { label: '優先度', content: <ButtonGroup options={PRIORITY_OPTIONS} value={record.priority} /> },
+    },
+    {
+      left:  null,
+      right: { label: 'パトロール終了時刻', content: <ValBox value={record.endTime ?? record.end_time} /> },
+    },
+  ];
+
+  // アップロードされた画像: アップロードがある記録のみ表示（ファイル名の下にサムネイル）
+  if (uploadedFiles.length > 0) {
+    rows.push({
+      left: null,
+      right: {
+        label: 'アップロードされた画像',
+        content: (
+          <div style={fs.uploadGrid}>
+            {uploadedFiles.map((file, i) => (
+              <div key={i} style={fs.uploadItem}>
+                <div style={fs.uploadName}>{file.name}</div>
+                {file.url && <img src={file.url} alt={file.name} style={fs.uploadThumb} />}
+              </div>
+            ))}
+          </div>
+        ),
+      },
+    });
+  }
+
   return (
     <div style={ds.wrapper}>
-      <HeaderBar onBack={onBack} />
+      {/* ── ヘッダー〜エリア/ビーチ/日付/ボタンは、スクロールしても常に上部に固定表示する ── */}
+      <div style={ds.stickyTop}>
+        <HeaderBar onBack={onBack} />
 
-      <main style={ds.main}>
-        {/* ── 上部: エリア / ビーチ / 日付 / ボタン ── */}
         <div style={ds.topSection}>
           <div style={ds.areaText}>{areaName}</div>
           <div style={ds.beachText}>{beachName}</div>
@@ -270,170 +352,33 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
             <span style={ds.dateText}>{dateLabel}　{seqLabel}</span>
             {canEditOrCancel && (
               <div style={ds.actionBtns}>
-                <button onClick={() => onEdit(record)} style={ds.editBtn}>編集する</button>
-                <button onClick={() => setShowCancelDialog(true)} style={ds.cancelBtn}>取消する</button>
+                <button onClick={() => setShowCancelDialog(true)} style={ds.actionBtn}>取消する</button>
+                <button onClick={() => onEdit(record)} style={ds.actionBtn}>編集する</button>
               </div>
             )}
           </div>
         </div>
 
         <div style={ds.divider} />
+      </div>
 
-        {/* ── ログ入力画面と同様のタイルレイアウト ── */}
+      <main style={ds.main}>
+        {/* ── ログ詳細画面レイアウト（画面定義書 準拠）。左右を1つのCSS Gridの行として並べ、罫線を段ごとに揃える ── */}
         <div style={ds.grid}>
-
-          {/* パトロールメンバー */}
-          <InputTile label="パトロールメンバー" icon={User} isExpandable={true}>
-            <ChipList items={memberItems} />
-          </InputTile>
-
-          {/* パトロール開始時刻、天候 */}
-          <InputTile label="パトロール開始時刻" icon={Clock} isExpandable={true}>
-            <ValBox value={record.startTime} />
-            <div style={fs.subLabel}>
-              <Cloud size={12} style={{ marginRight: 4 }} />天候
-            </div>
-            {hasValue(record.weather)
-              ? <RadioDisplay options={WEATHER_OPTIONS} value={record.weather} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 潮汐 */}
-          <InputTile label="潮汐" icon={Waves}>
-            {hasValue(record.tide)
-              ? <RadioDisplay options={TIDE_OPTIONS} value={record.tide} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 潮流 */}
-          <InputTile label="潮流" icon={TrendingUpDown}>
-            {hasValue(record.current)
-              ? <ToggleDisplay options={CURRENT_OPTIONS} value={record.current} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 満潮時刻・高さ */}
-          <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
-            <TwoBox
-              left={record.highTideTime}
-              right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
-            />
-          </InputTile>
-
-          {/* 波高（アウターリーフ）*/}
-          <InputTile label="波高（アウターリーフ）" icon={Activity}>
-            {hasValue(record.waveOuter)
-              ? <RadioDisplay options={WAVE_OPTIONS} value={record.waveOuter} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 干潮時刻・高さ */}
-          <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
-            <TwoBox
-              left={record.lowTideTime}
-              right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
-            />
-          </InputTile>
-
-          {/* 波高（ショアゾーン） */}
-          <InputTile label="波高（ショアゾーン）" icon={Activity}>
-            {hasValue(record.wave)
-              ? <RadioDisplay options={WAVE_OPTIONS} value={record.wave} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 風向（天気予報） */}
-          <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}>
-            <SelectBox value={labelOf(DIRECTIONS, record.windDir)} />
-          </InputTile>
-
-          {/* 風向（現地） */}
-          <InputTile label="風向（現地）" icon={Compass} isExpandable={true}>
-            <SelectBox value={labelOf(DIRECTIONS, record.windDirDetail)} />
-          </InputTile>
-
-          {/* 風速（現地） */}
-          <InputTile label="風速（現地）" icon={Gauge}>
-            {hasValue(record.windSpeedDetail)
-              ? <RadioDisplay options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 風速（天気予報） */}
-          <InputTile label="風速（天気予報）" icon={Gauge}>
-            {hasValue(record.windSpeed)
-              ? <RadioDisplay options={WIND_SPEED_OPTIONS} value={record.windSpeed} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 注意報 */}
-          <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}>
-            <ChipList items={warnItems} />
-          </InputTile>
-
-          {/* ビーチ利用の特徴 */}
-          <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
-            <ChipList items={featureItems} />
-          </InputTile>
-
-          {/* 警報 */}
-          <InputTile label="警報" icon={CircleAlert} isExpandable={true}>
-            <ChipList items={alertItems} />
-          </InputTile>
-
-          {/* 注意喚起人数 */}
-          <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}>
-            <FourBox
-              v1={hasValue(record.jpWarning)  ? `${record.jpWarning} 名`  : null}
-              v2={hasValue(record.forWarning) ? `${record.forWarning} 名` : null}
-              v3={hasValue(record.jpTourist)  ? `${record.jpTourist} 名`  : null}
-              v4={hasValue(record.forTourist) ? `${record.forTourist} 名` : null}
-            />
-          </InputTile>
-
-          {/* 使用車両 */}
-          <InputTile label="使用車両" icon={Car} isExpandable={true}>
-            <TwoBox left={record.carType} right={record.carNo} />
-          </InputTile>
-
-          {/* 利用者数 */}
-          <InputTile label="利用者数" icon={Users}>
-            <ValBox value={hasValue(record.visitors) ? `${record.visitors} 名` : null} />
-          </InputTile>
-
-          {/* メモ */}
-          <InputTile label="メモ" icon={NotebookPen} isExpandable={true}>
-            <TextAreaBox value={record.note} />
-          </InputTile>
-
-          {/* 申し送り事項（応急手当・救助・その他） */}
-          <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}>
-            <TextAreaBox value={record.handover} />
-            <div style={fs.subLabel}>
-              <Flag size={12} style={{ marginRight: 4 }} />優先度
-            </div>
-            {hasValue(record.priority)
-              ? <RadioDisplay options={PRIORITY_OPTIONS} value={record.priority} />
-              : <span style={fs.placeholder}>---</span>}
-          </InputTile>
-
-          {/* 空欄（位置合わせ） */}
-          <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
-          </InputTile>
-
-          {/* アップロードされた画像 */}
-          <InputTile label="アップロードされた画像" icon={FileUp} isExpandable={true}>
-          </InputTile>
-
-          {/* 空欄（位置合わせ） */}
-          <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
-          </InputTile>
-
-          {/* パトロール終了時刻 */}
-          <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
-            <ValBox value={record.endTime ?? record.end_time} />
-          </InputTile>
-
+          {rows.map((row, i) => {
+            const isLastRow = i === rows.length - 1;
+            const rowBorder = isLastRow ? {} : fs.rowDivider;
+            return (
+              <React.Fragment key={i}>
+                <div style={{ ...fs.cell, ...fs.cellLeft, ...rowBorder }}>
+                  {row.left && (<><div style={fs.label}>{row.left.label}</div>{row.left.content}</>)}
+                </div>
+                <div style={{ ...fs.cell, ...rowBorder }}>
+                  {row.right && (<><div style={fs.label}>{row.right.label}</div>{row.right.content}</>)}
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
       </main>
 
@@ -464,54 +409,51 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   );
 }
 
-/* ── フィールドスタイル ── */
+/* ── フィールドスタイル ──
+   ログ入力画面(EditView)と同じ配色を流用し、グレー背景・罫線区切りの見た目を再現する */
 const fs = {
-  fieldLabel: {
-    fontSize: '12px', color: '#64748b',
-    marginTop: '14px', marginBottom: '4px',
-  },
+  // 行の実体は RecordDetailView の rows.map() 側で2セル(左右)ずつ描画する。
+  // 1つの grid に左右を並べることで、内容量が違っても段ごとに罫線が揃う
+  cell: { padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 },
+  cellLeft: { borderRight: '1px solid #e2e8f0' },
+  rowDivider: { borderBottom: '1px solid #e2e8f0' },
+  label: { fontSize: '12px', fontWeight: 'bold', color: '#334155' },
+  // 読み取り専用ボックスは background-color: rgb(229, 231, 235) で塗り、
+  // 枠線の代わりに薄い黒(rgba(0,0,0,0.1))のリング状box-shadowで縁取る（border:0）
   valBox: {
-    backgroundColor: '#f1f5f9', borderRadius: '8px',
-    padding: '10px 12px', fontSize: '14px', color: '#1e293b',
-    minHeight: '40px', display: 'flex', alignItems: 'center',
-  },
-  selectBox: {
-    backgroundColor: '#f1f5f9', borderRadius: '8px',
-    padding: '10px 12px', fontSize: '14px', color: '#1e293b',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    minHeight: '40px',
+    backgroundColor: 'rgb(229, 231, 235)', borderRadius: '8px', border: 0,
+    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+    padding: '8px 12px', fontSize: '13px', color: '#1e293b',
+    minHeight: '36px', display: 'flex', alignItems: 'center',
   },
   textAreaBox: {
-    backgroundColor: '#f1f5f9', borderRadius: '8px',
-    padding: '10px 12px', fontSize: '14px', color: '#1e293b',
-    minHeight: '64px', lineHeight: 1.6,
+    backgroundColor: 'rgb(229, 231, 235)', borderRadius: '8px', border: 0,
+    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+    padding: '8px 12px', fontSize: '13px', color: '#1e293b',
+    minHeight: '60px', lineHeight: 1.6,
   },
-  chipRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '4px 0' },
+  chipRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '2px 0' },
   chip: {
-    backgroundColor: '#f1f5f9', borderRadius: '9999px',
-    padding: '4px 10px', fontSize: '12px', color: '#1e293b',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#fff', borderRadius: '9999px',
+    padding: '4px 6px 4px 10px', fontSize: '13px', color: '#1f2937',
+    border: '1px solid #e2e8f0', display: 'inline-flex', alignItems: 'center', gap: '4px',
   },
-  placeholder: { fontSize: '14px', color: '#94a3b8' },
-  subLabel: {
-    fontSize: '12px', fontWeight: 'bold', color: '#64748b',
-    display: 'flex', alignItems: 'center', marginTop: '4px',
+  chipX: { color: '#9ca3af', fontSize: '12px' },
+  placeholder: { fontSize: '13px', color: '#94a3b8' },
+  unitLabel: { fontSize: '12px', fontWeight: 'bold', color: '#64748b', flexShrink: 0 },
+  uploadGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  uploadItem: { width: '72px' },
+  uploadName: { fontSize: '10px', color: '#64748b', wordBreak: 'break-all', marginBottom: '4px' },
+  uploadThumb: { width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' },
+  // EditView の radioBtnStyle と同じ配色（未選択: 白地グレー枠 / 選択: 水色枠+淡青地）。
+  // 各ボタンは flex:1 で行内を均等割りし、選択肢の文字数に関わらず等幅にする
+  btnRow: { display: 'flex', gap: '8px' },
+  btn: {
+    flex: 1, padding: '4px 6px', borderRadius: '8px', border: '1px solid #e2e8f0',
+    fontSize: '13px', fontWeight: '600', backgroundColor: '#fff', color: '#64748b',
+    textAlign: 'center',
   },
-  radioRow: {
-    display: 'flex', flexWrap: 'wrap',
-    gap: '6px 10px', padding: '6px 0', alignItems: 'center',
-  },
-  radioItem: {
-    display: 'flex', alignItems: 'center', gap: '4px',
-    fontSize: '13px', color: '#1e293b',
-  },
-  radioDot:    { width: '13px', height: '13px', borderRadius: '50%', display: 'inline-block', flexShrink: 0 },
-  radioDotSel: { backgroundColor: '#0f172a', border: 'none' },
-  radioDotEmp: { backgroundColor: 'transparent', border: '1.5px solid #94a3b8' },
-  toggleRow: { display: 'flex', gap: '6px', padding: '4px 0' },
-  toggleBtn:  { padding: '7px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold' },
-  toggleSel:  { backgroundColor: '#0f172a', color: 'white' },
-  toggleEmp:  { backgroundColor: '#f1f5f9', color: '#334155' },
+  btnSel: { borderColor: '#38bdf8', backgroundColor: '#e0f2fe', color: '#0369a1' },
 };
 
 /* ── レイアウトスタイル ── */
@@ -536,18 +478,17 @@ const ds = {
   dateRow:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' },
   dateText:    { fontSize: '14px', color: '#334155' },
   actionBtns:  { display: 'flex', gap: '8px' },
-  editBtn: {
-    backgroundColor: 'white', color: '#0f172a',
-    border: '1.5px solid #0f172a', borderRadius: '9999px',
-    padding: '6px 16px', fontSize: '13px', cursor: 'pointer',
-  },
-  cancelBtn: {
-    backgroundColor: 'white', color: '#ef4444',
-    border: '1.5px solid #ef4444', borderRadius: '9999px',
-    padding: '6px 16px', fontSize: '13px', cursor: 'pointer',
+  actionBtn: {
+    backgroundColor: '#e5e7eb', color: '#1a1a1a',
+    border: 'none', borderRadius: '9999px',
+    padding: '8px 20px', fontSize: '13px', cursor: 'pointer',
   },
   divider: { height: '1px', backgroundColor: '#e2e8f0', margin: '0 16px 4px' },
-  grid:    { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '8px', alignItems: 'stretch' },
+  // ヘッダー〜エリア/ビーチ/日付/ボタンをまとめてスクロール上部に固定する
+  stickyTop: { position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' },
+  // 画面定義書の通り、背景はグレー・カード枠は使わず罫線区切りの表形式にする。
+  // 左右セルを同じgridの行として並べるので、内容量が違っても段ごとに罫線が揃う
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f2f2f2' },
   message: { padding: '40px', textAlign: 'center', color: '#64748b' },
   overlay: {
     position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',

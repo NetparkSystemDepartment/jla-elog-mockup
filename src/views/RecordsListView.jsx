@@ -217,88 +217,103 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
 
   return (
     <div style={s.wrapper}>
+      {/* ── ヘッダー〜フィルター〜テーブル見出し行(th相当)までをスクロール上部に固定表示する ── */}
+      <div style={s.stickyTop}>
       <header style={s.header}>
-        <div style={s.menuBtn}><Menu color="white" size={22} /></div>
-        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴一覧' : 'ログデータ一覧'}</h1>
+        {showCancelled ? (
+          <button
+            onClick={() => { setShowCancelled(false); resetPage(); setSelectedKeys(new Set()); }}
+            style={s.backBtn}
+          >
+            <ChevronLeft color="white" size={24} />
+          </button>
+        ) : (
+          <div style={s.menuBtn}><Menu color="white" size={22} /></div>
+        )}
+        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴' : 'ログデータ'}</h1>
         <div style={{ width: 40 }} />
       </header>
 
-      <main style={s.main}>
         {/* フィルターパネル */}
+        {/* 1段目・2段目でアイコン／内容／ボタンの列幅を揃えるため、2行分をまとめて1つのCSS Gridで組む
+            （絞り込みボタンとCSVボタンは文字数が違い幅も異なるため、独立したflex行だとメンバー欄と曜日欄の右端が揃わない） */}
         <div style={s.filterPanel}>
-          <div style={s.filterRow}>
-            <Filter size={16} color="#334155" />
-            <div style={s.inputArea}>
-              <Select
-                isMulti
-                isSearchable
-                options={areaSelectOptions}
-                value={areaSelectOptions.filter(o => draftAreas.includes(o.value))}
-                onChange={(selected) => {
-                  setDraftAreas((selected || []).map(o => o.value));
-                }}
-                placeholder="全エリア"
-                noOptionsMessage={() => "見つかりません"}
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
-              />
-            </div>
-            <div style={s.inputMember}>
-              <Select
-                isMulti
-                isSearchable
-                options={memberOptions}
-                value={memberOptions.filter(o => draftMembers.includes(o.value))}
-                onChange={(selected) => {
-                  setDraftMembers((selected || []).map(o => o.value));
-                }}
-                placeholder="パトロールメンバー"
-                noOptionsMessage={() => "見つかりません"}
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
-              />
+          <div style={s.filterGrid}>
+            <Filter size={16} color="#334155" style={{ alignSelf: 'center' }} />
+            <div style={s.dateGroup}>
+              <div style={s.inputArea}>
+                <Select
+                  isMulti
+                  isSearchable
+                  options={areaSelectOptions}
+                  value={areaSelectOptions.filter(o => draftAreas.includes(o.value))}
+                  onChange={(selected) => {
+                    setDraftAreas((selected || []).map(o => o.value));
+                  }}
+                  placeholder="全エリア"
+                  noOptionsMessage={() => "見つかりません"}
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
+              </div>
+              <div style={s.inputMember}>
+                <Select
+                  isMulti
+                  isSearchable
+                  options={memberOptions}
+                  value={memberOptions.filter(o => draftMembers.includes(o.value))}
+                  onChange={(selected) => {
+                    setDraftMembers((selected || []).map(o => o.value));
+                  }}
+                  placeholder="パトロールメンバー"
+                  noOptionsMessage={() => "見つかりません"}
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
+              </div>
             </div>
             <button onClick={handleSearch} style={s.searchBtn}>絞り込み</button>
-          </div>
 
-          <div style={s.filterRow}>
-            <input
-              type="date"
-              value={draftDateFrom}
-              onChange={e => setDraftDateFrom(e.target.value)}
-              style={s.dateInput}
-            />
-            <span style={{ color: '#64748b' }}>～</span>
-            <input
-              type="date"
-              value={draftDateTo}
-              onChange={e => setDraftDateTo(e.target.value)}
-              style={s.dateInput}
-            />
-            <select
-              value={draftDow}
-              onChange={e => setDraftDow(e.target.value)}
-              style={s.selectSm}
-            >
-              <option value="">曜日</option>
-              {DAY_LABELS.map((d, i) => (
-                <option key={i} value={String(i)}>{d}</option>
-              ))}
-            </select>
-            {isAdmin && (
+            <div />
+            <div style={s.dateGroup}>
+              <input
+                type="date"
+                value={draftDateFrom}
+                onChange={e => setDraftDateFrom(e.target.value)}
+                style={s.dateInput}
+              />
+              <span style={{ color: '#64748b' }}>～</span>
+              <input
+                type="date"
+                value={draftDateTo}
+                onChange={e => setDraftDateTo(e.target.value)}
+                style={s.dateInput}
+              />
+              <select
+                value={draftDow}
+                onChange={e => setDraftDow(e.target.value)}
+                style={s.selectSm}
+              >
+                <option value="">曜日</option>
+                {DAY_LABELS.map((d, i) => (
+                  <option key={i} value={String(i)}>{d}</option>
+                ))}
+              </select>
+            </div>
+            {isAdmin ? (
               <button onClick={handleCsvDownload} style={s.csvBtn}>
+                <span style={{ textDecoration: 'underline' }}>CSV</span>
                 <Download size={14} />
-                <span style={{ textDecoration: 'underline' }}>csv</span>
               </button>
-            )}
+            ) : <div />}
           </div>
         </div>
 
         {/* テーブルラベル */}
         <div style={s.tableLabel}>
-          {showCancelled ? '取消履歴' : '全ての記録一覧'}
+          {showCancelled ? '取消履歴一覧' : 'ログデータ一覧'}
         </div>
 
         {/* テーブルヘッダー */}
@@ -310,6 +325,7 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
                 checked={isPageAllSelected}
                 onChange={e => handleSelectAll(e.target.checked)}
               />
+              <div style={s.checkAllLabel}>全選択</div>
             </div>
           )}
           <div style={{ ...s.col, cursor: 'pointer' }} onClick={() => handleSortClick('area')}>
@@ -323,7 +339,9 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
           </div>
           <div style={s.colWide}>パトロールメンバー</div>
         </div>
+      </div>
 
+      <main style={s.main}>
         {isLoading && <div style={s.message}>読み込み中...</div>}
         {error    && <div style={s.message}>データの取得に失敗しました</div>}
 
@@ -406,13 +424,21 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   },
   menuBtn: { padding: '4px', display: 'flex', alignItems: 'center' },
+  backBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' },
   headerTitle: { color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 },
   main: { flex: 1, display: 'flex', flexDirection: 'column' },
+  // ヘッダー〜フィルター〜テーブル見出し行(th相当)をスクロール上部に固定する
+  stickyTop: { position: 'sticky', top: 0, zIndex: 10 },
   filterPanel: {
     backgroundColor: 'white', padding: '12px 16px',
     display: 'flex', flexDirection: 'column', gap: '8px',
   },
-  filterRow: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+  // アイコン列(16px)／内容列(1fr)／ボタン列(auto)を2段で共有し、内容列の右端（パトロールメンバー／曜日）を揃える
+  filterGrid: {
+    display: 'grid', gridTemplateColumns: '16px 1fr auto',
+    columnGap: '8px', rowGap: '8px', alignItems: 'center',
+  },
+  dateGroup: { display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 },
   selectSm: {
     border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
     fontSize: '13px', backgroundColor: '#f8fafc', minWidth: '60px',
@@ -426,11 +452,11 @@ const s = {
   },
   dateInput: {
     border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
-    fontSize: '13px', backgroundColor: '#f1f5f9',
+    fontSize: '13px', backgroundColor: '#f1f5f9', flex: 1, minWidth: 0,
   },
   csvBtn: {
     background: 'none', border: 'none', display: 'flex', alignItems: 'center',
-    gap: '4px', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto', color: '#334155',
+    gap: '4px', fontSize: '13px', cursor: 'pointer', color: '#334155', flexShrink: 0,
   },
   tableLabel: { backgroundColor: '#d1d5db', padding: '4px 16px', fontSize: '11px', color: '#475569' },
   tableHeader: {
@@ -443,7 +469,8 @@ const s = {
     borderBottom: '1px solid #f1f5f9', fontSize: '14px', alignItems: 'center',
     cursor: 'pointer',
   },
-  checkCell: { width: '32px', flexShrink: 0 },
+  checkCell: { width: '40px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  checkAllLabel: { fontSize: '9px', color: '#64748b', marginTop: '2px' },
   col: { flex: 1, userSelect: 'none' },
   colWide: { flex: 1.5, fontSize: '12px', color: '#334155' },
   message: { padding: '32px', textAlign: 'center', color: '#64748b' },
@@ -453,7 +480,7 @@ const s = {
   },
   pagination: { display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b' },
   pageBtn: {
-    background: 'none', border: '1px solid #cbd5e1', borderRadius: '6px',
+    background: 'none', border: 'none',
     padding: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center',
   },
   historyBtn: {
@@ -475,6 +502,8 @@ const customSelectStyles = {
     borderRadius: '8px',
     minHeight: 'auto',
   }),
+  // ドロップダウン矢印の前にある縦の区切り線は画面定義書に無いため非表示にする
+  indicatorSeparator: () => ({ display: 'none' }),
   // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
   multiValue: (provided) => ({
     ...provided,
