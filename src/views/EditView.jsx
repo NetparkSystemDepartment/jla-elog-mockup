@@ -944,6 +944,13 @@ const rowDividerStyle = { borderBottom: '1px solid #e2e8f0' };
 const cellLabelStyle = { fontSize: '12px', fontWeight: 'bold', color: '#334155' };
 
 const customSelectStyles = {
+  // menuPortalTarget={document.body} でメニューがDOMツリーの外（body直下）に描画されるため、
+  // 画面側のフォント指定を継承できずブラウザ既定フォント（明朝系）になってしまう。
+  // ポータルのルートで明示的に指定し、配下のメニュー/選択肢に継承させる
+  menuPortal: (provided) => ({
+    ...provided,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  }),
   // 入力エリア全体（コントロール）のスタイル
   control: (provided, state) => ({
     ...provided,

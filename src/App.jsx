@@ -21,18 +21,6 @@ import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
 const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
-const getMasterAreaBeachNos = (coastName, beachName) => {
-  try {
-    const masterInfo = JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
-    const allAreaList = (masterInfo.area_info || []).filter(a => Number(a.delete_flg) !== 1);
-    const areaObj = allAreaList.find(a => a.area === coastName);
-    const beachObj = (areaObj?.beach_info || []).find(b => b.beach === beachName);
-    return { area: areaObj?.no ?? null, beach: beachObj?.no ?? null };
-  } catch {
-    return { area: null, beach: null };
-  }
-};
-
 const FOOTER_VIEWS = ['home', 'list', 'records', 'recordDetail'];
 
 function GlobalFooter({ onNavigate }) {
@@ -290,10 +278,13 @@ function App() {
       // axiosInstance が共通でヘッダー（Authorizationなど）を処理する設計、
       // またはサーバー側がセッション/POST内のデータで認証する設計であれば、そのまま record を渡します。
  
-      const { date, id, timestamp, isSynced, area: _a, beach: _b,
+      // area/beach は EditView の handleSendClick で既に selectedCoast.no / selectedBeach.no
+      // （マスタのエリア番号）がセット済みのため、ここでは破棄・再計算せずそのまま使う。
+      // 以前はここで getMasterAreaBeachNos(selectedCoast, selectedBeach) により再計算していたが、
+      // selectedCoast/selectedBeach は { no, name } オブジェクトなのに文字列として比較しており、
+      // 常に area: null / beach: null になって「パラメータ異常(3001)」でサーバーに拒否されていた
+      const { date, id, timestamp, isSynced,
         ...cleanRecord } = record;
-
-      const { area: masterArea, beach: masterBeach } = getMasterAreaBeachNos(selectedCoast, selectedBeach);
 
       // members には記録担当者（自分）が含まれていないため先頭に追加する。
       // getinfo には担当者用の専用フィールドが無く、ログ詳細画面は members[0] を記録担当者として表示するため必須
@@ -301,8 +292,6 @@ function App() {
         type: 1,
         data: {
           ...cleanRecord,
-          area: masterArea,
-          beach: masterBeach,
           members: [user.user_id, ...(cleanRecord.members || [])],
           delete_flg: false,
         }
@@ -315,10 +304,17 @@ function App() {
       // トークンの有効期限切れ、再ログイン
       if (result.result === false) {
         toast.dismiss(toastId);
+        if (result.error_no === 1001) {
+          toast.warning(
+            <div>ログイン情報が確認できません。<br />再ログインして再度送信してください。</div>
+          );
+          logout();
+          return;
+        }
         if (result.error_no === 1002) {
           toast.warning(
             <div>ログイン情報が不正です。<br />再ログインして再度送信してください。</div>
-          );  
+          );
           logout();
           return;
         }

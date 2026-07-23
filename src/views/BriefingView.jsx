@@ -104,10 +104,17 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
         // トークンの有効期限切れ、利用時間外、再ログイン
         if (resData.result === false) {
+          if (resData.error_no === 1001) {
+            toast.warning(
+              <div>ログイン情報が確認できません。<br />再ログインしてください。</div>
+            );
+            logout();
+            return;
+          }
           if (resData.error_no === 1002) {
             toast.warning(
               <div>ログイン情報が不正です。<br />再ログインしてください。</div>
-            );  
+            );
             logout();
             return;
           }
@@ -978,6 +985,13 @@ const briefingStyles = {
 };
 
 const customSelectStyles = {
+  // menuPortalTarget={document.body} でメニューがDOMツリーの外（body直下）に描画されるため、
+  // 画面側のフォント指定を継承できずブラウザ既定フォント（明朝系）になってしまう。
+  // ポータルのルートで明示的に指定し、配下のメニュー/選択肢に継承させる
+  menuPortal: (provided) => ({
+    ...provided,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  }),
   // 入力エリア全体（コントロール）のスタイル
   control: (provided, state) => ({
     ...provided,
