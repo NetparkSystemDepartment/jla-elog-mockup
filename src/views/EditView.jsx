@@ -1,5 +1,4 @@
 import React, { useState, useEffect, forwardRef } from 'react';
-import { Ban } from 'lucide-react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 registerLocale('ja', ja);
@@ -7,16 +6,12 @@ import { MultiSelectInput } from '../components/MultiSelectInput';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 //import styles from './EditView.module.css';
-import { toast } from 'sonner';
 import { Construction, Calendar } from 'lucide-react';
 import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
   WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS, FEATURE_OPTIONS,
   WIND_SHORE_OPTIONS } from '../constants';
 import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
-// useNetworkState	ブラウザのネットワーク接続の状態を追跡する
-import { useNetworkState } from 'react-use';
 import Select from 'react-select';
-import { useConfirm } from '../components/ConfirmDialogContext';
 
 
 // パトロールメンバー
@@ -32,19 +27,12 @@ const initialFormData = {
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData, beach, setView, profileList, seq, isEdit = false, onUpdate }) => {
+const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onBack, existingData, beach, setView, profileList, seq, onUpdate }) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
   startDate: selectedDate,
   seq: existingData.seq,
 });
-
-  // ネットワーク状態
-  const netState = useNetworkState();
-//console.log('netState:', netState.online);
-
-  // アンパトロールモード
-  const [unpatrolled, setUnpatrolled] = useState(false);
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
@@ -74,59 +62,6 @@ const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, on
   // 車両名
   const safeCarInfo = useSafeCarInfo();
 
-  //
-  const confirm = useConfirm(); 
-  const handleToggle = async() => {
-
-    if (!unpatrolled) {
-      const ok = await confirm({
-        title: "確認",
-        message: "このビーチにおける未送信のパトロールログは削除されます。パトロール未実施ですか？",
-        okText: "パトロール未実施",
-        cancelText: "もどる",
-      });
-
-      if (!ok) return;
-
-      formData.startTime = '';
-      formData.weather = '';
-      formData.current = '';
-      formData.waveOuter = '';
-      formData.wave = '';
-      formData.windDirDetail = '';
-      formData.windSpeedDetail = '';
-      formData.windShoreDetail = '';
-      formData.feature = '';
-      formData.jpWarning = '';
-      formData.forWarning = '';
-      formData.jpTourist = '';
-      formData.forTourist = '';
-      formData.visitors = '';
-      formData.handover = 'なし';
-      formData.priority = '';
-      formData.endTime = '';
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      unpatrolled: !prev.unpatrolled
-    }));
-
-    setUnpatrolled(!unpatrolled);
-
-//console.log('unpatrolled:', unpatrolled);
-    if (!unpatrolled && formData.note === "なし") {
-      formData.note = "";
-    }
-    if (unpatrolled && formData.note === "") {
-      formData.note = "なし";
-    }
-
-    // エラーオブジェクトをクリア
-    setErrors({});
-    
-  }; 
-   
 useEffect(() => {
 //console.log("EditView In:", existingData);
 
@@ -141,110 +76,19 @@ useEffect(() => {
 
     // 3. 加工したデータを State にセットする
     setFormData(updatedData);
-
-    // 4. Unpatrollのステートをセットする
-    setUnpatrolled(updatedData.unpatrolled);
   }
 }, [existingData]);
 
-  // 全ての入力を削除（モックアップのみ）
-  const handleClear = () => {
-    toast.warning('入力内容をすべて消去しますか？', {
-      duration: Infinity,
-      action: {
-        label: 'クリアする',
-        onClick: () => {
-          setFormData(initialFormData);
-          toast.success('クリアしました');
-        },
-      },
-      cancel: {
-        label: 'キャンセル',
-        onClick: () => toast.dismiss(),
-      },
-    });
-  };
-
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
-  
-  // 必須入力のチェック
-  const isFormValid = () => {
-    // メンバーは共通必須
-    const hasMembers = formData.members?.length > 0;
 
-    // Unpatroll時はメモのみ必須
-    if (unpatrolled === true) {
-      return (
-//        hasMembers &&
-        !!formData.note?.trim()
-      );
-    }
-
-    // 数値フィールド（0 を有効値として許容）
-    const numericFields = [
-      formData.weather,
-      formData.current,
-      formData.waveOuter,
-      formData.wave,
-      formData.tide,
-      formData.windSpeed,
-      formData.windSpeedDetail,
-      formData.visitors,
-      formData.jpWarning,
-      formData.forWarning,
-      formData.jpTourist,
-      formData.forTourist,
-    ].every(v => v != null && v !== '');
-
-    // 文字列・時刻フィールド（空文字を弾く）
-    const textFields = [
-      formData.startTime,
-      formData.endTime,
-      formData.highTideTime,
-      formData.highTide,   // ← 数値なら上のnumericFieldsへ移動
-      formData.lowTideTime,
-      formData.lowTide,    // ← 同上
-      formData.windDir,
-      formData.windDirDetail,
-      formData.warn,
-      formData.feature,
-      formData.alert,
-      formData.carType,
-      formData.carNo,
-      formData.handover,
-      formData.note,
-    ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
-
-    return hasMembers && numericFields && textFields;
-  };
-
-  const isValid = isFormValid();
-//console.log('isValid:', isValid);
- 
   // 「保存して閉じる」ボタン
   const handleSaveClick = () => {
-    const newErrors = {};
-
     formData.startDate = selectedDate;
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
-    if (isEdit) {
-      onUpdate(formData);
-    } else {
-      onSave(formData);
-    }
+    onUpdate(formData);
   };
-
-    // 「送信」ボタン
-  const handleSendClick = () => {
-    formData.startDate = selectedDate;
-    formData.area = selectedCoast.no;
-    formData.beach = selectedBeach.no;
-//    console.log('formData:', formData);
-    // 保存（indexedDB）処理
-    onSubmit(formData);
-  }
 
   // 複数選択のプルダウン
   const [isOpen, setIsOpen] = useState(false);
@@ -283,10 +127,6 @@ useEffect(() => {
 
   //const formattedDate = format(selectedDate, 'M月d日 (eee)');
   const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
-  //const dailySeq = 1
-
-  const isDisabled = !Boolean(isValid) || !netState.online;
-//console.log('isDisabled:', isDisabled);
 
   // ログ詳細画面と同じグリッド構造（左右ペアのCSS Grid・罫線区切り・グレー背景）で組む。
   // 各行は { label, content } のペアで、右側だけの行は left: null にする
@@ -850,7 +690,7 @@ useEffect(() => {
       <header>
         <div style={headerTopStyle}>
           <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
-          <span style={logoTextStyle}>{isEdit ? 'ログ編集' : 'ログ入力'}</span>
+          <span style={logoTextStyle}>ログ編集</span>
           <span></span>
         </div>
         <div style={headerMiddleStyle}>{selectedCoast.name}</div>
@@ -881,35 +721,6 @@ useEffect(() => {
         })}
       </main>
 
-      <footer>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-
-          {!isEdit && (
-            <button
-              type="button"
-              onClick={handleToggle}
-              style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
-              Unpatrolled
-            </button>
-          )}
-
-          {!isEdit && (
-            <button
-              onClick={() => handleSendClick(formData)}
-              disabled={isDisabled}
-              style={{
-                ...sendBtnStyle,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                opacity: isDisabled ? 0.5 : 1,
-              }}
-            >
-              <span style={{ marginTop: 4}}>{isDisabled ? (<Ban size={14} style={{ marginRight: 8}} />) : ('')}</span>
-              <span>送信</span>
-            </button>
-          )}
-        </div>
-      </footer>
-
     </div>
     </div>
   );
@@ -936,12 +747,10 @@ const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' };
 const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' };
 const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px', color: '#64748b', width: '10%', };
-const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
-const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#08172A', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', width: '128px', height: '36px', marginRight: '8px', textAlign: 'center' };
 const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
 
-// ログ入力画面はカード枠なしのグリッド。白背景に罫線区切り（ログ詳細画面と同じ構造で背景色のみ白）
+// ログ編集画面はカード枠なしのグリッド。白背景に罫線区切り（ログ詳細画面と同じ構造で背景色のみ白）
 const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#fff' };
 const cellStyle = { padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 };
 const cellLeftStyle = { borderRight: '1px solid #e2e8f0' };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import ListView from './views/ListView';
 import EditView from './views/EditView';
+import LogEntryView from './views/LogEntryView';
 import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
@@ -612,18 +613,34 @@ function App() {
       const foundSyncedRecord = syncedRecords.find(r => r.beach === selectedBeach.name);
       const syncedRecoredSeq = foundSyncedRecord ? (Number(foundSyncedRecord.detail_key) || 0) : 0;
 
+      // ログ詳細画面からの編集（既存レコードあり）は EditView（ログ編集）、
+      // ビーチ選択からの新規登録は LogEntryView（ログ入力、issue27適用前のUIを復元）を使う
+      if (editingRecord) {
+        return (
+          <EditView
+            user={user}
+            selectedCoast={selectedCoast}
+            selectedBeach={selectedBeach}
+            selectedDate={format(selectedDate, 'yyyy-MM-dd')}
+            onBack={() => { setEditingRecord(null); setView('recordDetail'); }}
+            onUpdate={handleUpdate}
+            existingData={editingRecord}
+            profileList={profileList}
+            seq={1}
+          />
+        );
+      }
+
       return (
-        <EditView
+        <LogEntryView
           user={user}
           selectedCoast={selectedCoast}
           selectedBeach={selectedBeach}
           selectedDate={format(selectedDate, 'yyyy-MM-dd')}
           onSave={handleSave}
           onSubmit={handleSubmit}
-          onBack={() => { setEditingRecord(null); setView(editingRecord ? 'recordDetail' : 'list'); }}
-          isEdit={!!editingRecord}
-          onUpdate={handleUpdate}
-          existingData={editingRecord || (() => {
+          onBack={() => setView('list')}
+          existingData={(() => {
             if (targetRecords && Object.keys(targetRecords).length > 0) {
               return targetRecords;
             }
