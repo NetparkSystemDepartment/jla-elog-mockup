@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getinfoApi, setinfoApi } from '../api/recordApi';
+import { useAuth } from '../contexts/authContext';
+import { useSafeCarInfo } from '../useSafeCarInfo';
 import {
   WEATHER_OPTIONS, TIDE_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS,
   DIRECTIONS, WIND_SPEED_OPTIONS, PRIORITY_OPTIONS, FEATURE_OPTIONS, WIND_SHORE_OPTIONS,
@@ -36,20 +38,22 @@ const labelOf = (options, id) => {
 /* ---------- 表示パーツ ---------- */
 /* ログ入力画面(EditView)のボタン選択UIと同じ配色・形状で、非活性の選択済み表示として再現する */
 
-function ValBox({ value }) {
+const justifyOf = (align) => align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+
+function ValBox({ value, align = 'left' }) {
   const empty = value === null || value === undefined || value === '';
   return (
-    <div style={fs.valBox}>
+    <div style={{ ...fs.valBox, justifyContent: justifyOf(align) }}>
       {empty ? <span style={fs.placeholder}>---</span> : value}
     </div>
   );
 }
 
-function TwoBox({ left, right }) {
+function TwoBox({ left, right, leftAlign = 'left', rightAlign = 'left' }) {
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={left} /></div>
-      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={right} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={left} align={leftAlign} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={right} align={rightAlign} /></div>
     </div>
   );
 }
@@ -88,25 +92,28 @@ function ButtonGroup({ options, value }) {
 }
 
 // EditView の「input + 外側ラベル（例: 名）」の見た目に合わせ、単位を値の外側に表示する
-function UnitBox({ value, unit }) {
+function UnitBox({ value, unit, align = 'left' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={value} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={value} align={align} /></div>
       {unit && <span style={fs.unitLabel}>{unit}</span>}
     </div>
   );
 }
 
-function FourBox({ v1, v2, v3, v4, unit }) {
+function FourBox({ v1, v2, v3, v4, unit, align = 'left' }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-      <UnitBox value={v1} unit={unit} /><UnitBox value={v2} unit={unit} />
-      <UnitBox value={v3} unit={unit} /><UnitBox value={v4} unit={unit} />
+      <UnitBox value={v1} unit={unit} align={align} /><UnitBox value={v2} unit={unit} align={align} />
+      <UnitBox value={v3} unit={unit} align={align} /><UnitBox value={v4} unit={unit} align={align} />
     </div>
   );
 }
 
 const hasValue = v => v !== null && v !== undefined && v !== '';
+
+// "HH:MM:SS" 形式で返ってくる場合があるため、他画面(input type="time")と合わせて秒を表示しない
+const formatTime = (t) => hasValue(t) ? String(t).slice(0, 5) : null;
 
 const normalizeDate = (dateStr) =>
   String(dateStr || '').slice(0, 10).replace(/\//g, '-');
@@ -136,6 +143,8 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling]         = useState(false);
   const queryClient = useQueryClient();
+  const { logout }  = useAuth();
+  const safeCarInfo = useSafeCarInfo();
 
   const masterInfo  = useMemo(() => getMasterInfo(), []);
   const allAreaList = useMemo(
@@ -154,17 +163,47 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     staleTime: 30_000,
   });
 
+  // getinfo はエラー時もHTTP 200でresult:falseを返すため、axiosInstanceの強制ログアウトが
+  // 走る前にトーストで理由を表示する（これが無いと「突然ログアウトする」ように見えてしまう）
+  useEffect(() => {
+    if (apiData?.result !== false) return;
+    if (apiData.error_no === 1001) {
+      toast.warning(<div>ログイン情報が確認できません。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1002) {
+      toast.warning(<div>ログイン情報が不正です。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1004) {
+      toast.warning(<div>ログインの有効期限が切れました。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1005) {
+      toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+      return;
+    }
+    toast.error(<div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>);
+  }, [apiData, logout]);
+
   const rawData = apiData?.data ?? null;
   const record = Array.isArray(rawData) ? (rawData[0] ?? null) : rawData;
 
   const effectiveStartDate = normalizeDate(record?.startDate || recordSummary?.startDate);
   const effectiveArea  = record?.area  ?? recordSummary?.area;
   const effectiveBeach = record?.beach ?? recordSummary?.beach;
+  // ログインユーザー（記録担当者）はgetinfo type=2（一覧取得）のlogin_userフィールド
+  const effectiveLoginUser = recordSummary?.login_user ?? null;
 
-  const canEditOrCancel = (() => {
+  // kind: 0=admin 1=パトロール 2=タワー 3=ゲストパトロール 4=ゲストタワー
+  // 編集する: adminは常に表示、パトロール/タワーは3日間のみ、ゲストは常に非表示
+  const canEdit = (() => {
     if (!record) return false;
     if (user?.kind === 0) return true;
-    if (user?.kind === 9) return false;
+    if (user?.kind === 3 || user?.kind === 4) return false;
     if (!effectiveStartDate) return false;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const diffMs = new Date(todayStr).getTime() - new Date(effectiveStartDate).getTime();
@@ -172,6 +211,9 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     const diffDays = Math.round(diffMs / 86400000);
     return diffDays >= 0 && diffDays <= 2;
   })();
+
+  // 取消する: adminのみ常に表示。パトロール/タワー/ゲストは常に非表示
+  const canCancel = !!record && user?.kind === 0;
 
   const handleCancel = async () => {
     setIsCancelling(true);
@@ -189,7 +231,30 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
       console.log('[cancel payload]', JSON.stringify(cancelPayload, null, 2));
       const result = await setinfoApi({ type: 1, data: cancelPayload });
       console.log('[cancel result]', JSON.stringify(result));
-      if (!result?.result) throw new Error(result?.error_msg || '取消失敗');
+
+      if (result?.result === false) {
+        if (result.error_no === 1001) {
+          toast.warning(<div>ログイン情報が確認できません。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1002) {
+          toast.warning(<div>ログイン情報が不正です。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1004) {
+          toast.warning(<div>ログインの有効期限が切れました。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+          return;
+        }
+        throw new Error(result?.error_msg || '取消失敗');
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['records-list'] });
       toast.success('取消が完了しました。');
       onBack();
@@ -229,10 +294,14 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     ? `# ${String(record.detail_key).padStart(2, '0')}`
     : '';
 
-  // ログイン者（記録担当者）が先頭、それ以外のパトロールメンバーが続く（ログインAPI仕様の並び順）
-  const memberItems   = (record.members || []).map(m => m?.user_id ?? String(m));
-  const recordOwner   = memberItems[0] ?? null;
-  const otherMembers  = memberItems.slice(1);
+  // ログイン者（記録担当者）は login_user フィールド、members は最初から「自分以外の
+  // パトロールメンバー」のみを持つ（membersの先頭がログイン者、という旧仕様の前提は誤りだった）
+  const recordOwner   = effectiveLoginUser;
+  const otherMembers  = (record.members || []).map(m => m?.user_id ?? String(m));
+
+  // record.carType は車種マスタのインデックス(order)で保存されているため、名称に変換して表示する
+  const carTypeLabel = safeCarInfo.find(d => String(d.order) === String(record.carType))?.carType
+    ?? record.carType;
 
   const warnText  = (Array.isArray(record.warn)  ? record.warn  : []).map(String).join('、');
   const alertText = (Array.isArray(record.alert) ? record.alert : []).map(String).join('、');
@@ -251,7 +320,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   const rows = [
     {
       left:  { label: 'ログインユーザー（記録担当者）', content: <ValBox value={recordOwner} /> },
-      right: { label: 'パトロール開始時刻', content: <ValBox value={record.startTime} /> },
+      right: { label: 'パトロール開始時刻', content: <ValBox value={formatTime(record.startTime)} align="center" /> },
     },
     {
       left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} /> },
@@ -263,15 +332,19 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     },
     {
       left:  { label: '満潮時刻・高さ[cm]', content: <TwoBox
-        left={record.highTideTime}
+        left={formatTime(record.highTideTime)}
+        leftAlign="center"
         right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
+        rightAlign="right"
       /> },
       right: { label: '波高（アウターリーフ）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.waveOuter} /> },
     },
     {
       left:  { label: '干潮時刻・高さ[cm]', content: <TwoBox
-        left={record.lowTideTime}
+        left={formatTime(record.lowTideTime)}
+        leftAlign="center"
         right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
+        rightAlign="right"
       /> },
       right: { label: '波高（ショアゾーン）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.wave} /> },
     },
@@ -289,10 +362,10 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     },
     {
       left:  { label: '警報', content: <ValBox value={alertText || null} /> },
-      right: { label: '利用者数', content: <ValBox value={hasValue(record.visitors) ? `${record.visitors} 名` : null} /> },
+      right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
     },
     {
-      left:  { label: '使用車両', content: <TwoBox left={record.carType} right={record.carNo} /> },
+      left:  { label: '使用車両', content: <TwoBox left={carTypeLabel} right={record.carNo} /> },
       right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
     },
     {
@@ -303,6 +376,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
         v3={hasValue(record.jpTourist)  ? record.jpTourist  : null}
         v4={hasValue(record.forTourist) ? record.forTourist : null}
         unit="名"
+        align="right"
       /> },
     },
     {
@@ -315,7 +389,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
     },
     {
       left:  null,
-      right: { label: 'パトロール終了時刻', content: <ValBox value={record.endTime ?? record.end_time} /> },
+      right: { label: 'パトロール終了時刻', content: <ValBox value={formatTime(record.endTime ?? record.end_time)} align="center" /> },
     },
   ];
 
@@ -350,10 +424,10 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
           <div style={ds.beachText}>{beachName}</div>
           <div style={ds.dateRow}>
             <span style={ds.dateText}>{dateLabel}　{seqLabel}</span>
-            {canEditOrCancel && (
+            {(canEdit || canCancel) && (
               <div style={ds.actionBtns}>
-                <button onClick={() => setShowCancelDialog(true)} style={ds.actionBtn}>取消する</button>
-                <button onClick={() => onEdit(record)} style={ds.actionBtn}>編集する</button>
+                {canCancel && <button onClick={() => setShowCancelDialog(true)} style={ds.actionBtn}>取消する</button>}
+                {canEdit && <button onClick={() => onEdit(record)} style={ds.actionBtn}>編集する</button>}
               </div>
             )}
           </div>

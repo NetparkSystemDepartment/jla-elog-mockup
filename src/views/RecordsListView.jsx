@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Filter, Download, Menu } from 'lucide-react';
-import { format, getDay, subDays } from 'date-fns';
+import { format, getDay } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { toast } from 'sonner';
 import Select from 'react-select';
 import { getinfoApi, getCsvApi } from '../api/recordApi';
 import { useSafeMembers } from '../useSafeMembers';
+import { useAuth } from '../contexts/authContext';
 
 const PAGE_SIZE = 20;
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -40,33 +42,52 @@ const beachLabel = (beachId, areaId, areaList) => {
   return beach?.beach ?? String(beachId);
 };
 
-function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelectedKeys }) {
+// record.area/record.beach はエリア名/ビーチ名の文字列で返るため、
+// デフォルトソート用のarea_no/beach_noは名前で引き当てて取得する
+const areaNoOf = (r, areaList) => areaList.find(a => a.area === r.area)?.no;
+const beachNoOf = (r, areaList) => {
+  const area = areaList.find(a => a.area === r.area);
+  return (area?.beach_info || []).find(b => b.beach === r.beach)?.no;
+};
+
+// デフォルトソート: 日付降順(新しい順) → エリア(area_no) → ビーチ(beach_no) → 情報詳細キー(detail_key)
+const makeDefaultCompare = (areaList) => (a, b) => {
+  const da = startDateKey(a), db = startDateKey(b);
+  if (da !== db) return da < db ? 1 : -1;
+
+  const aAreaNo = Number(areaNoOf(a, areaList) ?? 0);
+  const bAreaNo = Number(areaNoOf(b, areaList) ?? 0);
+  if (aAreaNo !== bAreaNo) return aAreaNo - bAreaNo;
+
+  const aBeachNo = Number(beachNoOf(a, areaList) ?? 0);
+  const bBeachNo = Number(beachNoOf(b, areaList) ?? 0);
+  if (aBeachNo !== bBeachNo) return aBeachNo - bBeachNo;
+
+  return Number(a.detail_key ?? 0) - Number(b.detail_key ?? 0);
+};
+
+// 検索条件はApp.jsx側で保持する（ログ詳細画面との行き来で条件を保持し、
+// フッターの「ログデータ」メニューから入った時だけ初期化するため、このコンポーネント内には持たない）
+function RecordsListView({
+  user, onBack, onSelectRecord, selectedKeys, setSelectedKeys,
+  filterAreas, setFilterAreas,
+  filterDateFrom, setFilterDateFrom,
+  filterDateTo, setFilterDateTo,
+  filterDow, setFilterDow,
+  filterMembers, setFilterMembers,
+  draftAreas, setDraftAreas,
+  draftDateFrom, setDraftDateFrom,
+  draftDateTo, setDraftDateTo,
+  draftDow, setDraftDow,
+  draftMembers, setDraftMembers,
+  sortCol, setSortCol,
+  sortDir, setSortDir,
+  currentPage, setCurrentPage,
+  showCancelled, setShowCancelled,
+}) {
   const isAdmin      = user.kind === 0;
   const canCsvSelect = user.kind <= 2; // admin / patrol / tower
-
-  // 初期表示時の絞り込み: 日付は3日前～当日、パトロールメンバーは現在のログイン者（アドミンは全員が対象のため対象外）
-  const initialDateFrom = () => format(subDays(new Date(), 3), 'yyyy-MM-dd');
-  const initialDateTo   = () => format(new Date(), 'yyyy-MM-dd');
-  const initialMembers  = () => (!isAdmin && user?.user_id) ? [user.user_id] : [];
-
-  // 実際に一覧の絞り込みに使われる「適用済み」の条件。「絞り込み」ボタン押下時にのみ更新する
-  const [filterAreas, setFilterAreas]       = useState([]);
-  const [filterDateFrom, setFilterDateFrom] = useState(initialDateFrom);
-  const [filterDateTo, setFilterDateTo]     = useState(initialDateTo);
-  const [filterDow, setFilterDow]           = useState('');
-  const [filterMembers, setFilterMembers]   = useState(initialMembers);
-
-  // フィルターパネルの入力欄が保持する「未適用」の条件（選択しただけでは一覧に反映しない）
-  const [draftAreas, setDraftAreas]         = useState([]);
-  const [draftDateFrom, setDraftDateFrom]   = useState(initialDateFrom);
-  const [draftDateTo, setDraftDateTo]       = useState(initialDateTo);
-  const [draftDow, setDraftDow]             = useState('');
-  const [draftMembers, setDraftMembers]     = useState(initialMembers);
-
-  const [sortCol, setSortCol]               = useState('startDate');
-  const [sortDir, setSortDir]               = useState('desc');
-  const [currentPage, setCurrentPage]       = useState(1);
-  const [showCancelled, setShowCancelled]   = useState(false);
+  const { logout }   = useAuth();
 
   const masterInfo  = useMemo(() => getMasterInfo(), []);
   const allAreaList = useMemo(
@@ -74,9 +95,11 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
     [masterInfo]
   );
 
+  // kind: 0=admin(全エリア) 1=パトロール 2=タワー 3=パトロールゲスト 4=タワーゲスト
+  // パトロール/パトロールゲストは巡回エリア(auth_type===1)、タワー/タワーゲストは常駐エリア(auth_type===2)に絞る
   const areaOptions = useMemo(() => {
-    if (user.kind === 1) return allAreaList.filter(a => a.auth_type === 1);
-    if (user.kind === 2) return allAreaList.filter(a => a.auth_type === 2);
+    if (user.kind === 1 || user.kind === 3) return allAreaList.filter(a => a.auth_type === 1);
+    if (user.kind === 2 || user.kind === 4) return allAreaList.filter(a => a.auth_type === 2);
     return allAreaList;
   }, [allAreaList, user.kind]);
 
@@ -87,18 +110,28 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
     [areaOptions]
   );
 
+  // ログイン者自身の絞り込みはrequestPayload.membersで常に効いており選択解除できないため、
+  // 選べても意味のないログイン者自身は選択肢から外す
   const safeMembers = useSafeMembers();
-  const memberOptions = useMemo(() => safeMembers.map(item => {
-    const uid = item?.user_id ?? String(item);
-    return { value: uid, label: uid };
-  }), [safeMembers]);
+  const memberOptions = useMemo(() => safeMembers
+    .map(item => {
+      const uid = item?.user_id ?? String(item);
+      return { value: uid, label: uid };
+    })
+    .filter(opt => opt.value !== user.user_id),
+  [safeMembers, user.user_id]);
 
-  // 検索キー（areas/start_date/end_date/weekday/delete_flg）をサーバーに渡し、
+  // 検索キー（areas/start_date/end_date/weekday/delete_flg/members）をサーバーに渡し、
   // 権限外エリアのデータまでブラウザに取得されないようにする。
-  // ※ members はログインAPIが「ID+姓」の文字列でしか返さず、getinfo が求める
-  //   [{id, user_id}] 形式を組み立てられないため、引き続きクライアント側で絞り込む。
+  // members はログイン中の本人（user.id / user.user_id）を常に含める。adminも例外なく含める仕様。
+  // ※ 他メンバーはログインAPIが「ID+姓」の文字列でしか返さず、getinfo が求める
+  //   {id, user_id} 形式を組み立てられないため、絞り込みパネルでの他メンバー選択は
+  //   引き続きクライアント側でのみ絞り込む。
   const requestPayload = useMemo(() => {
-    const payload = { type: 2 };
+    const payload = {
+      type: 2,
+      members: [{ id: user.id, user_id: user.user_id }],
+    };
 
     if (filterAreas.length > 0) {
       const areaNos = filterAreas
@@ -115,13 +148,39 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
     if (showCancelled) payload.delete_flg = true;
 
     return payload;
-  }, [filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList]);
+  }, [filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, user.id, user.user_id]);
 
   const { data: apiData, isLoading, error } = useQuery({
     queryKey: ['records-list', requestPayload],
     queryFn: () => getinfoApi(requestPayload),
     staleTime: 60_000,
   });
+
+  // getinfo はエラー時もHTTP 200でresult:falseを返すため、axiosInstanceの強制ログアウトが
+  // 走る前にトーストで理由を表示する（これが無いと「突然ログアウトする」ように見えてしまう）
+  useEffect(() => {
+    if (apiData?.result !== false) return;
+    if (apiData.error_no === 1001) {
+      toast.warning(<div>ログイン情報が確認できません。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1002) {
+      toast.warning(<div>ログイン情報が不正です。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1004) {
+      toast.warning(<div>ログインの有効期限が切れました。<br />再ログインしてください。</div>);
+      logout();
+      return;
+    }
+    if (apiData.error_no === 1005) {
+      toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+      return;
+    }
+    toast.error(<div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>);
+  }, [apiData, logout]);
 
   const allRecords = useMemo(() => apiData?.data || [], [apiData]);
 
@@ -137,14 +196,14 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
   }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow, filterMembers]);
 
   const sorted = useMemo(() => {
-    if (!sortCol) return filtered;
+    if (!sortCol) return [...filtered].sort(makeDefaultCompare(allAreaList));
     return [...filtered].sort((a, b) => {
       const va = String(a[sortCol] ?? '');
       const vb = String(b[sortCol] ?? '');
       const cmp = va < vb ? -1 : va > vb ? 1 : 0;
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [filtered, sortCol, sortDir]);
+  }, [filtered, sortCol, sortDir, allAreaList]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paged      = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -199,7 +258,24 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert(e.message || 'CSV出力に失敗しました');
+      // 1001/1002/1004時のforceLogout()はgetCsvApi内で既に呼ばれているため、ここではトースト表示のみ行う
+      if (e.error_no === 1001) {
+        toast.warning(<div>ログイン情報が確認できません。<br />再ログインしてください。</div>);
+        return;
+      }
+      if (e.error_no === 1002) {
+        toast.warning(<div>ログイン情報が不正です。<br />再ログインしてください。</div>);
+        return;
+      }
+      if (e.error_no === 1004) {
+        toast.warning(<div>ログインの有効期限が切れました。<br />再ログインしてください。</div>);
+        return;
+      }
+      if (e.error_no === 1005) {
+        toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+        return;
+      }
+      toast.error(e.message || 'CSV出力に失敗しました');
     }
   };
 
@@ -327,7 +403,7 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
                 ))}
               </select>
             </div>
-            {isAdmin ? (
+            {canCsvSelect ? (
               <button onClick={handleCsvDownload} style={s.csvBtn}>
                 <span style={{ textDecoration: 'underline' }}>CSV</span>
                 <Download size={14} />
@@ -397,7 +473,11 @@ function RecordsListView({ user, onBack, onSelectRecord, selectedKeys, setSelect
               })()}
             </div>
             <div style={s.colWide}>
-              {(record.members || []).map((m, i) => <div key={i}>{m?.user_id ?? String(m)}</div>)}
+              {/* ログイン者(login_user) + 自分以外のパトロールメンバー先頭1名(members[0])の2名のみ表示する */}
+              {record.login_user && <div>{record.login_user}</div>}
+              {record.members?.[0] && (
+                <div>{record.members[0]?.user_id ?? String(record.members[0])}</div>
+              )}
             </div>
           </div>
         ))}
@@ -451,7 +531,8 @@ const s = {
   menuBtn: { padding: '4px', display: 'flex', alignItems: 'center' },
   backBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' },
   headerTitle: { color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 },
-  main: { flex: 1, display: 'flex', flexDirection: 'column' },
+  // ページング用フローティングフッター(下記footer)の高さ分、最終行が隠れないよう余白を確保する
+  main: { flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: '140px' },
   // ヘッダー〜フィルター〜テーブル見出し行(th相当)をスクロール上部に固定する
   stickyTop: { position: 'sticky', top: 0, zIndex: 10 },
   filterPanel: {
@@ -505,9 +586,13 @@ const s = {
   col: { flex: 1, userSelect: 'none' },
   colWide: { flex: 1.5, fontSize: '12px', color: '#334155' },
   message: { padding: '32px', textAlign: 'center', color: '#64748b' },
+  // 常時グローバルフッター(高さ80px)の直上にフロート表示するページングバー
   footer: {
+    position: 'fixed', bottom: '80px', left: 0, right: 0,
+    maxWidth: '820px', margin: '0 auto',
     padding: '12px 16px', display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginTop: 'auto', marginBottom: '80px',
+    alignItems: 'center', backgroundColor: 'white',
+    borderTop: '1px solid #d1d5db', zIndex: 20,
   },
   pagination: { display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b' },
   pageBtn: {
@@ -524,9 +609,12 @@ const customSelectStyles = {
   // menuPortalTarget={document.body} でメニューがDOMツリーの外（body直下）に描画されるため、
   // 画面側のフォント指定を継承できずブラウザ既定フォント（明朝系）になってしまう。
   // ポータルのルートで明示的に指定し、配下のメニュー/選択肢に継承させる
+  // zIndexもreact-select既定値のままだと一覧行やフローティングフッターの下に回り込むため、
+  // それらより確実に手前に出るよう明示的に指定する
   menuPortal: (provided) => ({
     ...provided,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    zIndex: 9999,
   }),
   // 入力エリア全体（コントロール）のスタイル
   control: (provided) => ({

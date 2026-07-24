@@ -9,7 +9,7 @@ import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
 import RecordDetailView from './views/RecordDetailView';
 import { getAllRecords, saveRecord, getRecordsByDate, cleanupExpiredData } from './db';
-import { startOfDay, format } from 'date-fns';
+import { startOfDay, format, subDays } from 'date-fns';
 import { toast, Toaster } from 'sonner';
 import { useAuth } from './contexts/authContext';
 import { supabase } from './supabaseClient';
@@ -131,6 +131,45 @@ function App() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
+
+  // ログデータ一覧の検索条件。ログ詳細画面との行き来（records ⇄ recordDetail）では保持し、
+  // フッターの「ログデータ」メニューから入り直した時だけ resetRecordsFilters() で初期化する
+  const recordsInitialDateFrom = () => format(subDays(new Date(), 3), 'yyyy-MM-dd');
+  const recordsInitialDateTo   = () => format(new Date(), 'yyyy-MM-dd');
+  const recordsInitialMembers  = () => (user?.user_id ? [user.user_id] : []);
+
+  const [recordsFilterAreas, setRecordsFilterAreas]       = useState([]);
+  const [recordsFilterDateFrom, setRecordsFilterDateFrom] = useState(recordsInitialDateFrom);
+  const [recordsFilterDateTo, setRecordsFilterDateTo]     = useState(recordsInitialDateTo);
+  const [recordsFilterDow, setRecordsFilterDow]           = useState('');
+  const [recordsFilterMembers, setRecordsFilterMembers]   = useState(recordsInitialMembers);
+  const [recordsDraftAreas, setRecordsDraftAreas]         = useState([]);
+  const [recordsDraftDateFrom, setRecordsDraftDateFrom]   = useState(recordsInitialDateFrom);
+  const [recordsDraftDateTo, setRecordsDraftDateTo]       = useState(recordsInitialDateTo);
+  const [recordsDraftDow, setRecordsDraftDow]             = useState('');
+  const [recordsDraftMembers, setRecordsDraftMembers]     = useState(recordsInitialMembers);
+  const [recordsSortCol, setRecordsSortCol]               = useState(null);
+  const [recordsSortDir, setRecordsSortDir]               = useState('desc');
+  const [recordsCurrentPage, setRecordsCurrentPage]       = useState(1);
+  const [recordsShowCancelled, setRecordsShowCancelled]   = useState(false);
+
+  const resetRecordsFilters = () => {
+    setRecordsFilterAreas([]);
+    setRecordsFilterDateFrom(recordsInitialDateFrom());
+    setRecordsFilterDateTo(recordsInitialDateTo());
+    setRecordsFilterDow('');
+    setRecordsFilterMembers(recordsInitialMembers());
+    setRecordsDraftAreas([]);
+    setRecordsDraftDateFrom(recordsInitialDateFrom());
+    setRecordsDraftDateTo(recordsInitialDateTo());
+    setRecordsDraftDow('');
+    setRecordsDraftMembers(recordsInitialMembers());
+    setRecordsSortCol(null);
+    setRecordsSortDir('desc');
+    setRecordsCurrentPage(1);
+    setRecordsShowCancelled(false);
+    setRecordsCsvSelectedKeys(new Set());
+  };
 
   // idからビーチ名を返す
   const getNameByBeachId = (name) => ONNA_BEACHES.find((c) => c.id === name)?.name;
@@ -451,7 +490,37 @@ function App() {
           delete_flg: false,
         },
       });
-      if (!result?.result) throw new Error(result?.error_msg || '更新失敗');
+      if (result?.result === false) {
+        toast.dismiss(toastId);
+        if (result.error_no === 1001) {
+          toast.warning(
+            <div>ログイン情報が確認できません。<br />再ログインして再度保存してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1002) {
+          toast.warning(
+            <div>ログイン情報が不正です。<br />再ログインして再度保存してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1004) {
+          toast.warning(
+            <div>ログインの有効期限が切れました。<br />再ログインして再度保存してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(
+            <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+          );
+          return;
+        }
+        throw new Error(result?.error_msg || '更新失敗');
+      }
       await queryClient.invalidateQueries({ queryKey: ['records-list'] });
       await queryClient.invalidateQueries({ queryKey: ['record-detail'] });
       toast.success('更新しました', { id: toastId });
@@ -591,6 +660,20 @@ function App() {
           onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
           selectedKeys={recordsCsvSelectedKeys}
           setSelectedKeys={setRecordsCsvSelectedKeys}
+          filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}
+          filterDateFrom={recordsFilterDateFrom} setFilterDateFrom={setRecordsFilterDateFrom}
+          filterDateTo={recordsFilterDateTo} setFilterDateTo={setRecordsFilterDateTo}
+          filterDow={recordsFilterDow} setFilterDow={setRecordsFilterDow}
+          filterMembers={recordsFilterMembers} setFilterMembers={setRecordsFilterMembers}
+          draftAreas={recordsDraftAreas} setDraftAreas={setRecordsDraftAreas}
+          draftDateFrom={recordsDraftDateFrom} setDraftDateFrom={setRecordsDraftDateFrom}
+          draftDateTo={recordsDraftDateTo} setDraftDateTo={setRecordsDraftDateTo}
+          draftDow={recordsDraftDow} setDraftDow={setRecordsDraftDow}
+          draftMembers={recordsDraftMembers} setDraftMembers={setRecordsDraftMembers}
+          sortCol={recordsSortCol} setSortCol={setRecordsSortCol}
+          sortDir={recordsSortDir} setSortDir={setRecordsSortDir}
+          currentPage={recordsCurrentPage} setCurrentPage={setRecordsCurrentPage}
+          showCancelled={recordsShowCancelled} setShowCancelled={setRecordsShowCancelled}
         />
       );
 
@@ -662,12 +745,19 @@ function App() {
       return <HomeView onNavigate={(target) => setView(target)} />;
   }};
 
+  // フッターメニューからの遷移。「ログデータ」はここから入り直した時だけ検索条件を初期化する
+  // （ログ詳細画面との行き来 records ⇄ recordDetail では条件を保持したいため、そちらは resetしない）
+  const handleFooterNavigate = (target) => {
+    if (target === 'records') resetRecordsFilters();
+    setView(target);
+  };
+
   return (
     <div>
       <Toaster richColors position="top-center" />
       {renderView()}
       {user && FOOTER_VIEWS.includes(view) && (
-        <GlobalFooter onNavigate={setView} />
+        <GlobalFooter onNavigate={handleFooterNavigate} />
       )}
     </div>
   );
