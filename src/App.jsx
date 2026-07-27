@@ -327,13 +327,14 @@ function App() {
       const { date, id, timestamp, isSynced,
         ...cleanRecord } = record;
 
-      // members には記録担当者（自分）が含まれていないため先頭に追加する。
-      // getinfo には担当者用の専用フィールドが無く、ログ詳細画面は members[0] を記録担当者として表示するため必須
+      // membersは自分以外のパトロールメンバーのみを送る。記録担当者はgetinfoのlogin_user
+      // フィールドでサーバー側が別途保持しており、setinfo(type=1)の仕様にlogin_userは無いため
+      // クライアントからmembersにログイン者自身を混ぜて送ってはいけない
       const payload = {
         type: 1,
         data: {
           ...cleanRecord,
-          members: [user.user_id, ...(cleanRecord.members || [])],
+          members: cleanRecord.members || [],
           delete_flg: false,
         }
       };
@@ -477,12 +478,13 @@ function App() {
     const toastId = toast.loading('更新中...');
     try {
       const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
-      // members には記録担当者（自分）が含まれていないため先頭に追加する（handleSubmitと同様）
+      // membersは自分以外のパトロールメンバーのみを送る（handleSubmitと同様。setinfoの仕様に
+      // login_userは無く、記録担当者をmembersに混ぜて送ってはいけない）
       const result = await setinfoApi({
         type: 1,
         data: {
           ...rest,
-          members: [user.user_id, ...(members || []).map(m => m?.user_id ?? String(m))],
+          members: (members || []).map(m => m?.user_id ?? String(m)),
           key: editingRecord.key,
           detail_key: editingRecord.detail_key,
           area: editingRecord.area,
