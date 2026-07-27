@@ -568,9 +568,12 @@ const ds = {
     position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
   },
+  // 画面本体のwrapperとは別階層（フラグメントの兄弟）に描画されるため、フォント指定を継承できず
+  // ブラウザ既定フォント（明朝系）になってしまう。ここで明示的に指定する
   dialog: {
     backgroundColor: 'white', borderRadius: '16px',
     padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   dialogText: { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 },
   dialogBtns: { display: 'flex', gap: '12px', justifyContent: 'center' },
