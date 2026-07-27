@@ -296,6 +296,7 @@ function App() {
 //      isSynced: false, // サーバー未送信フラグ
       isSynced: 1, // サーバー未送信フラグ
       token: user.token,
+      loginId: user.id,
     };
 
     let localId;
