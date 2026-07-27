@@ -139,14 +139,14 @@ useEffect(() => {
   const displayDate = isNaN(parsedStartDate.getTime()) ? new Date() : parsedStartDate;
   const formattedDate = format(displayDate, 'M月d日 (eee)', { locale: ja });
 
-  // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidと同じ。
-  // priority（優先度）・windShoreDetail（ビーチに対しての風向）は任意項目のため対象外）
+  // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidをベースに、
+  // windShoreDetail（ビーチに対しての風向）を追加。priority（優先度）のみ任意項目のため対象外）
   const REQUIRED_FIELDS = [
     'startTime', 'endTime', 'members',
     'weather', 'current', 'tide',
     'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
     'waveOuter', 'wave',
-    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail',
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail',
     'warn', 'alert', 'feature',
     'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
     'carType', 'carNo', 'handover', 'note',
@@ -503,6 +503,7 @@ useEffect(() => {
       },
       right: {
         label: 'ビーチに対しての風向',
+        fields: ['windShoreDetail'],
         content: (
           <select
             value={formData.windShoreDetail || ''}

@@ -11,6 +11,8 @@ import { useAuth } from '../contexts/authContext';
 
 const PAGE_SIZE = 20;
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+// 取消履歴一覧はまだリリースしないため、ボタンは表示したまま画面遷移だけ無効化する
+const CANCEL_HISTORY_RELEASED = false;
 
 const getMasterInfo = () => {
   try {
@@ -113,25 +115,24 @@ function RecordsListView({
   // ログイン者自身の絞り込みはrequestPayload.membersで常に効いており選択解除できないため、
   // 選べても意味のないログイン者自身は選択肢から外す
   const safeMembers = useSafeMembers();
-  const memberOptions = useMemo(() => safeMembers
-    .map(item => {
-      const uid = item?.user_id ?? String(item);
-      return { value: uid, label: uid };
-    })
-    .filter(opt => opt.value !== user.user_id),
-  [safeMembers, user.user_id]);
+  const memberOptions = useMemo(() => safeMembers.map(item => {
+    const uid = item?.user_id ?? String(item);
+    return { value: uid, label: uid };
+  }), [safeMembers]);
 
   // 検索キー（areas/start_date/end_date/weekday/delete_flg/members）をサーバーに渡し、
   // 権限外エリアのデータまでブラウザに取得されないようにする。
-  // members はログイン中の本人（user.id / user.user_id）を常に含める。adminも例外なく含める仕様。
-  // ※ 他メンバーはログインAPIが「ID+姓」の文字列でしか返さず、getinfo が求める
-  //   {id, user_id} 形式を組み立てられないため、絞り込みパネルでの他メンバー選択は
-  //   引き続きクライアント側でのみ絞り込む。
+  // members は「絞り込みパネルで選ばれている条件」をそのまま反映する（常時強制はしない）。
+  // ただし {id, user_id} 形式を組み立てられるのはログイン中の本人だけなので、
+  // 選択中のメンバーに本人が含まれる場合のみサーバーへ送る。
+  // ※ 他メンバーはログインAPIが「ID+姓」の文字列でしか返さず {id, user_id} 形式を
+  //   組み立てられないため、選択されていてもクライアント側でのみ絞り込む。
   const requestPayload = useMemo(() => {
-    const payload = {
-      type: 2,
-      members: [{ id: user.id, user_id: user.user_id }],
-    };
+    const payload = { type: 2 };
+
+    if (filterMembers.includes(user.user_id)) {
+      payload.members = [{ id: user.id, user_id: user.user_id }];
+    }
 
     if (filterAreas.length > 0) {
       const areaNos = filterAreas
@@ -148,7 +149,7 @@ function RecordsListView({
     if (showCancelled) payload.delete_flg = true;
 
     return payload;
-  }, [filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, user.id, user.user_id]);
+  }, [filterMembers, filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, user.id, user.user_id]);
 
   const { data: apiData, isLoading, error } = useQuery({
     queryKey: ['records-list', requestPayload],
@@ -184,16 +185,17 @@ function RecordsListView({
 
   const allRecords = useMemo(() => apiData?.data || [], [apiData]);
 
+  // パトロールメンバーは、record.membersにしか入っていないという前提でクライアント側フィルターを
+  // 組んでいたが、login_userである(members配列には入らない)記録が絞り落とされてしまっていた。
+  // メンバーの絞り込みはサーバー側(requestPayload.members)に任せ、フロント側では再フィルタしない
   const filtered = useMemo(() => {
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
       .filter(r => filterAreas.length === 0 || filterAreas.includes(String(r.area)))
       .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
       .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
-      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow)
-      .filter(r => filterMembers.length === 0 ||
-        (r.members || []).some(m => filterMembers.includes(m?.user_id ?? String(m))));
-  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow, filterMembers]);
+      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow);
+  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return [...filtered].sort(makeDefaultCompare(allAreaList));
@@ -506,7 +508,10 @@ function RecordsListView({
           </div>
           {isAdmin && (
             <button
-              onClick={() => { setShowCancelled(v => !v); resetPage(); setSelectedKeys(new Set()); }}
+              onClick={() => {
+                if (!CANCEL_HISTORY_RELEASED) return;
+                setShowCancelled(v => !v); resetPage(); setSelectedKeys(new Set());
+              }}
               style={s.historyBtn}
             >
               {showCancelled ? '通常一覧に戻る' : '取消履歴を確認する'}

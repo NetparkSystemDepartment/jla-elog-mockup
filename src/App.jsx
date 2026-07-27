@@ -17,6 +17,7 @@ import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone } from 'lucide-react';
 import { getNameByBeachNo } from './useAreaInfo';
+import { useNetworkState } from 'react-use';
 
 import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
@@ -25,6 +26,10 @@ const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 const FOOTER_VIEWS = ['home', 'list', 'records', 'recordDetail'];
 
 function GlobalFooter({ onNavigate }) {
+  // ログデータ画面はオフライン時に使えない導線のため、オフライン中はボタンを無効化する
+  const netState = useNetworkState();
+  const recordsDisabled = !netState.online;
+
   return (
     <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200 }}>
       <nav style={gfStyles.footer}>
@@ -40,7 +45,11 @@ function GlobalFooter({ onNavigate }) {
             <span style={{ fontSize: '10px', marginTop: '2px' }}>新規登録</span>
           </div>
         </button>
-        <button onClick={() => onNavigate('records')} style={gfStyles.navItem}>
+        <button
+          onClick={() => onNavigate('records')}
+          disabled={recordsDisabled}
+          style={{ ...gfStyles.navItem, ...(recordsDisabled ? gfStyles.navItemDisabled : {}) }}
+        >
           <FileText size={24} /><span>ログデータ</span>
         </button>
         <button style={gfStyles.navItem}>
@@ -63,6 +72,7 @@ const gfStyles = {
     gap: '4px', background: 'none', border: 'none', color: 'white',
     fontSize: '10px', cursor: 'pointer',
   },
+  navItemDisabled: { opacity: 0.4, cursor: 'not-allowed' },
   mainCircle: {
     width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#08172A',
     border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
