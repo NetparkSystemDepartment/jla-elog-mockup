@@ -457,11 +457,11 @@ function App() {
       setSelectedCoast('');
       setSelectedBeach('');
     }
-    // startDateは "yyyy/mm/dd" 形式で返ってくるため、区切り文字をハイフンに揃えてから Date に渡す
-    // （揃えないと Invalid Date になり、記録日ではなく今日の日付にフォールバックしてしまう）
-    const normalizedDateStr = String(fullRecord.startDate).slice(0, 10).replaceAll('/', '-');
-    const d = new Date(normalizedDateStr + 'T00:00:00');
-    setSelectedDate(startOfDay(isNaN(d.getTime()) ? new Date() : d));
+    // 編集対象の日付はEditView側でexistingData.startDateから直接表示するため、
+    // ここでApp.jsx共有のselectedDate/briefingDataは書き換えない
+    // （以前はここでselectedDate/briefingDataを編集対象のデータで上書きしていたが、
+    // 新規登録画面(LogEntryView)もこの2つを共有しているため、編集画面を経由した後に
+    // 新規登録へ遷移すると日付やブリーフィング内容が編集対象のもので汚染されてしまっていた）
     const normalizedRecord = fullRecord.end_time !== undefined && fullRecord.endTime === undefined
       ? { ...fullRecord, endTime: fullRecord.end_time }
       : fullRecord;
@@ -470,7 +470,6 @@ function App() {
       normalizedRecord.seq = normalizedRecord.detail_key;
     }
     setEditingRecord(normalizedRecord);
-    setBriefingData(normalizedRecord);
     setView('edit');
   };
 
@@ -707,7 +706,6 @@ function App() {
             user={user}
             selectedCoast={selectedCoast}
             selectedBeach={selectedBeach}
-            selectedDate={format(selectedDate, 'yyyy-MM-dd')}
             onBack={() => { setEditingRecord(null); setView('recordDetail'); }}
             onUpdate={handleUpdate}
             existingData={editingRecord}

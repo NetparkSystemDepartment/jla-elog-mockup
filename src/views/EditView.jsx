@@ -27,10 +27,10 @@ const initialFormData = {
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onBack, existingData, beach, setView, profileList, seq, onUpdate }) => {
+const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, beach, setView, profileList, seq, onUpdate }) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
-  startDate: selectedDate,
+  startDate: existingData.startDate,
   seq: existingData.seq,
 });
 
@@ -91,7 +91,6 @@ useEffect(() => {
   };
 
   const confirmSave = () => {
-    formData.startDate = selectedDate;
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
     setShowSaveDialog(false);
@@ -133,8 +132,12 @@ useEffect(() => {
     </div>
   ));
 
-  //const formattedDate = format(selectedDate, 'M月d日 (eee)');
-  const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
+  // 編集対象の日付はexistingData.startDateから直接表示する（App.jsx共有のselectedDateには依存しない。
+  // "yyyy/mm/dd"形式で返ることがあるため区切り文字をハイフンに揃えてからDateに渡す）
+  const normalizedStartDate = String(existingData?.startDate || '').slice(0, 10).replaceAll('/', '-');
+  const parsedStartDate = new Date(normalizedStartDate + 'T00:00:00');
+  const displayDate = isNaN(parsedStartDate.getTime()) ? new Date() : parsedStartDate;
+  const formattedDate = format(displayDate, 'M月d日 (eee)', { locale: ja });
 
   // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidと同じ。
   // priority（優先度）・windShoreDetail（ビーチに対しての風向）は任意項目のため対象外）
