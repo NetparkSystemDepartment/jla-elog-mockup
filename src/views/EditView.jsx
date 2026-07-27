@@ -82,11 +82,19 @@ useEffect(() => {
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
 
-  // 「保存して閉じる」ボタン
+  // 「保存して閉じる」ボタン（定義書に図示はないが、上書き保存前に確認ダイアログを挟む。
+  // ログ詳細画面の取消確認ダイアログと同じ見た目・仕組みを流用する）
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
   const handleSaveClick = () => {
+    setShowSaveDialog(true);
+  };
+
+  const confirmSave = () => {
     formData.startDate = selectedDate;
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
+    setShowSaveDialog(false);
     onUpdate(formData);
   };
 
@@ -128,12 +136,40 @@ useEffect(() => {
   //const formattedDate = format(selectedDate, 'M月d日 (eee)');
   const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
 
+  // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidと同じ。
+  // priority（優先度）・windShoreDetail（ビーチに対しての風向）は任意項目のため対象外）
+  const REQUIRED_FIELDS = [
+    'startTime', 'endTime', 'members',
+    'weather', 'current', 'tide',
+    'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
+    'waveOuter', 'wave',
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail',
+    'warn', 'alert', 'feature',
+    'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
+    'carType', 'carNo', 'handover', 'note',
+  ];
+  const isValueFilled = (v) => Array.isArray(v) ? v.length > 0 : (v !== null && v !== undefined && v !== '');
+  // Unpatrolled（パトロール未実施）時はnoteのみ必須（ログ入力と同じ仕様）
+  const isFieldRequired = (field) => formData.unpatrolled ? field === 'note' : REQUIRED_FIELDS.includes(field);
+  // セルに複数フィールドが同居する場合（時刻+高さ、車種+車番など）は、その中の必須項目が
+  // すべて埋まっていればセルの背景をグレーにする。非必須フィールドしか無いセルは常に白のまま
+  const cellFilled = (fields = []) => {
+    const requiredOnes = fields.filter(isFieldRequired);
+    return requiredOnes.length > 0 && requiredOnes.every(f => isValueFilled(formData[f]));
+  };
+  const isFormValid = formData.unpatrolled
+    ? isValueFilled(formData.note)
+    : REQUIRED_FIELDS.every(f => isValueFilled(formData[f]));
+
   // ログ詳細画面と同じグリッド構造（左右ペアのCSS Grid・罫線区切り・グレー背景）で組む。
-  // 各行は { label, content } のペアで、右側だけの行は left: null にする
+  // 各行は { label, content, fields } のペアで、右側だけの行は left: null にする。
+  // fields は必須項目チェック・背景色判定に使うformDataのキー一覧
   const rows = [
     {
       left: {
-        label: 'ログイン者（記録担当者）',
+        label: 'ログインユーザー（記録担当者）',
+        // formDataのキーではなく常に確定済みの値のため、必須項目チェックを介さず常にグレー表示にする
+        forceFilled: true,
         content: (
           <input
             type="text"
@@ -145,6 +181,7 @@ useEffect(() => {
       },
       right: {
         label: 'パトロール開始時刻',
+        fields: ['startTime'],
         content: (
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
@@ -156,6 +193,7 @@ useEffect(() => {
     {
       left: {
         label: '自分以外のパトロールメンバー',
+        fields: ['members'],
         content: (
           <Select
             isMulti
@@ -179,6 +217,7 @@ useEffect(() => {
       },
       right: {
         label: '天候',
+        fields: ['weather'],
         content: (
           <div style={radioFlexStyle}>
             {WEATHER_OPTIONS.map(opt => (
@@ -206,6 +245,7 @@ useEffect(() => {
     {
       left: {
         label: '潮汐',
+        fields: ['tide'],
         content: (
           <div style={radioFlexStyle}>
             {TIDE_OPTIONS.map(opt => (
@@ -231,6 +271,7 @@ useEffect(() => {
       },
       right: {
         label: '潮流',
+        fields: ['current'],
         content: (
           <div style={radioFlexStyle}>
             {CURRENT_OPTIONS.map(opt => (
@@ -258,6 +299,7 @@ useEffect(() => {
     {
       left: {
         label: '満潮時刻・高さ[cm]',
+        fields: ['highTideTime', 'highTide'],
         content: (
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="time" style={{...inputStyle, ...(errors.highTideTime ? errorInput : {})}}
@@ -270,6 +312,7 @@ useEffect(() => {
       },
       right: {
         label: '波高（アウターリーフ）',
+        fields: ['waveOuter'],
         content: (
           <div style={radioFlexStyle}>
             {WAVE_OPTIONS.map(opt => (
@@ -297,6 +340,7 @@ useEffect(() => {
     {
       left: {
         label: '干潮時刻・高さ[cm]',
+        fields: ['lowTideTime', 'lowTide'],
         content: (
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="time" style={{...inputStyle, ...(errors.lowTideTime ? errorInput : {})}}
@@ -309,6 +353,7 @@ useEffect(() => {
       },
       right: {
         label: '波高（ショアゾーン）',
+        fields: ['wave'],
         content: (
           <div style={radioFlexStyle}>
             {WAVE_OPTIONS.map(opt => (
@@ -336,6 +381,7 @@ useEffect(() => {
     {
       left: {
         label: '風速（天気予報）',
+        fields: ['windSpeed'],
         content: (
           <div style={radioFlexStyle}>
             {WIND_SPEED_OPTIONS.map(opt => (
@@ -361,6 +407,7 @@ useEffect(() => {
       },
       right: {
         label: '風速（現地）',
+        fields: ['windSpeedDetail'],
         content: (
           <div style={radioFlexStyle}>
             {WIND_SPEED_OPTIONS.map(opt => (
@@ -388,6 +435,7 @@ useEffect(() => {
     {
       left: {
         label: '風向（天気予報）',
+        fields: ['windDir'],
         content: (
           <select
             value={formData.windDir || ''}
@@ -405,6 +453,7 @@ useEffect(() => {
       },
       right: {
         label: '風向（現地）',
+        fields: ['windDirDetail'],
         content: (
           <select
             value={formData.windDirDetail || ''}
@@ -424,6 +473,7 @@ useEffect(() => {
     {
       left: {
         label: '注意報',
+        fields: ['warn'],
         content: (
           <Select
             isMulti
@@ -469,6 +519,7 @@ useEffect(() => {
     {
       left: {
         label: '警報',
+        fields: ['alert'],
         content: (
           <Select
             isMulti
@@ -495,6 +546,7 @@ useEffect(() => {
       },
       right: {
         label: '利用者数',
+        fields: ['visitors'],
         content: (
           <div style={inputFlexStyle}>
             <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
@@ -508,6 +560,7 @@ useEffect(() => {
     {
       left: {
         label: '使用車両',
+        fields: ['carType', 'carNo'],
         content: (
           <div style={{ display: 'flex', gap: '8px' }}>
             <select
@@ -534,6 +587,7 @@ useEffect(() => {
       },
       right: {
         label: 'ビーチ利用の特徴',
+        fields: ['feature'],
         content: (
           <Select
             isMulti
@@ -554,6 +608,7 @@ useEffect(() => {
     {
       left: {
         label: 'メモ',
+        fields: ['note'],
         highlight: formData.unpatrolled,
         content: (
           <>
@@ -579,6 +634,7 @@ useEffect(() => {
       },
       right: {
         label: '注意喚起人数',
+        fields: ['jpWarning', 'forWarning', 'jpTourist', 'forTourist'],
         content: (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
@@ -617,6 +673,7 @@ useEffect(() => {
       left: null,
       right: {
         label: '申し送り事項（応急手当・救助・その他）',
+        fields: ['handover'],
         content: (
           <>
             <textarea
@@ -669,6 +726,7 @@ useEffect(() => {
       left: null,
       right: {
         label: 'パトロール終了時刻',
+        fields: ['endTime'],
         content: (
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <input type="time" style={{...inputStyle, width: '40%', ...(errors.endTime ? errorInput : {})}}
@@ -684,6 +742,7 @@ useEffect(() => {
   ];
 
   return (
+    <>
     <div style={container}>
     <div className="notranslate">
       <div style={stickyTopStyle}>
@@ -696,7 +755,11 @@ useEffect(() => {
         <div style={headerMiddleStyle}>{selectedCoast.name}</div>
         <div style={headerBottomStyle}>
           <h3>{selectedBeach.name}</h3>
-          <button onClick={handleSaveClick} style={saveBtnStyle} >保存して閉じる</button>
+          <button
+            onClick={handleSaveClick}
+            disabled={!isFormValid}
+            style={{ ...saveBtnStyle, opacity: isFormValid ? 1 : 0.5, cursor: isFormValid ? 'pointer' : 'not-allowed' }}
+          >保存して閉じる</button>
         </div>
         <div style={headerBottomStyle}>
           <span>{formattedDate}の記録 #{String(formData.seq).padStart(2, '0')}</span>
@@ -710,10 +773,18 @@ useEffect(() => {
           const rowBorder = isLastRow ? {} : rowDividerStyle;
           return (
             <React.Fragment key={i}>
-              <div style={{ ...cellStyle, ...cellLeftStyle, ...rowBorder, ...(row.left?.highlight ? { backgroundColor: '#ECD283' } : {}) }}>
+              <div style={{
+                ...cellStyle, ...cellLeftStyle, ...rowBorder,
+                backgroundColor: (row.left?.forceFilled || cellFilled(row.left?.fields)) ? '#f2f2f2' : '#fff',
+                ...(row.left?.highlight ? { backgroundColor: '#ECD283' } : {}),
+              }}>
                 {row.left && (<><div style={cellLabelStyle}>{row.left.label}</div>{row.left.content}</>)}
               </div>
-              <div style={{ ...cellStyle, ...rowBorder, ...(row.right?.highlight ? { backgroundColor: '#ECD283' } : {}) }}>
+              <div style={{
+                ...cellStyle, ...rowBorder,
+                backgroundColor: (row.right?.forceFilled || cellFilled(row.right?.fields)) ? '#f2f2f2' : '#fff',
+                ...(row.right?.highlight ? { backgroundColor: '#ECD283' } : {}),
+              }}>
                 {row.right && (<><div style={cellLabelStyle}>{row.right.label}</div>{row.right.content}</>)}
               </div>
             </React.Fragment>
@@ -723,6 +794,20 @@ useEffect(() => {
 
     </div>
     </div>
+
+    {/* 保存確認ダイアログ（ログ詳細画面の取消確認ダイアログと同じ見た目を流用） */}
+    {showSaveDialog && (
+      <div style={dialogStyles.overlay}>
+        <div style={dialogStyles.dialog}>
+          <p style={dialogStyles.dialogText}>この内容で保存します。</p>
+          <div style={dialogStyles.dialogBtns}>
+            <button onClick={confirmSave} style={dialogStyles.dialogOkBtn}>保存する</button>
+            <button onClick={() => setShowSaveDialog(false)} style={dialogStyles.dialogBackBtn}>もどる</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
@@ -756,6 +841,30 @@ const cellStyle = { padding: '10px 12px', display: 'flex', flexDirection: 'colum
 const cellLeftStyle = { borderRight: '1px solid #e2e8f0' };
 const rowDividerStyle = { borderBottom: '1px solid #e2e8f0' };
 const cellLabelStyle = { fontSize: '12px', fontWeight: 'bold', color: '#334155' };
+
+// ログ詳細画面(RecordDetailView)の取消確認ダイアログと同じ見た目
+const dialogStyles = {
+  overlay: {
+    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+  },
+  dialog: {
+    backgroundColor: 'white', borderRadius: '16px',
+    padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
+  },
+  dialogText: { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 },
+  dialogBtns: { display: 'flex', gap: '12px', justifyContent: 'center' },
+  dialogOkBtn: {
+    padding: '10px 24px', border: '1.5px solid #ef4444', borderRadius: '9999px',
+    backgroundColor: 'white', color: '#ef4444',
+    cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+  },
+  dialogBackBtn: {
+    padding: '10px 24px', border: '1.5px solid #cbd5e1', borderRadius: '9999px',
+    backgroundColor: '#f1f5f9', color: '#334155',
+    cursor: 'pointer', fontSize: '14px',
+  },
+};
 
 const customSelectStyles = {
   // menuPortalTarget={document.body} でメニューがDOMツリーの外（body直下）に描画されるため、

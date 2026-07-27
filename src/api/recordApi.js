@@ -36,6 +36,8 @@ export const getinfoApi = async (payload) => {
 /**
  * 4. CSV出力API（選択されたレコードをサーバーでCSV化してもらう）
  * @param {Object} payload - { type: 4, data: [{ key: 'xxxx', detail_key: 'xxxx' }, ...] }
+ *   ※ all_download_flg は「検索条件を無視した全件ダウンロード」用のフラグで、
+ *   現仕様では必ず検索が入るためこのケースは使わない（付与しない）
  * @returns {Promise<Blob>} - CSVバイナリ（text/csv）
  */
 export const getCsvApi = async (payload) => {
@@ -47,7 +49,9 @@ export const getCsvApi = async (payload) => {
   if (blob.type && blob.type.includes('json')) {
     const json = JSON.parse(await blob.text());
     if (SESSION_ERROR_CODES.includes(json.error_no)) forceLogout();
-    throw new Error(json.error_msg || 'CSV出力に失敗しました');
+    const err = new Error(json.error_msg || 'CSV出力に失敗しました');
+    err.error_no = json.error_no;
+    throw err;
   }
 
   return blob;
