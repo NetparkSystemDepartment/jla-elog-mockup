@@ -185,17 +185,20 @@ function RecordsListView({
 
   const allRecords = useMemo(() => apiData?.data || [], [apiData]);
 
-  // パトロールメンバーは、record.membersにしか入っていないという前提でクライアント側フィルターを
-  // 組んでいたが、login_userである(members配列には入らない)記録が絞り落とされてしまっていた。
-  // メンバーの絞り込みはサーバー側(requestPayload.members)に任せ、フロント側では再フィルタしない
+  // パトロールメンバーの絞り込みは、他メンバーの{id, user_id}をサーバーへ送れない制約上、
+  // 引き続きクライアント側で行う。記録の担当者はlogin_userフィールドで、それ以外のパトロール
+  // メンバーはmembers配列で持つため、両方を見て一致すれば表示する
   const filtered = useMemo(() => {
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
       .filter(r => filterAreas.length === 0 || filterAreas.includes(String(r.area)))
       .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
       .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
-      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow);
-  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow]);
+      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow)
+      .filter(r => filterMembers.length === 0 ||
+        filterMembers.includes(r.login_user) ||
+        (r.members || []).some(m => filterMembers.includes(m?.user_id ?? String(m))));
+  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow, filterMembers]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return [...filtered].sort(makeDefaultCompare(allAreaList));
