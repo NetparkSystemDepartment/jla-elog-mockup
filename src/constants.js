@@ -30,22 +30,22 @@ export const WAVE_OPTIONS = [
 ];
 
 export const DIRECTIONS = [
-  { id: 1, label: '北' },
-  { id: 2, label: '北北東' },
-  { id: 3, label: '北東' },
-  { id: 4, label: '東北東' },
-  { id: 5, label: '東' },
-  { id: 6, label: '東南東' },
-  { id: 7, label: '南東' },
-  { id: 8, label: '南南東' },
-  { id: 9, label: '南' },
-  { id: 10, label: '南南西' },
-  { id: 11, label: '南西' },
-  { id: 12, label: '西南西' },
-  { id: 13, label: '西' },
-  { id: 14, label: '西北西' },
-  { id: 15, label: '北西' },
-  { id: 16, label: '北北西' },
+  { id: 0, label: '北' },
+  { id: 1, label: '北北東' },
+  { id: 2, label: '北東' },
+  { id: 3, label: '東北東' },
+  { id: 4, label: '東' },
+  { id: 5, label: '東南東' },
+  { id: 6, label: '南東' },
+  { id: 7, label: '南南東' },
+  { id: 8, label: '南' },
+  { id: 9, label: '南南西' },
+  { id: 10, label: '南西' },
+  { id: 11, label: '西南西' },
+  { id: 12, label: '西' },
+  { id: 13, label: '西北西' },
+  { id: 14, label: '北西' },
+  { id: 15, label: '北北西' },
 ];
 
 export const WIND_SHORE_OPTIONS = [
