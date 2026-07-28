@@ -33,12 +33,30 @@ export const getinfoApi = async (payload) => {
   return data;
 };
 
+// Content-Dispositionヘッダー（例: attachment; filename="loglist_20260701_20260720.csv"、
+// もしくは RFC5987 の filename*=UTF-8''...）からファイル名を取り出す
+const parseFilenameFromContentDisposition = (header) => {
+  if (!header) return null;
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      // デコードに失敗した場合は下のASCII形式のパースにフォールスルー
+    }
+  }
+  const asciiMatch = header.match(/filename="?([^";]+)"?/i);
+  return asciiMatch ? asciiMatch[1] : null;
+};
+
 /**
  * 4. CSV出力API（選択されたレコードをサーバーでCSV化してもらう）
  * @param {Object} payload - { type: 4, data: [{ key: 'xxxx', detail_key: 'xxxx' }, ...] }
  *   ※ all_download_flg は「検索条件を無視した全件ダウンロード」用のフラグで、
  *   現仕様では必ず検索が入るためこのケースは使わない（付与しない）
- * @returns {Promise<Blob>} - CSVバイナリ（text/csv）
+ * @returns {Promise<{blob: Blob, filename: string|null}>} - CSVバイナリと、
+ *   レスポンスヘッダーのContent-Dispositionから取得したファイル名
+ *   （ファイル名はサーバー側で決定・設定される仕様のため、クライアントでは組み立てない）
  */
 export const getCsvApi = async (payload) => {
   const response = await axiosInstance.post('/getinfo.php', payload, { responseType: 'blob' });
@@ -54,5 +72,6 @@ export const getCsvApi = async (payload) => {
     throw err;
   }
 
-  return blob;
+  const filename = parseFilenameFromContentDisposition(response.headers?.['content-disposition']);
+  return { blob, filename };
 };

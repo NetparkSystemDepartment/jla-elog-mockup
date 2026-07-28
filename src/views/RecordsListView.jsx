@@ -122,16 +122,21 @@ function RecordsListView({
 
   // 検索キー（areas/start_date/end_date/weekday/delete_flg/members）をサーバーに渡し、
   // 権限外エリアのデータまでブラウザに取得されないようにする。
-  // members は「絞り込みパネルで選ばれている条件」をそのまま反映する（常時強制はしない）。
-  // ただし {id, user_id} 形式を組み立てられるのはログイン中の本人だけなので、
-  // 選択中のメンバーに本人が含まれる場合のみサーバーへ送る。
-  // ※ 他メンバーはログインAPIが「ID+姓」の文字列でしか返さず {id, user_id} 形式を
-  //   組み立てられないため、選択されていてもクライアント側でのみ絞り込む。
+  // members は「絞り込みパネルで選ばれている条件」を{id, user_id}形式で列挙する。
+  // ログインAPIのmembersは元から{id, user_id}のオブジェクト配列で返るため、
+  // 選択中のuser_id文字列と突き合わせてidを引ければ、自分以外のメンバーも列挙できる。
   const requestPayload = useMemo(() => {
     const payload = { type: 2 };
 
-    if (filterMembers.includes(user.user_id)) {
-      payload.members = [{ id: user.id, user_id: user.user_id }];
+    if (filterMembers.length > 0) {
+      const memberObjs = filterMembers
+        .map(uid => {
+          if (uid === user.user_id) return { id: user.id, user_id: uid };
+          const found = safeMembers.find(m => (m?.user_id ?? String(m)) === uid);
+          return found ? { id: found.id, user_id: uid } : null;
+        })
+        .filter(Boolean);
+      if (memberObjs.length > 0) payload.members = memberObjs;
     }
 
     if (filterAreas.length > 0) {
@@ -149,7 +154,7 @@ function RecordsListView({
     if (showCancelled) payload.delete_flg = true;
 
     return payload;
-  }, [filterMembers, filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, user.id, user.user_id]);
+  }, [filterMembers, filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, safeMembers, user.id, user.user_id]);
 
   const { data: apiData, isLoading, error } = useQuery({
     queryKey: ['records-list', requestPayload],
@@ -185,20 +190,16 @@ function RecordsListView({
 
   const allRecords = useMemo(() => apiData?.data || [], [apiData]);
 
-  // パトロールメンバーの絞り込みは、他メンバーの{id, user_id}をサーバーへ送れない制約上、
-  // 引き続きクライアント側で行う。記録の担当者はlogin_userフィールドで、それ以外のパトロール
-  // メンバーはmembers配列で持つため、両方を見て一致すれば表示する
+  // パトロールメンバーの絞り込みは、選択した全員分を{id, user_id}でrequestPayload.membersに
+  // 渡してサーバー側に任せるため、クライアント側では再フィルタしない
   const filtered = useMemo(() => {
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
       .filter(r => filterAreas.length === 0 || filterAreas.includes(String(r.area)))
       .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
       .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
-      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow)
-      .filter(r => filterMembers.length === 0 ||
-        filterMembers.includes(r.login_user) ||
-        (r.members || []).some(m => filterMembers.includes(m?.user_id ?? String(m))));
-  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow, filterMembers]);
+      .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow);
+  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return [...filtered].sort(makeDefaultCompare(allAreaList));
@@ -252,14 +253,16 @@ function RecordsListView({
     try {
       const targets = sorted.filter(r => selectedKeys.has(rowKey(r)));
       const data = targets.map(r => ({ key: r.key, detail_key: r.detail_key }));
-      const blob = await getCsvApi({ type: 4, data });
+      // ファイル名はサーバーがContent-Dispositionヘッダーで決定するため、そちらを使う
+      // （取得できなかった場合のみ、フォールバックとして今日の日付のファイル名にする）
+      const { blob, filename } = await getCsvApi({ type: 4, data });
 
       // aタグのdownload属性でその場でダウンロードさせる。
       // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
+      a.download = filename || `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -478,11 +481,11 @@ function RecordsListView({
               })()}
             </div>
             <div style={s.colWide}>
-              {/* ログイン者(login_user) + 自分以外のパトロールメンバー先頭1名(members[0])の2名のみ表示する */}
+              {/* ログイン者(login_user) + 自分以外のパトロールメンバー全員を表示する */}
               {record.login_user && <div>{record.login_user}</div>}
-              {record.members?.[0] && (
-                <div>{record.members[0]?.user_id ?? String(record.members[0])}</div>
-              )}
+              {(record.members || []).map((m, i) => (
+                <div key={i}>{m?.user_id ?? String(m)}</div>
+              ))}
             </div>
           </div>
         ))}
