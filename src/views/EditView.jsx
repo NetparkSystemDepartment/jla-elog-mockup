@@ -441,7 +441,7 @@ useEffect(() => {
         fields: ['windDir'],
         content: (
           <select
-            value={formData.windDir || ''}
+            value={formData.windDir ?? ''}
             onChange={e => {
               const val = e.target.value;
               setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
@@ -459,7 +459,7 @@ useEffect(() => {
         fields: ['windDirDetail'],
         content: (
           <select
-            value={formData.windDirDetail || ''}
+            value={formData.windDirDetail ?? ''}
             onChange={e => {
               const val = e.target.value;
               setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
@@ -506,7 +506,7 @@ useEffect(() => {
         fields: ['windShoreDetail'],
         content: (
           <select
-            value={formData.windShoreDetail || ''}
+            value={formData.windShoreDetail ?? ''}
             onChange={e => {
               const val = e.target.value;
               setFormData({ ...formData, windShoreDetail: val !== '' ? Number(val) : '' });
@@ -569,7 +569,7 @@ useEffect(() => {
           <div style={{ display: 'flex', gap: '8px' }}>
             <select
               style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
-              value={formData.carType || ''}
+              value={formData.carType ?? ''}
               onChange={e => {
                 const val = e.target.value;
                 setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
