@@ -260,14 +260,16 @@ function RecordsListView({
     try {
       const targets = sorted.filter(r => selectedKeys.has(rowKey(r)));
       const data = targets.map(r => ({ key: r.key, detail_key: r.detail_key }));
-      const blob = await getCsvApi({ type: 4, data });
+      // ファイル名はサーバーがContent-Dispositionヘッダーで決定するため、そちらを使う
+      // （取得できなかった場合のみ、フォールバックとして今日の日付のファイル名にする）
+      const { blob, filename } = await getCsvApi({ type: 4, data });
 
       // aタグのdownload属性でその場でダウンロードさせる。
       // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
+      a.download = filename || `elog_${format(new Date(), 'yyyyMMdd')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
