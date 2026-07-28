@@ -17,6 +17,7 @@ import { loadWeeklyRecords } from './api';
 import { setinfoApi } from './api/recordApi';
 import { Home, LifeBuoy, PencilLine, FileText, Megaphone } from 'lucide-react';
 import { getNameByBeachNo } from './useAreaInfo';
+import { useNetworkState } from 'react-use';
 
 import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
@@ -25,6 +26,10 @@ const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 const FOOTER_VIEWS = ['home', 'list', 'records', 'recordDetail'];
 
 function GlobalFooter({ onNavigate }) {
+  // ログデータ画面はオフライン時に使えない導線のため、オフライン中はボタンを無効化する
+  const netState = useNetworkState();
+  const recordsDisabled = !netState.online;
+
   return (
     <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200 }}>
       <nav style={gfStyles.footer}>
@@ -40,7 +45,11 @@ function GlobalFooter({ onNavigate }) {
             <span style={{ fontSize: '10px', marginTop: '2px' }}>新規登録</span>
           </div>
         </button>
-        <button onClick={() => onNavigate('records')} style={gfStyles.navItem}>
+        <button
+          onClick={() => onNavigate('records')}
+          disabled={recordsDisabled}
+          style={{ ...gfStyles.navItem, ...(recordsDisabled ? gfStyles.navItemDisabled : {}) }}
+        >
           <FileText size={24} /><span>ログデータ</span>
         </button>
         <button style={gfStyles.navItem}>
@@ -63,6 +72,7 @@ const gfStyles = {
     gap: '4px', background: 'none', border: 'none', color: 'white',
     fontSize: '10px', cursor: 'pointer',
   },
+  navItemDisabled: { opacity: 0.4, cursor: 'not-allowed' },
   mainCircle: {
     width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#08172A',
     border: '2px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -327,13 +337,14 @@ function App() {
       const { date, id, timestamp, isSynced,
         ...cleanRecord } = record;
 
-      // members には記録担当者（自分）が含まれていないため先頭に追加する。
-      // getinfo には担当者用の専用フィールドが無く、ログ詳細画面は members[0] を記録担当者として表示するため必須
+      // membersは自分以外のパトロールメンバーのみを送る。記録担当者はgetinfoのlogin_user
+      // フィールドでサーバー側が別途保持しており、setinfo(type=1)の仕様にlogin_userは無いため
+      // クライアントからmembersにログイン者自身を混ぜて送ってはいけない
       const payload = {
         type: 1,
         data: {
           ...cleanRecord,
-          members: [user.user_id, ...(cleanRecord.members || [])],
+          members: cleanRecord.members || [],
           delete_flg: false,
         }
       };
@@ -456,11 +467,11 @@ function App() {
       setSelectedCoast('');
       setSelectedBeach('');
     }
-    // startDateは "yyyy/mm/dd" 形式で返ってくるため、区切り文字をハイフンに揃えてから Date に渡す
-    // （揃えないと Invalid Date になり、記録日ではなく今日の日付にフォールバックしてしまう）
-    const normalizedDateStr = String(fullRecord.startDate).slice(0, 10).replaceAll('/', '-');
-    const d = new Date(normalizedDateStr + 'T00:00:00');
-    setSelectedDate(startOfDay(isNaN(d.getTime()) ? new Date() : d));
+    // 編集対象の日付はEditView側でexistingData.startDateから直接表示するため、
+    // ここでApp.jsx共有のselectedDate/briefingDataは書き換えない
+    // （以前はここでselectedDate/briefingDataを編集対象のデータで上書きしていたが、
+    // 新規登録画面(LogEntryView)もこの2つを共有しているため、編集画面を経由した後に
+    // 新規登録へ遷移すると日付やブリーフィング内容が編集対象のもので汚染されてしまっていた）
     const normalizedRecord = fullRecord.end_time !== undefined && fullRecord.endTime === undefined
       ? { ...fullRecord, endTime: fullRecord.end_time }
       : fullRecord;
@@ -469,7 +480,6 @@ function App() {
       normalizedRecord.seq = normalizedRecord.detail_key;
     }
     setEditingRecord(normalizedRecord);
-    setBriefingData(normalizedRecord);
     setView('edit');
   };
 
@@ -477,12 +487,13 @@ function App() {
     const toastId = toast.loading('更新中...');
     try {
       const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
-      // members には記録担当者（自分）が含まれていないため先頭に追加する（handleSubmitと同様）
+      // membersは自分以外のパトロールメンバーのみを送る（handleSubmitと同様。setinfoの仕様に
+      // login_userは無く、記録担当者をmembersに混ぜて送ってはいけない）
       const result = await setinfoApi({
         type: 1,
         data: {
           ...rest,
-          members: [user.user_id, ...(members || []).map(m => m?.user_id ?? String(m))],
+          members: (members || []).map(m => m?.user_id ?? String(m)),
           key: editingRecord.key,
           detail_key: editingRecord.detail_key,
           area: editingRecord.area,
@@ -705,7 +716,6 @@ function App() {
             user={user}
             selectedCoast={selectedCoast}
             selectedBeach={selectedBeach}
-            selectedDate={format(selectedDate, 'yyyy-MM-dd')}
             onBack={() => { setEditingRecord(null); setView('recordDetail'); }}
             onUpdate={handleUpdate}
             existingData={editingRecord}

@@ -27,10 +27,10 @@ const initialFormData = {
   unpatrolled: false, area: '', beach: '', seq: 1
 };
 
-const EditView = ({ user, selectedCoast, selectedBeach, selectedDate, onBack, existingData, beach, setView, profileList, seq, onUpdate }) => {
+const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, beach, setView, profileList, seq, onUpdate }) => {
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
-  startDate: selectedDate,
+  startDate: existingData.startDate,
   seq: existingData.seq,
 });
 
@@ -91,7 +91,6 @@ useEffect(() => {
   };
 
   const confirmSave = () => {
-    formData.startDate = selectedDate;
     formData.area = selectedCoast.no;
     formData.beach = selectedBeach.no;
     setShowSaveDialog(false);
@@ -133,17 +132,21 @@ useEffect(() => {
     </div>
   ));
 
-  //const formattedDate = format(selectedDate, 'M月d日 (eee)');
-  const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
+  // 編集対象の日付はexistingData.startDateから直接表示する（App.jsx共有のselectedDateには依存しない。
+  // "yyyy/mm/dd"形式で返ることがあるため区切り文字をハイフンに揃えてからDateに渡す）
+  const normalizedStartDate = String(existingData?.startDate || '').slice(0, 10).replaceAll('/', '-');
+  const parsedStartDate = new Date(normalizedStartDate + 'T00:00:00');
+  const displayDate = isNaN(parsedStartDate.getTime()) ? new Date() : parsedStartDate;
+  const formattedDate = format(displayDate, 'M月d日 (eee)', { locale: ja });
 
-  // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidと同じ。
-  // priority（優先度）・windShoreDetail（ビーチに対しての風向）は任意項目のため対象外）
+  // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidをベースに、
+  // windShoreDetail（ビーチに対しての風向）を追加。priority（優先度）のみ任意項目のため対象外）
   const REQUIRED_FIELDS = [
     'startTime', 'endTime', 'members',
     'weather', 'current', 'tide',
     'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
     'waveOuter', 'wave',
-    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail',
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail',
     'warn', 'alert', 'feature',
     'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
     'carType', 'carNo', 'handover', 'note',
@@ -500,6 +503,7 @@ useEffect(() => {
       },
       right: {
         label: 'ビーチに対しての風向',
+        fields: ['windShoreDetail'],
         content: (
           <select
             value={formData.windShoreDetail || ''}
@@ -848,9 +852,12 @@ const dialogStyles = {
     position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
   },
+  // 画面本体(container)とは別階層（フラグメントの兄弟）に描画されるため、フォント指定を継承できず
+  // ブラウザ既定フォント（明朝系）になってしまう。ここで明示的に指定する
   dialog: {
     backgroundColor: 'white', borderRadius: '16px',
     padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   dialogText: { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 },
   dialogBtns: { display: 'flex', gap: '12px', justifyContent: 'center' },
