@@ -481,11 +481,11 @@ function RecordsListView({
               })()}
             </div>
             <div style={s.colWide}>
-              {/* ログイン者(login_user) + 自分以外のパトロールメンバー全員を表示する */}
+              {/* ログイン者(login_user) + 自分以外のパトロールメンバー先頭1名(members[0])の2名のみ表示する */}
               {record.login_user && <div>{record.login_user}</div>}
-              {(record.members || []).map((m, i) => (
-                <div key={i}>{m?.user_id ?? String(m)}</div>
-              ))}
+              {record.members?.[0] && (
+                <div>{record.members[0]?.user_id ?? String(record.members[0])}</div>
+              )}
             </div>
           </div>
         ))}
