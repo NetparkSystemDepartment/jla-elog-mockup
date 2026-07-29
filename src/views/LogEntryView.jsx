@@ -298,7 +298,7 @@ useEffect(() => {
        }}>
 
         {/* パトロールメンバー */}
-        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}>
+        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true} hasValue={Boolean(formData.members && formData.members.length > 0)}>
           {/* ログイン者（記録担当者）を追加 */}
           <div>
             <input
@@ -332,7 +332,11 @@ useEffect(() => {
         </InputTile>
 
         {/* パトロール開始時刻、終了時刻、天候　→　終了時刻は画面最下部へ移動 */}
-        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}>
+        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}
+          hasValue={(formData.startTime !== '' && formData.startTime !== null && formData.startTime !== undefined)
+            && (formData.weather !== '' && formData.weather !== null && formData.weather !== undefined) 
+          }
+        >
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
               value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
@@ -366,7 +370,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 潮汐 */}
-        <InputTile label="潮汐" icon={Waves}>
+        <InputTile label="潮汐" icon={Waves}
+          hasValue={formData.tide !== '' && formData.tide !== null && formData.tide !== undefined}
+        >
           <div style={radioFlexStyle}>
             {TIDE_OPTIONS.map(opt => (
               <button
@@ -393,7 +399,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 潮流 */}
-        <InputTile label="潮流" icon={TrendingUpDown}>
+        <InputTile label="潮流" icon={TrendingUpDown}
+          hasValue={formData.current !== '' && formData.current !== null && formData.current !== undefined}
+        >
           <div style={radioFlexStyle}>
             {CURRENT_OPTIONS.map(opt => (
               <button
@@ -420,7 +428,10 @@ useEffect(() => {
         </InputTile>
 
         {/* 満潮時国・高さ */}
-        <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}>
+        <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}
+          hasValue={formData.highTideTime !== '' && formData.highTideTime !== null && formData.highTideTime !== undefined
+            && formData.highTide !== '' && formData.highTide !== null && formData.highTide !== undefined}
+        >
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="time" style={{...inputStyle, ...(errors.highTideTime ? errorInput : {})}}
               value={formData.highTideTime} onChange={e => {setFormData({...formData, highTideTime: e.target.value}); if (errors.highTideTime) setErrors({ ...errors, highTideTime: null });}} />
@@ -431,7 +442,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 波高（アウターリーフ）*/}
-        <InputTile label="波高（アウターリーフ）" icon={Activity}>
+        <InputTile label="波高（アウターリーフ）" icon={Activity}
+          hasValue={formData.waveOuter !== '' && formData.waveOuter !== null && formData.waveOuter !== undefined}>
           <div style={radioFlexStyle}>
              {WAVE_OPTIONS.map(opt => (
               <button
@@ -458,7 +470,10 @@ useEffect(() => {
         </InputTile>
 
         {/* 干潮時刻・高さ */}
-        <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}>
+        <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}
+          hasValue={formData.lowTideTime !== '' && formData.lowTideTime !== null && formData.lowTideTime !== undefined
+            && formData.lowTide !== '' && formData.lowTide !== null && formData.lowTide !== undefined}
+        >
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="time" style={{...inputStyle, ...(errors.lowTideTime ? errorInput : {})}}
               value={formData.lowTideTime} onChange={e => {setFormData({...formData, lowTideTime: e.target.value}); if (errors.lowTideTime) setErrors({ ...errors, lowTideTime: null });}} />
@@ -469,7 +484,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 波高（ショアゾーン） */}
-        <InputTile label="波高（ショアゾーン）" icon={Activity}>
+        <InputTile label="波高（ショアゾーン）" icon={Activity}
+          hasValue={formData.wave !== '' && formData.wave !== null && formData.wave !== undefined}>
           <div style={radioFlexStyle}>
              {WAVE_OPTIONS.map(opt => (
               <button
@@ -496,7 +512,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 風向（天気予報） */}
-        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}>
+        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}
+          hasValue={formData.windDir !== '' && formData.windDir !== null && formData.windDir !== undefined}>
           <select
             value={formData.windDir || ''}
             onChange={e => {
@@ -517,7 +534,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 風向（現地） */}
-        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}>
+        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}
+          hasValue={formData.windDirDetail !== '' && formData.windDirDetail !== null && formData.windDirDetail !== undefined}>
           <select
             value={formData.windDirDetail || ''}
             onChange={e => {
@@ -538,7 +556,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 風速（天気予報） */}
-        <InputTile label="風速（天気予報）" icon={Gauge}>
+        <InputTile label="風速（天気予報）" icon={Gauge}
+          hasValue={formData.windSpeed !== '' && formData.windSpeed !== null && formData.windSpeed !== undefined}>
           <div style={radioFlexStyle}>
             {WIND_SPEED_OPTIONS.map(opt => (
               <button
@@ -565,7 +584,8 @@ useEffect(() => {
         </InputTile>
 
         {/* 風速（現地） */}
-        <InputTile label="風速（現地）" icon={Gauge}>
+        <InputTile label="風速（現地）" icon={Gauge}
+          hasValue={formData.windSpeedDetail !== '' && formData.windSpeedDetail !== null && formData.windSpeedDetail !== undefined}>
           <div style={radioFlexStyle}>
             {WIND_SPEED_OPTIONS.map(opt => (
               <button
@@ -592,7 +612,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 注意報 */}
-        <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}>
+        <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}
+          hasValue={Boolean(formData.warn && formData.warn.length > 0)}
+        >
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}   // サジェスト検索有効
@@ -626,7 +648,9 @@ useEffect(() => {
         </InputTile>
 
         {/* ビーチ利用の特徴 */}
-        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}>
+        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}
+          hasValue={Boolean(formData.feature && formData.feature.length > 0)}
+        >
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}   // サジェスト検索有効
@@ -643,7 +667,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 警報 */}
-        <InputTile label="警報" icon={CircleAlert} isExpandable={true}>
+        <InputTile label="警報" icon={CircleAlert} isExpandable={true}
+          hasValue={Boolean(formData.alert && formData.alert.length > 0)}
+        >
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable={false}  // サジェスト検索有効
@@ -676,7 +702,12 @@ useEffect(() => {
         </InputTile>
 
         {/* 注意喚起人数 */}
-        <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}>
+        <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}
+          hasValue={formData.jpWarning !== '' && formData.jpWarning !== null && formData.jpWarning !== undefined
+            && formData.forWarning !== '' && formData.forWarning !== null && formData.forWarning !== undefined
+            && formData.jpTourist !== '' && formData.jpTourist !== null && formData.jpTourist !== undefined
+            && formData.forTourist !== '' && formData.forTourist !== null && formData.forTourist !== undefined}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
             <label style={labelLeftyStyle}>日本人県内在住</label>
             <label style={labelLeftyStyle}>外国人県内在住</label>
@@ -720,7 +751,10 @@ useEffect(() => {
         </InputTile>
 
         {/* 車両情報、申し送り事項　→　使用車両に変更 */}
-        <InputTile label="使用車両" icon={Car} isExpandable={true}>
+        <InputTile label="使用車両" icon={Car} isExpandable={true}
+          hasValue={formData.carType !== '' && formData.carType !== null && formData.carType !== undefined
+            && formData.carNo !== '' && formData.carNo !== null && formData.carNo !== undefined}
+        >
           <div style={{ display: 'flex', gap: '8px' }}>
             <select
                 style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
@@ -749,7 +783,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 利用者数 */}
-        <InputTile label="利用者数" icon={Users}>
+        <InputTile label="利用者数" icon={Users}
+          hasValue={formData.visitors !== '' && formData.visitors !== null && formData.visitors !== undefined}
+        >
           <div style={inputFlexStyle}>
             <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
               value={formData.visitors}
@@ -762,7 +798,9 @@ useEffect(() => {
         </InputTile>
 
         {/* 特記事項（応急手当・救助・その他）　→　メモに変更 */}
-          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'} >
+          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'}
+            hasValue={formData.note !== '' && formData.note !== null && formData.note !== undefined}
+          >
           <textarea
             value={formData.note}
             maxLength={100}
@@ -786,7 +824,10 @@ useEffect(() => {
             </div>
         </InputTile>
 
-        <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}>
+        <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}
+          hasValue={(formData.handover !== '' && formData.handover !== null && formData.handover !== undefined)
+          }
+        >
           <textarea
             value={formData.handover}
             maxLength={100}
@@ -847,7 +888,9 @@ useEffect(() => {
         </InputTile>
 
         {/* パトロール終了時刻 */}
-        <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}>
+        <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}
+          hasValue={formData.endTime !== '' && formData.endTime !== null && formData.endTime !== undefined}
+        >
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <input type="time" style={{...inputStyle, width: '40%', ...(errors.endTime ? errorInput : {})}}
               value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
