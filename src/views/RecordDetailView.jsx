@@ -369,7 +369,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
       right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
     },
     {
-      left:  { label: 'メモ', content: <TextAreaBox value={record.note} /> },
+      left:  { label: 'メモ', highlight: Boolean(record.unpatrolled), content: <TextAreaBox value={record.note} /> },
       right: { label: '注意喚起人数', content: <FourBox
         v1={hasValue(record.jpWarning)  ? record.jpWarning  : null}
         v2={hasValue(record.forWarning) ? record.forWarning : null}
@@ -444,10 +444,16 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
             const rowBorder = isLastRow ? {} : fs.rowDivider;
             return (
               <React.Fragment key={i}>
-                <div style={{ ...fs.cell, ...fs.cellLeft, ...rowBorder }}>
+                <div style={{
+                  ...fs.cell, ...fs.cellLeft, ...rowBorder,
+                  ...(row.left?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                }}>
                   {row.left && (<><div style={fs.label}>{row.left.label}</div>{row.left.content}</>)}
                 </div>
-                <div style={{ ...fs.cell, ...rowBorder }}>
+                <div style={{
+                  ...fs.cell, ...rowBorder,
+                  ...(row.right?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                }}>
                   {row.right && (<><div style={fs.label}>{row.right.label}</div>{row.right.content}</>)}
                 </div>
               </React.Fragment>
