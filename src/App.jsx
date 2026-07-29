@@ -488,12 +488,13 @@ function App() {
     try {
       const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
       // membersは自分以外のパトロールメンバーのみを送る（handleSubmitと同様。setinfoの仕様に
-      // login_userは無く、記録担当者をmembersに混ぜて送ってはいけない）
+      // login_userは無く、記録担当者をmembersに混ぜて送ってはいけない）。
+      // {id, user_id}のオブジェクト配列のまま送るため、文字列への変換はしない
       const result = await setinfoApi({
         type: 1,
         data: {
           ...rest,
-          members: (members || []).map(m => m?.user_id ?? String(m)),
+          members: members || [],
           key: editingRecord.key,
           detail_key: editingRecord.detail_key,
           area: editingRecord.area,

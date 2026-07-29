@@ -41,10 +41,12 @@ const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, be
   const exceptLogin = safeMembers.filter(member =>
     (member?.user_id ?? member) !== user.user_id
   );
-  const loginOptions = exceptLogin.map(item => {
-    const uid = item?.user_id ?? String(item);
-    return { value: uid, label: uid };
-  });
+  // valueはuser_id文字列ではなく{id, user_id}オブジェクトそのものを保持する
+  // （setinfo送信・indexedDB保存までidを引き継ぐため。0ddd60e時点の実装踏襲）
+  const loginOptions = exceptLogin.map(item => ({
+    value: item,
+    label: item?.user_id ?? String(item),
+  }));
   const warningOptions = WARNING_OPTIONS.map(item => ({
     value: item,
     label: item
@@ -202,13 +204,22 @@ useEffect(() => {
             isMulti
             isSearchable
             options={loginOptions}
-            value={(Array.isArray(formData.members) ? formData.members : []).map(item => {
-              const uid = item?.user_id ?? String(item);
-              return { value: uid, label: uid };
-            })}
+            value={(Array.isArray(formData.members) ? formData.members : []).map(item => ({
+              value: item,
+              label: item?.user_id ?? String(item),
+            }))}
             onChange={(selectedOptions) => {
               const nextMembers = (selectedOptions || []).map(option => option.value);
               setFormData({ ...formData, members: nextMembers });
+            }}
+            // formData.membersは既存データ読み込み時など別インスタンスのオブジェクトになり得るため、
+            // 参照一致ではなくidで選択済み判定する（0ddd60e時点の実装踏襲）
+            isOptionSelected={(option, selectedValues) => {
+              return selectedValues.some(selectedValue => {
+                const optionId = option.value?.id ?? option.value;
+                const selectedId = selectedValue.value?.id ?? selectedValue.value;
+                return optionId === selectedId;
+              });
             }}
             placeholder="ユーザーID"
             noOptionsMessage={() => "見つかりません"}

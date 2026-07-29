@@ -218,6 +218,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   const handleCancel = async () => {
     setIsCancelling(true);
     try {
+      // membersはgetinfoが返す{id, user_id}のオブジェクト配列のまま送る（文字列への変換はしない）
       const { members: rawMembers, end_time, ...rest } = record;
       const cancelPayload = {
         ...rest,
@@ -225,7 +226,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
         area: effectiveArea,
         beach: effectiveBeach,
         startDate: effectiveStartDate,
-        members: (rawMembers || []).map(m => m?.user_id ?? String(m)),
+        members: rawMembers || [],
         delete_flg: true,
       };
       console.log('[cancel payload]', JSON.stringify(cancelPayload, null, 2));
