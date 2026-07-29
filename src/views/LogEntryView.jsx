@@ -799,7 +799,7 @@ useEffect(() => {
 
         {/* 特記事項（応急手当・救助・その他）　→　メモに変更 */}
           <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'}
-            hasValue={formData.note !== '' && formData.note !== null && formData.note !== undefined}
+            hasValue={!formData.unpatrolled && formData.note !== '' && formData.note !== null && formData.note !== undefined}
           >
           <textarea
             value={formData.note}
