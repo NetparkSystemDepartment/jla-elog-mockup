@@ -1,6 +1,14 @@
 // sw.js (ServiceWorkerのコード)
 import { getUnsentRecordsFromIndexedDB, saveRecordToIndexedDB } from './db-config.js';
 
+self.addEventListener('install', () => {
+  self.skipWaiting(); // 新しいSWをすぐにactivateさせる
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim()); // 既存タブの制御もすぐ奪う
+});
+
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-beach-reports') {
     event.waitUntil(syncUnsentReports());

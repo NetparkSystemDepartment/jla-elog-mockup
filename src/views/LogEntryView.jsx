@@ -952,7 +952,7 @@ const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
 const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
-    webkitTextFillColor: '#000000', opacity: '1'
+    WebkitTextFillColor: '#000000', opacity: '1'
    };
 const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px' };

@@ -126,7 +126,7 @@ const ListView = ({ user, baseDate, setBaseDate, selectedDate, setSelectedDate, 
             const isToday = format(today, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
             return (
-              <div key={coast.id} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px' }}>
+              <div key={coast.no} style={{ backgroundColor: '#fff', padding: '12px', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div style={coastNameTextStyle}>{coast.name}</div>
                   <button onClick={() => handleSelect(coast)}  style={compactSelectBtnStyle}>ビーチを選択</button>

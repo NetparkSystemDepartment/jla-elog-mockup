@@ -841,7 +841,7 @@ const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyConten
 const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
 const inputNoteStyle = { width: '100%', boxSizing: 'border-box', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '60px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
 const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
-    webkitTextFillColor: '#000000', opacity: '1'
+    WebkitTextFillColor: '#000000', opacity: '1'
    };
 const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 // ログ詳細画面のButtonGroupと同じく、選択肢の文字数に関わらずflex:1で等幅にする
