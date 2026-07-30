@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import ListView from './views/ListView';
-import EditView from './views/EditView';
+import LogEditView from './views/LogEditView';
 import LogEntryView from './views/LogEntryView';
 import LoginView from './views/LoginView';
 import HomeView from './views/HomeView';
@@ -713,7 +713,7 @@ function App() {
       // ビーチ選択からの新規登録は LogEntryView（ログ入力、issue27適用前のUIを復元）を使う
       if (editingRecord) {
         return (
-          <EditView
+          <LogEditView
             user={user}
             selectedCoast={selectedCoast}
             selectedBeach={selectedBeach}
