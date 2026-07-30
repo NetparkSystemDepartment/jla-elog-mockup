@@ -24,7 +24,7 @@ import { COAST_DATA, ONNA_BEACHES } from './constantsPublic';
 
 const DUMMYSTAFF = [ 'staff01', 'staff02', 'staff03', 'staff04', 'staff05' ];
 
-const FOOTER_VIEWS = ['home', 'list', 'records', 'recordDetail'];
+const FOOTER_VIEWS = ['home', 'list', 'records'];
 
 function GlobalFooter({ onNavigate }) {
   // ログデータ画面はオフライン時に使えない導線のため、オフライン中はボタンを無効化する

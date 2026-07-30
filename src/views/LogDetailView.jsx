@@ -351,25 +351,23 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
        }}>
 
-        {/* パトロールメンバー */}
-        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}
-          hasValue={hasValue(recordOwner) || otherMembers.length > 0}
-        >
+        {/* ログインユーザー（記録担当者） */}
+        <InputTile label="ログイン者（記録担当者）" icon={User} hasValue={hasValue(recordOwner)}>
           <ValBox value={recordOwner} />
-          <div style={labelBaseStyle}>
-            <Users size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
-          </div>
+        </InputTile>
+
+        {/* パトロール開始時刻 */}
+        <InputTile label="パトロール開始時刻" icon={Clock} hasValue={hasValue(record.startTime)}>
+          <ValBox value={formatTime(record.startTime)} align="center" />
+        </InputTile>
+
+        {/* 自分以外のパトロールメンバー */}
+        <InputTile label="自分以外のパトロールメンバー" icon={Users} isExpandable={true} hasValue={otherMembers.length > 0}>
           <ChipList items={otherMembers} removable={false} />
         </InputTile>
 
-        {/* パトロール開始時刻、天候 */}
-        <InputTile label="パトロール開始時刻" icon={Clock} isExpandable={true}
-          hasValue={hasValue(record.startTime) && hasValue(record.weather)}
-        >
-          <ValBox value={formatTime(record.startTime)} align="center" />
-          <div style={labelBaseStyle}>
-            <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
-          </div>
+        {/* 天候 */}
+        <InputTile label="天候" icon={Cloud} hasValue={hasValue(record.weather)}>
           <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} />
         </InputTile>
 
@@ -413,16 +411,6 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
           <ButtonGroup options={WAVE_OPTIONS} value={record.wave} />
         </InputTile>
 
-        {/* 風向（天気予報） */}
-        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDir)}>
-          <ValBox value={labelOf(DIRECTIONS, record.windDir)} />
-        </InputTile>
-
-        {/* 風向（現地） */}
-        <InputTile label="風向（現地）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDirDetail)}>
-          <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} />
-        </InputTile>
-
         {/* 風速（天気予報） */}
         <InputTile label="風速（天気予報）" icon={Gauge} hasValue={hasValue(record.windSpeed)}>
           <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeed} />
@@ -433,9 +421,14 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
           <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} />
         </InputTile>
 
-        {/* ビーチに対しての風向　→　LogEntryView（issue27適用前）には無い追加項目 */}
-        <InputTile label="ビーチに対しての風向" icon={Wind} isExpandable={true} hasValue={hasValue(record.windShoreDetail)}>
-          <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} />
+        {/* 風向（天気予報） */}
+        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDir)}>
+          <ValBox value={labelOf(DIRECTIONS, record.windDir)} />
+        </InputTile>
+
+        {/* 風向（現地） */}
+        <InputTile label="風向（現地）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDirDetail)}>
+          <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} />
         </InputTile>
 
         {/* 注意報 */}
@@ -443,14 +436,40 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
           <ChipList items={(record.warn || []).map(String)} removable={false} />
         </InputTile>
 
-        {/* ビーチ利用の特徴 */}
-        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true} hasValue={featureItems.length > 0}>
-          <ChipList items={featureItems} removable={false} />
+        {/* ビーチに対しての風向 */}
+        <InputTile label="ビーチに対しての風向" icon={Wind} isExpandable={true} hasValue={hasValue(record.windShoreDetail)}>
+          <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} />
         </InputTile>
 
         {/* 警報 */}
         <InputTile label="警報" icon={CircleAlert} isExpandable={true} hasValue={Boolean(alertText)}>
           <ChipList items={(record.alert || []).map(String)} removable={false} />
+        </InputTile>
+
+        {/* 利用者数 */}
+        <InputTile label="利用者数" icon={Users} hasValue={hasValue(record.visitors)}>
+          <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" />
+        </InputTile>
+
+        {/* 使用車両 */}
+        <InputTile label="使用車両" icon={Car} isExpandable={true}
+          hasValue={hasValue(record.carType) && hasValue(record.carNo)}
+        >
+          <TwoBox left={carTypeLabel} right={record.carNo} />
+        </InputTile>
+
+        {/* ビーチ利用の特徴 */}
+        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true} hasValue={featureItems.length > 0}>
+          <ChipList items={featureItems} removable={false} />
+        </InputTile>
+
+        {/* メモ　→　未パトロール時はLogEntryViewと同じ黄色ハイライトを再現するため、
+            hasValueをfalseに固定してbackgroundColorのオーバーライドを効かせる */}
+        <InputTile label="メモ" icon={NotebookPen} isExpandable={true}
+          backgroundColor={record.unpatrolled ? '#ECD283' : '#fff'}
+          hasValue={!record.unpatrolled && hasValue(record.note)}
+        >
+          <TextAreaBox value={record.note} />
         </InputTile>
 
         {/* 注意喚起人数 */}
@@ -476,35 +495,15 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
           </div>
         </InputTile>
 
-        {/* 使用車両 */}
-        <InputTile label="使用車両" icon={Car} isExpandable={true}
-          hasValue={hasValue(record.carType) && hasValue(record.carNo)}
-        >
-          <TwoBox left={carTypeLabel} right={record.carNo} />
-        </InputTile>
-
-        {/* 利用者数 */}
-        <InputTile label="利用者数" icon={Users} hasValue={hasValue(record.visitors)}>
-          <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" />
-        </InputTile>
-
-        {/* メモ　→　未パトロール時はLogEntryViewと同じ黄色ハイライトを再現するため、
-            hasValueをfalseに固定してbackgroundColorのオーバーライドを効かせる */}
-        <InputTile label="メモ" icon={NotebookPen} isExpandable={true}
-          backgroundColor={record.unpatrolled ? '#ECD283' : '#fff'}
-          hasValue={!record.unpatrolled && hasValue(record.note)}
-        >
-          <TextAreaBox value={record.note} />
-        </InputTile>
-
-        {/* 申し送り事項、優先度 */}
+        {/* 申し送り事項 */}
         <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}
           hasValue={hasValue(record.handover)}
         >
           <TextAreaBox value={record.handover} />
-          <div style={labelBaseStyle}>
-            <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
-          </div>
+        </InputTile>
+
+        {/* 優先度 */}
+        <InputTile label="優先度" icon={Flag} hasValue={hasValue(record.priority)}>
           <ButtonGroup options={PRIORITY_OPTIONS} value={record.priority} />
         </InputTile>
 
@@ -612,7 +611,6 @@ const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
 const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' };
-const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
 const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textAlign: 'left', width: '50%' };
 const messageStyle = { padding: '40px', textAlign: 'center', color: '#64748b' };
 
