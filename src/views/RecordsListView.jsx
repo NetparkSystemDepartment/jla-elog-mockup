@@ -251,7 +251,14 @@ function RecordsListView({
     }
 
     try {
+      // selectedKeysは検索条件を変えてもクリアされないため、絞り込み後の一覧に
+      // 存在しない古い選択が残っている場合がある。その場合targetsが空になるので、
+      // 空データをサーバーに送らずエラーにする
       const targets = sorted.filter(r => selectedKeys.has(rowKey(r)));
+      if (targets.length === 0) {
+        alert('CSV出力する記録にチェックを入れてください');
+        return;
+      }
       const data = targets.map(r => ({ key: r.key, detail_key: r.detail_key }));
       // ファイル名はサーバーがContent-Dispositionヘッダーで決定するため、そちらを使う
       // （取得できなかった場合のみ、フォールバックとして今日の日付のファイル名にする）
@@ -297,6 +304,9 @@ function RecordsListView({
     setFilterDow(draftDow);
     setFilterMembers(draftMembers);
     resetPage();
+    // 検索条件が変わると一覧の内容が変わり、チェック済みの記録が結果から消えることがあるため、
+    // CSV選択状態は毎回リセットする
+    setSelectedKeys(new Set());
   };
 
   return (
