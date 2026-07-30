@@ -205,16 +205,22 @@ useEffect(() => {
       formData.lowTide,
       formData.windDir,
       formData.windDirDetail,
-      formData.warn,
-      formData.feature,
-      formData.alert,
       formData.carType,
       formData.carNo,
       formData.handover,
       formData.note,
     ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
 
-    return hasMembers && numericFields && textFields;
+    // マルチセレクトの配列フィールド（空文字ではなく空配列で「未選択」になるため、
+    // textFieldsの文字列判定（v?.trim?.()）だと配列は素通りしてしまう。
+    // 配列は必ず長さでチェックする）
+    const arrayFields = [
+      formData.warn,
+      formData.feature,
+      formData.alert,
+    ].every(v => Array.isArray(v) && v.length > 0);
+
+    return hasMembers && numericFields && textFields && arrayFields;
   };
 
   const isValid = isFormValid();

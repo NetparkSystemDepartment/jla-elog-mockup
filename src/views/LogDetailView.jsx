@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft } from 'lucide-react';
+import { Clock, Cloud, Wind, Users, Gauge, Waves, User, WavesArrowUp, WavesArrowDown,
+  Compass, TrendingUpDown, Activity, WavesLadder, Megaphone, NotebookPen, FileUp, Flag,
+  HandHelping, Car, CircleAlert, TriangleAlert } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
+import InputTile from '../components/InputTile';
 import { getinfoApi, setinfoApi } from '../api/recordApi';
 import { useAuth } from '../contexts/authContext';
 import { useSafeCarInfo } from '../useSafeCarInfo';
@@ -12,7 +15,7 @@ import {
   DIRECTIONS, WIND_SPEED_OPTIONS, PRIORITY_OPTIONS, FEATURE_OPTIONS, WIND_SHORE_OPTIONS,
 } from '../constants';
 
-/* ---------- マスター情報ヘルパー ---------- */
+/* ---------- マスター情報ヘルパー（ロジックは変更なし） ---------- */
 const getMasterInfo = () => {
   try {
     return JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
@@ -35,8 +38,11 @@ const labelOf = (options, id) => {
   return found?.label ?? null;
 };
 
-/* ---------- 表示パーツ ---------- */
-/* ログ入力画面(EditView)のボタン選択UIと同じ配色・形状で、非活性の選択済み表示として再現する */
+/* ---------- 表示パーツ ----------
+   LogEntryView の入力欄（inputStyle: 背景#f3f4f6・枠線なし・角丸8px）と
+   同じトーンになるよう配色を揃えた「非活性の値表示」パーツ群。
+   InputTile 自体が hasValue で背景をワントーン暗く(#d8d8d8)するので、
+   その内側でさらにコントラストが付くよう、こちらは明るいグレーのままにする。 */
 
 const justifyOf = (align) => align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
 
@@ -62,6 +68,7 @@ function TextAreaBox({ value }) {
   return <div style={fs.textAreaBox}>{value || 'なし'}</div>;
 }
 
+// LogEntryView の react-select（customSelectStyles.multiValue）のバッジと同じ配色で再現
 function ChipList({ items, removable = true }) {
   const filtered = (items || []).filter(Boolean);
   if (filtered.length === 0) return <span style={fs.placeholder}>---</span>;
@@ -74,7 +81,7 @@ function ChipList({ items, removable = true }) {
   );
 }
 
-// EditView の radioBtnStyle（未選択/選択）と同じ配色のボタン群を、非活性表示として再現する
+// LogEntryView の radioBtnStyle（未選択/選択）と同じ配色のボタン群を、非活性表示として再現する
 function ButtonGroup({ options, value }) {
   const strVal = String(value);
   return (
@@ -91,7 +98,7 @@ function ButtonGroup({ options, value }) {
   );
 }
 
-// EditView の「input + 外側ラベル（例: 名）」の見た目に合わせ、単位を値の外側に表示する
+// LogEntryView の「input + 外側ラベル（例: 名）」の見た目に合わせ、単位を値の外側に表示する
 function UnitBox({ value, unit, align = 'left' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -103,7 +110,7 @@ function UnitBox({ value, unit, align = 'left' }) {
 
 function FourBox({ v1, v2, v3, v4, unit, align = 'left' }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
       <UnitBox value={v1} unit={unit} align={align} /><UnitBox value={v2} unit={unit} align={align} />
       <UnitBox value={v3} unit={unit} align={align} /><UnitBox value={v4} unit={unit} align={align} />
     </div>
@@ -128,16 +135,6 @@ const safeFormatDate = (dateStr, fmt, opts) => {
 };
 
 /* ================================================ */
-
-function HeaderBar({ onBack }) {
-  return (
-    <header style={ds.header}>
-      <button onClick={onBack} style={ds.backBtn}><ChevronLeft color="white" size={24} /></button>
-      <h1 style={ds.headerTitle}>ログ詳細</h1>
-      <div style={{ width: 40 }} />
-    </header>
-  );
-}
 
 function LogDetailView({ user, recordSummary, onBack, onEdit }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -269,18 +266,26 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
 
   if (isLoading) {
     return (
-      <div style={ds.wrapper}>
-        <HeaderBar onBack={onBack} />
-        <div style={ds.message}>読み込み中...</div>
+      <div style={container}>
+        <div style={headerTopStyle}>
+          <button onClick={onBack} style={{ ...logoTextStyle, backgroundColor: '#08172A', color: '#FFFFFF', border: 'none' }}>＜</button>
+          <span style={logoTextStyle}>ログ詳細</span>
+          <span></span>
+        </div>
+        <div style={messageStyle}>読み込み中...</div>
       </div>
     );
   }
 
   if (error || !record) {
     return (
-      <div style={ds.wrapper}>
-        <HeaderBar onBack={onBack} />
-        <div style={ds.message}>データの取得に失敗しました</div>
+      <div style={container}>
+        <div style={headerTopStyle}>
+          <button onClick={onBack} style={{ ...logoTextStyle, backgroundColor: '#08172A', color: '#FFFFFF', border: 'none' }}>＜</button>
+          <span style={logoTextStyle}>ログ詳細</span>
+          <span></span>
+        </div>
+        <div style={messageStyle}>データの取得に失敗しました</div>
       </div>
     );
   }
@@ -289,10 +294,10 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
   const areaName  = areaLabel(effectiveArea, allAreaList);
   const beachName = beachLabel(effectiveBeach, effectiveArea, allAreaList);
 
-  const _dateFormatted = safeFormatDate(effectiveStartDate, 'M月d日(E)', { locale: ja });
-  const dateLabel = _dateFormatted ? _dateFormatted + 'の記録' : '---';
+  const _dateFormatted = safeFormatDate(effectiveStartDate, 'M月d日 (eee)', { locale: ja });
+  const dateLabel = _dateFormatted ? `${_dateFormatted}の記録` : '---';
   const seqLabel = record.detail_key != null
-    ? `# ${String(record.detail_key).padStart(2, '0')}`
+    ? `#${String(record.detail_key).padStart(2, '0')}`
     : '';
 
   // ログイン者（記録担当者）は login_user フィールド、members は最初から「自分以外の
@@ -316,128 +321,29 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
     url: f?.url ?? f?.thumbnail_url ?? f?.path ?? null,
   }));
 
-  // 左右を同じCSS Gridの行として並べることで、内容量が違っても罫線が段ごとに揃うようにする
-  // （独立した2本のflex columnだと、行ごとの高さが左右でズレて罫線が噛み合わなくなるため）
-  const rows = [
-    {
-      left:  { label: 'ログインユーザー（記録担当者）', content: <ValBox value={recordOwner} /> },
-      right: { label: 'パトロール開始時刻', content: <ValBox value={formatTime(record.startTime)} align="center" /> },
-    },
-    {
-      left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} /> },
-      right: { label: '天候', content: <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} /> },
-    },
-    {
-      left:  { label: '潮汐', content: <ButtonGroup options={TIDE_OPTIONS} value={record.tide} /> },
-      right: { label: '潮流', content: <ButtonGroup options={CURRENT_OPTIONS} value={record.current} /> },
-    },
-    {
-      left:  { label: '満潮時刻・高さ[cm]', content: <TwoBox
-        left={formatTime(record.highTideTime)}
-        leftAlign="center"
-        right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
-        rightAlign="right"
-      /> },
-      right: { label: '波高（アウターリーフ）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.waveOuter} /> },
-    },
-    {
-      left:  { label: '干潮時刻・高さ[cm]', content: <TwoBox
-        left={formatTime(record.lowTideTime)}
-        leftAlign="center"
-        right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
-        rightAlign="right"
-      /> },
-      right: { label: '波高（ショアゾーン）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.wave} /> },
-    },
-    {
-      left:  { label: '風速（天気予報）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeed} /> },
-      right: { label: '風速（現地）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} /> },
-    },
-    {
-      left:  { label: '風向（天気予報）', content: <ValBox value={labelOf(DIRECTIONS, record.windDir)} /> },
-      right: { label: '風向（現地）', content: <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} /> },
-    },
-    {
-      left:  { label: '注意報', content: <ValBox value={warnText || null} /> },
-      right: { label: 'ビーチに対しての風向', content: <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} /> },
-    },
-    {
-      left:  { label: '警報', content: <ValBox value={alertText || null} /> },
-      right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
-    },
-    {
-      left:  { label: '使用車両', content: <TwoBox left={carTypeLabel} right={record.carNo} /> },
-      right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
-    },
-    {
-      left:  { label: 'メモ', highlight: Boolean(record.unpatrolled), content: <TextAreaBox value={record.note} /> },
-      right: { label: '注意喚起人数', content: <FourBox
-        v1={hasValue(record.jpWarning)  ? record.jpWarning  : null}
-        v2={hasValue(record.forWarning) ? record.forWarning : null}
-        v3={hasValue(record.jpTourist)  ? record.jpTourist  : null}
-        v4={hasValue(record.forTourist) ? record.forTourist : null}
-        unit="名"
-        align="right"
-      /> },
-    },
-    {
-      left:  null,
-      right: { label: '申し送り事項（応急手当・救助・その他）', content: <TextAreaBox value={record.handover} /> },
-    },
-    {
-      left:  null,
-      right: { label: '優先度', content: <ButtonGroup options={PRIORITY_OPTIONS} value={record.priority} /> },
-    },
-    {
-      left:  null,
-      right: { label: 'パトロール終了時刻', content: <ValBox value={formatTime(record.endTime ?? record.end_time)} align="center" /> },
-    },
-  ];
-
-  // アップロードされた画像: アップロードがある記録のみ表示（ファイル名の下にサムネイル）
-  if (uploadedFiles.length > 0) {
-    rows.push({
-      left: null,
-      right: {
-        label: 'アップロードされた画像',
-        content: (
-          <div style={fs.uploadGrid}>
-            {uploadedFiles.map((file, i) => (
-              <div key={i} style={fs.uploadItem}>
-                <div style={fs.uploadName}>{file.name}</div>
-                {file.url && <img src={file.url} alt={file.name} style={fs.uploadThumb} />}
-              </div>
-            ))}
-          </div>
-        ),
-      },
-    });
-  }
-
   return (
     <div style={container}>
     <div className="notranslate">
       <header>
-
         <div style={headerTopStyle}>
-          <button onClick={onBack} style={{...logoTextStyle, backgroundColor: "#08172A", color: "#FFFFFF", border: "none"} }>＜</button>
-          <span style={logoTextStyle}>ログ編集</span>
+          <button onClick={onBack} style={{ ...logoTextStyle, backgroundColor: '#08172A', color: '#FFFFFF', border: 'none' }}>＜</button>
+          <span style={logoTextStyle}>ログ詳細</span>
           <span></span>
         </div>
-        <div style={headerMiddleStyle}>{selectedCoast.name}</div>
+        <div style={headerMiddleStyle}>{areaName}</div>
         <div style={headerBottomStyle}>
-          <h3>{selectedBeach.name}</h3>
-          <button onClick={handleSaveClick}
-            disabled={isDisabled}
-            style={{
-              ...saveBtnStyle,
-              cursor: isDisabled ? 'not-allowed' : 'pointer' ,
-              opacity: isDisabled ? 0.5 : 1,
-            }}
-           >保存して閉じる</button>
+          <h3>{beachName}</h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {canCancel && (
+              <button onClick={() => setShowCancelDialog(true)} style={cancelBtnStyle}>取消する</button>
+            )}
+            {canEdit && (
+              <button onClick={() => onEdit(record)} style={editBtnStyle}>編集する</button>
+            )}
+          </div>
         </div>
         <div style={headerBottomStyle}>
-          <span>{formattedDate}の記録 #{String(formData.seq).padStart(2, '0')}</span>
+          <span>{dateLabel} {seqLabel}</span>
         </div>
       </header>
 
@@ -446,598 +352,180 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
        }}>
 
         {/* パトロールメンバー */}
-        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true} hasValue={Boolean(formData.members && formData.members.length > 0)}>
-          {/* ログイン者（記録担当者）を追加 */}
-          <div>
-            <input
-              type="text"
-              value={(user.id + user.name) || ''}
-              disabled
-              style={disabledInput}
-            />
-          </div>
+        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true}
+          hasValue={hasValue(recordOwner) || otherMembers.length > 0}
+        >
+          <ValBox value={recordOwner} />
           <div style={labelBaseStyle}>
             <Users size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
           </div>
-          <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable  // サジェスト検索有効
-            hideSelectedOptions={true}
-            options={loginOptions}
-            value={(formData.members || []).map(item => ({
-              value: item,
-              label: item?.user_id ?? String(item),
-            }))}
-            onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, members: nextMembers });
-            }}
-            // formData.membersは既存データ読み込み時など別インスタンスのオブジェクトになり得るため、
-            // 参照一致ではなくidで選択済み判定する（0ddd60e時点の実装踏襲）
-            isOptionSelected={(option, selectedValues) => {
-              return selectedValues.some(selectedValue => {
-                const optionId = option.value?.id ?? option.value;
-                const selectedId = selectedValue.value?.id ?? selectedValue.value;
-                return optionId === selectedId;
-              });
-            }}
-            placeholder="ユーザーID"
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
-
+          <ChipList items={otherMembers} removable={false} />
         </InputTile>
 
-        {/* パトロール開始時刻、終了時刻、天候　→　終了時刻は画面最下部へ移動 */}
-        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}
-          hasValue={(formData.startTime !== '' && formData.startTime !== null && formData.startTime !== undefined)
-            && (formData.weather !== '' && formData.weather !== null && formData.weather !== undefined) 
-          }
+        {/* パトロール開始時刻、天候 */}
+        <InputTile label="パトロール開始時刻" icon={Clock} isExpandable={true}
+          hasValue={hasValue(record.startTime) && hasValue(record.weather)}
         >
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
-              value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
-          </div>
+          <ValBox value={formatTime(record.startTime)} align="center" />
           <div style={labelBaseStyle}>
             <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
           </div>
-          <div style={radioFlexStyle}>
-            {WEATHER_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, weather: opt.id });
-                  if (errors.weather) {
-                    setErrors({ ...errors, weather: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.weather ? '#ef4444' : (formData.weather === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.weather === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.weather === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+          <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} />
         </InputTile>
 
         {/* 潮汐 */}
-        <InputTile label="潮汐" icon={Waves}
-          hasValue={formData.tide !== '' && formData.tide !== null && formData.tide !== undefined}
-        >
-          <div style={radioFlexStyle}>
-            {TIDE_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, tide: opt.id });
-                  if (errors.tide) {
-                    setErrors({ ...errors, tide: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.tide ? '#ef4444' : (formData.tide === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.tide === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.tide === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+        <InputTile label="潮汐" icon={Waves} hasValue={hasValue(record.tide)}>
+          <ButtonGroup options={TIDE_OPTIONS} value={record.tide} />
         </InputTile>
 
         {/* 潮流 */}
-        <InputTile label="潮流" icon={TrendingUpDown}
-          hasValue={formData.current !== '' && formData.current !== null && formData.current !== undefined}
-        >
-          <div style={radioFlexStyle}>
-            {CURRENT_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, current: opt.id });
-                  if (errors.current) {
-                    setErrors({ ...errors, current: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.current ? '#ef4444' : (formData.current === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.current === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.current === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+        <InputTile label="潮流" icon={TrendingUpDown} hasValue={hasValue(record.current)}>
+          <ButtonGroup options={CURRENT_OPTIONS} value={record.current} />
         </InputTile>
 
-        {/* 満潮時国・高さ */}
+        {/* 満潮時刻・高さ */}
         <InputTile label="満潮時刻・高さ[cm]" icon={WavesArrowUp}
-          hasValue={formData.highTideTime !== '' && formData.highTideTime !== null && formData.highTideTime !== undefined
-            && formData.highTide !== '' && formData.highTide !== null && formData.highTide !== undefined}
+          hasValue={hasValue(record.highTideTime) && hasValue(record.highTide)}
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...inputStyle, ...(errors.highTideTime ? errorInput : {})}}
-              value={formData.highTideTime} onChange={e => {setFormData({...formData, highTideTime: e.target.value}); if (errors.highTideTime) setErrors({ ...errors, highTideTime: null });}} />
-            <input type="number" placeholder="高さ [cm] "style={{...inputStyle, textAlign: 'right', ...(errors.highTide ? errorInput : {})}}
-              value={formData.highTide} onChange={e => {setFormData({...formData, highTide: e.target.value}); if (errors.highTide) setErrors({ ...errors, highTide: null });}} />
-            <span style={unitTextStyle}>cm</span>
-          </div>
+          <TwoBox
+            left={formatTime(record.highTideTime)} leftAlign="center"
+            right={hasValue(record.highTide) ? `${record.highTide} cm` : null} rightAlign="right"
+          />
         </InputTile>
 
-        {/* 波高（アウターリーフ）*/}
-        <InputTile label="波高（アウターリーフ）" icon={Activity}
-          hasValue={formData.waveOuter !== '' && formData.waveOuter !== null && formData.waveOuter !== undefined}>
-          <div style={radioFlexStyle}>
-             {WAVE_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, waveOuter: opt.id });
-                  if (errors.waveOuter) {
-                    setErrors({ ...errors, waveOuter: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.waveOuter ? '#ef4444' : (formData.waveOuter === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.waveOuter === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.waveOuter === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+        {/* 波高（アウターリーフ） */}
+        <InputTile label="波高（アウターリーフ）" icon={Activity} hasValue={hasValue(record.waveOuter)}>
+          <ButtonGroup options={WAVE_OPTIONS} value={record.waveOuter} />
         </InputTile>
 
         {/* 干潮時刻・高さ */}
         <InputTile label="干潮時刻・高さ[cm]" icon={WavesArrowDown}
-          hasValue={formData.lowTideTime !== '' && formData.lowTideTime !== null && formData.lowTideTime !== undefined
-            && formData.lowTide !== '' && formData.lowTide !== null && formData.lowTide !== undefined}
+          hasValue={hasValue(record.lowTideTime) && hasValue(record.lowTide)}
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <input type="time" style={{...inputStyle, ...(errors.lowTideTime ? errorInput : {})}}
-              value={formData.lowTideTime} onChange={e => {setFormData({...formData, lowTideTime: e.target.value}); if (errors.lowTideTime) setErrors({ ...errors, lowTideTime: null });}} />
-            <input type="number" placeholder="高さ [cm] "style={{...inputStyle, textAlign: 'right', ...(errors.lowTide ? errorInput : {})}}
-              value={formData.lowTide} onChange={e => {setFormData({...formData, lowTide: e.target.value}); if (errors.lowTide) setErrors({ ...errors, lowTide: null });}} />
-            <span style={unitTextStyle}>cm</span>
-          </div>
+          <TwoBox
+            left={formatTime(record.lowTideTime)} leftAlign="center"
+            right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null} rightAlign="right"
+          />
         </InputTile>
 
         {/* 波高（ショアゾーン） */}
-        <InputTile label="波高（ショアゾーン）" icon={Activity}
-          hasValue={formData.wave !== '' && formData.wave !== null && formData.wave !== undefined}>
-          <div style={radioFlexStyle}>
-             {WAVE_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, wave: opt.id });
-                  if (errors.wave) {
-                    setErrors({ ...errors, wave: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.wave ? '#ef4444' : (formData.wave === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.wave === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.wave === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-           </div>
+        <InputTile label="波高（ショアゾーン）" icon={Activity} hasValue={hasValue(record.wave)}>
+          <ButtonGroup options={WAVE_OPTIONS} value={record.wave} />
         </InputTile>
 
         {/* 風向（天気予報） */}
-        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}
-          hasValue={formData.windDir !== '' && formData.windDir !== null && formData.windDir !== undefined}>
-          <select
-            value={formData.windDir || ''}
-            onChange={e => {
-              const val = e.target.value;
-              // 選択されたIDを数値に変換して保存（未選択時は空文字）
-              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
-              if (errors.windDir) setErrors({ ...errors, windDir: null });
-            }}
-            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
-           >
-            <option value="">ー選択ー</option>
-              {DIRECTIONS.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-          </select>
+        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDir)}>
+          <ValBox value={labelOf(DIRECTIONS, record.windDir)} />
         </InputTile>
 
         {/* 風向（現地） */}
-        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}
-          hasValue={formData.windDirDetail !== '' && formData.windDirDetail !== null && formData.windDirDetail !== undefined}>
-          <select
-            value={formData.windDirDetail || ''}
-            onChange={e => {
-              const val = e.target.value;
-              // 選択されたIDを数値に変換して保存（未選択時は空文字）
-              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
-              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
-            }}
-            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
-          >
-            <option value="">ー選択ー</option>
-              {DIRECTIONS.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-          </select>
+        <InputTile label="風向（現地）" icon={Compass} isExpandable={true} hasValue={hasValue(record.windDirDetail)}>
+          <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} />
         </InputTile>
 
         {/* 風速（天気予報） */}
-        <InputTile label="風速（天気予報）" icon={Gauge}
-          hasValue={formData.windSpeed !== '' && formData.windSpeed !== null && formData.windSpeed !== undefined}>
-          <div style={radioFlexStyle}>
-            {WIND_SPEED_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, windSpeed: opt.id });
-                  if (errors.windSpeed) {
-                    setErrors({ ...errors, windSpeed: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.windSpeed ? '#ef4444' : (formData.windSpeed === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.windSpeed === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.windSpeed === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+        <InputTile label="風速（天気予報）" icon={Gauge} hasValue={hasValue(record.windSpeed)}>
+          <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeed} />
         </InputTile>
 
         {/* 風速（現地） */}
-        <InputTile label="風速（現地）" icon={Gauge}
-          hasValue={formData.windSpeedDetail !== '' && formData.windSpeedDetail !== null && formData.windSpeedDetail !== undefined}>
-          <div style={radioFlexStyle}>
-            {WIND_SPEED_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, windSpeedDetail: opt.id });
-                  if (errors.windSpeedDetail) {
-                    setErrors({ ...errors, windSpeedDetail: null });
-                  }
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: errors.windSpeedDetail ? '#ef4444' : (formData.windSpeedDetail === opt.id ? '#38bdf8' : '#e2e8f0'),
-                  backgroundColor: formData.windSpeedDetail === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.windSpeedDetail === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+        <InputTile label="風速（現地）" icon={Gauge} hasValue={hasValue(record.windSpeedDetail)}>
+          <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} />
+        </InputTile>
+
+        {/* ビーチに対しての風向　→　LogEntryView（issue27適用前）には無い追加項目 */}
+        <InputTile label="ビーチに対しての風向" icon={Wind} isExpandable={true} hasValue={hasValue(record.windShoreDetail)}>
+          <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} />
         </InputTile>
 
         {/* 注意報 */}
-        <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}
-          hasValue={Boolean(formData.warn && formData.warn.length > 0)}
-        >
-          <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable={false}   // サジェスト検索有効
-            options={warningOptions}
-            value={(formData.warn || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
-              const currentValues = (selectedOptions || []).map(option => option.value);
-
-              let updatedValues = currentValues;
-
-              // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
-              const prevValues = formData.warn || [];
-              const addedValue = currentValues.find(val => !prevValues.includes(val));
-
-              if (addedValue === 'なし') {
-                // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
-                updatedValues = ['なし'];
-              } else if (currentValues.includes('なし') && currentValues.length > 1) {
-              // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
-                updatedValues = currentValues.filter(val => val !== 'なし');
-              }
-
-              setFormData({ ...formData, warn: updatedValues });
-            }}
-            placeholder="注意報"
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
-
+        <InputTile label="注意報" icon={TriangleAlert} isExpandable={true} hasValue={Boolean(warnText)}>
+          <ChipList items={(record.warn || []).map(String)} removable={false} />
         </InputTile>
 
         {/* ビーチ利用の特徴 */}
-        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}
-          hasValue={Boolean(formData.feature && formData.feature.length > 0)}
-        >
-          <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable={false}   // サジェスト検索有効
-            options={featureOptions}
-            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
-            }}
-            placeholder=""
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
+        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true} hasValue={featureItems.length > 0}>
+          <ChipList items={featureItems} removable={false} />
         </InputTile>
 
         {/* 警報 */}
-        <InputTile label="警報" icon={CircleAlert} isExpandable={true}
-          hasValue={Boolean(formData.alert && formData.alert.length > 0)}
-        >
-          <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable={false}  // サジェスト検索有効
-            options={alertOptions}
-            value={(formData.alert || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              // react-select から渡されるオブジェクト配列を、単純な文字列の配列に変換
-              const currentValues = (selectedOptions || []).map(option => option.value);
-
-              let updatedValues = currentValues;
-
-              // 直前の状態（data.warn）と現在の状態を比較して、何が「新しく追加されたか」を判定
-              const prevValues = formData.alert || [];
-              const addedValue = currentValues.find(val => !prevValues.includes(val));
-
-              if (addedValue === 'なし') {
-                // 「なし」が新しく選ばれたら、他の選択をすべてクリアして「なし」だけにする
-                updatedValues = ['なし'];
-              } else if (currentValues.includes('なし') && currentValues.length > 1) {
-              // 「なし」以外の項目が新しく選ばれたら、リストから「なし」を削除する
-                updatedValues = currentValues.filter(val => val !== 'なし');
-              }
-
-              setFormData({ ...formData, alert: updatedValues });
-            }}
-            placeholder="警報"
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
+        <InputTile label="警報" icon={CircleAlert} isExpandable={true} hasValue={Boolean(alertText)}>
+          <ChipList items={(record.alert || []).map(String)} removable={false} />
         </InputTile>
 
         {/* 注意喚起人数 */}
         <InputTile label="注意喚起人数" icon={Megaphone} isExpandable={true}
-          hasValue={formData.jpWarning !== '' && formData.jpWarning !== null && formData.jpWarning !== undefined
-            && formData.forWarning !== '' && formData.forWarning !== null && formData.forWarning !== undefined
-            && formData.jpTourist !== '' && formData.jpTourist !== null && formData.jpTourist !== undefined
-            && formData.forTourist !== '' && formData.forTourist !== null && formData.forTourist !== undefined}
+          hasValue={hasValue(record.jpWarning) && hasValue(record.forWarning)
+            && hasValue(record.jpTourist) && hasValue(record.forTourist)}
         >
           <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
             <label style={labelLeftyStyle}>日本人県内在住</label>
             <label style={labelLeftyStyle}>外国人県内在住</label>
           </div>
-          <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpWarning ? errorInput : {})}}
-              value={formData.jpWarning}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, jpWarning: val === '' ? '' : Number(val)});
-              if (errors.jpWarning) setErrors({ ...errors, jpWarning: null });}} />
-            <label style={unitTextStyle}>名</label>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.forWarning ? errorInput : {})}}
-              value={formData.forWarning}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, forWarning: val === '' ? '' : Number(val)});
-              if (errors.forWarning) setErrors({ ...errors, forWarning: null });}} />
-            <label style={unitTextStyle}>名</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <UnitBox value={hasValue(record.jpWarning) ? record.jpWarning : null} unit="名" align="right" />
+            <UnitBox value={hasValue(record.forWarning) ? record.forWarning : null} unit="名" align="right" />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-evenly', gap: '6px' }}>
             <label style={labelLeftyStyle}>日本人観光客</label>
             <label style={labelLeftyStyle}>外国人観光客</label>
           </div>
-          <div style={{ display: 'flex', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.jpTourist ? errorInput : {})}}
-              value={formData.jpTourist}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, jpTourist: val === '' ? '' : Number(val)});
-              if (errors.jpTourist) setErrors({ ...errors, jpTourist: null });}} />
-            <label style={unitTextStyle}>名</label>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.forTourist ? errorInput : {})}}
-              value={formData.forTourist}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, forTourist: val === '' ? '' : Number(val)});
-              if (errors.forTourist) setErrors({ ...errors, forTourist: null });}} />
-            <label style={unitTextStyle}>名</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <UnitBox value={hasValue(record.jpTourist) ? record.jpTourist : null} unit="名" align="right" />
+            <UnitBox value={hasValue(record.forTourist) ? record.forTourist : null} unit="名" align="right" />
           </div>
         </InputTile>
 
-        {/* 車両情報、申し送り事項　→　使用車両に変更 */}
+        {/* 使用車両 */}
         <InputTile label="使用車両" icon={Car} isExpandable={true}
-          hasValue={formData.carType !== '' && formData.carType !== null && formData.carType !== undefined
-            && formData.carNo !== '' && formData.carNo !== null && formData.carNo !== undefined}
+          hasValue={hasValue(record.carType) && hasValue(record.carNo)}
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select
-                style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
-                 value={formData.carType || ''}
-                 onChange={e => {
-                   // 選択されたIDを数値に変換して保存（未選択時は空文字）
-                   const val = e.target.value;
-                   setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
-                    if (errors.carType) {
-                      setErrors({ ...errors, carType: null });
-                    }
-                 }}
-             >
-               <option value="">車種名</option>
-               {safeCarInfo.map(d => (
-                 <option key={d.order} value={d.order}>
-                 {d.carType}
-                 </option>
-                ))}
-             </select>
-             <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
-              value={formData.carNo}
-              onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
-                if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
-          </div>
+          <TwoBox left={carTypeLabel} right={record.carNo} />
         </InputTile>
 
         {/* 利用者数 */}
-        <InputTile label="利用者数" icon={Users}
-          hasValue={formData.visitors !== '' && formData.visitors !== null && formData.visitors !== undefined}
+        <InputTile label="利用者数" icon={Users} hasValue={hasValue(record.visitors)}>
+          <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" />
+        </InputTile>
+
+        {/* メモ　→　未パトロール時はLogEntryViewと同じ黄色ハイライトを再現するため、
+            hasValueをfalseに固定してbackgroundColorのオーバーライドを効かせる */}
+        <InputTile label="メモ" icon={NotebookPen} isExpandable={true}
+          backgroundColor={record.unpatrolled ? '#ECD283' : '#fff'}
+          hasValue={!record.unpatrolled && hasValue(record.note)}
         >
-          <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
-              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
-            <label style={unitTextStyle}>名</label>
-          </div>
+          <TextAreaBox value={record.note} />
         </InputTile>
 
-        {/* 特記事項（応急手当・救助・その他）　→　メモに変更 */}
-          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'}
-            hasValue={!formData.unpatrolled && formData.note !== '' && formData.note !== null && formData.note !== undefined}
-          >
-          <textarea
-            value={formData.note}
-            maxLength={100}
-            onChange={(e) => {
-              setFormData({...formData, note: e.target.value});
-              if (errors.note) {
-                setErrors({ ...errors, note: null });
-              }
-            }}
-            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
-            <div style={{
-              right: '12px',
-              bottom: '8px',
-              fontSize: '10px',
-              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
-              userSelect: 'none',
-              textAlign: 'right'
-              }}>
-              {formData.note.length} / 100
-            </div>
-        </InputTile>
-
+        {/* 申し送り事項、優先度 */}
         <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}
-          hasValue={(formData.handover !== '' && formData.handover !== null && formData.handover !== undefined)
-          }
+          hasValue={hasValue(record.handover)}
         >
-          <textarea
-            value={formData.handover}
-            maxLength={100}
-            onChange={(e) => {
-              setFormData({...formData, handover: e.target.value});
-              if (errors.handover) {
-                setErrors({ ...errors, handover: null });
-              }
-            }}
-            style={{...inputNoteStyle, ...(errors.handover ? errorInput : {})}} />
-            <div style={{
-              right: '12px',
-              bottom: '8px',
-              fontSize: '10px',
-              color: formData.handover.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-              fontWeight: formData.handover.length >= 100 ? 'bold' : 'normal',
-              userSelect: 'none',
-              textAlign: 'right'
-              }}>
-              {formData.handover.length} / 100
-            </div>
-
+          <TextAreaBox value={record.handover} />
           <div style={labelBaseStyle}>
             <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
           </div>
-          <div style={radioFlexStyle}>
-            {PRIORITY_OPTIONS.map(opt => (
-              <button
-                key={opt.id} // keyには一意のidを指定
-                type="button" // フォームの意図しない送信を防ぐために明示
-                onClick={() => {
-                  // idを状態（formData）に保存
-                  setFormData({ ...formData, priority: opt.id });
-                }}
-                style={{
-                  ...radioBtnStyle,
-                  borderColor: formData.priority === opt.id ? '#38bdf8' : '#e2e8f0',
-                  backgroundColor: formData.priority === opt.id ? '#e0f2fe' : '#fff',
-                  color: formData.priority === opt.id ? '#0369a1' : '#64748b'
-                }}
-              >
-                {opt.label} {/* 画面表示はlabelを使用 */}
-              </button>
-            ))}
-          </div>
+          <ButtonGroup options={PRIORITY_OPTIONS} value={record.priority} />
         </InputTile>
 
         {/* 空欄（位置合わせ） */}
         <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
         </InputTile>
 
-        {/* 画像のアップロード */}
-        <InputTile label="画像のアップロード" icon={FileUp} isExpandable={true}>
+        {/* アップロードされた画像 */}
+        <InputTile label="アップロードされた画像" icon={FileUp} isExpandable={true} hasValue={uploadedFiles.length > 0}>
+          {uploadedFiles.length > 0 ? (
+            <div style={fs.uploadGrid}>
+              {uploadedFiles.map((file, i) => (
+                <div key={i} style={fs.uploadItem}>
+                  <div style={fs.uploadName}>{file.name}</div>
+                  {file.url && <img src={file.url} alt={file.name} style={fs.uploadThumb} />}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ValBox value={null} />
+          )}
         </InputTile>
 
         {/* 空欄（位置合わせ） */}
@@ -1045,183 +533,113 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
         </InputTile>
 
         {/* パトロール終了時刻 */}
-        <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true}
-          hasValue={formData.endTime !== '' && formData.endTime !== null && formData.endTime !== undefined}
-        >
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <input type="time" style={{...inputStyle, width: '40%', ...(errors.endTime ? errorInput : {})}}
-              value={formData.endTime} onChange={e => {setFormData({...formData, endTime: e.target.value}); if (errors.endTime) setErrors({ ...errors, endTime: null });}} />
-          </div>
+        <InputTile label="パトロール終了時刻" icon={Clock} isExpandable={true} hasValue={hasValue(record.endTime ?? record.end_time)}>
+          <ValBox value={formatTime(record.endTime ?? record.end_time)} align="center" />
         </InputTile>
 
       </main>
 
-      <footer>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-
-          {/* ログ編集画面はUnpatrolledボタンはなし
-          <button
-            type="button"
-            onClick={handleToggle}
-            style={{...unpatrolledBtnStyle, backgroundColor: formData.unpatrolled ? '#ECD283' : '#cccccc',}}>
-            Unpatrolled
-          </button>
-          */}
-
-          {/* ログ編集画面は送信ボタンはなし
-          <button
-            onClick={() => handleSendClick(formData)}
-            disabled={isDisabled}
-            style={{
-              ...sendBtnStyle,
-              cursor: isDisabled ? 'not-allowed' : 'pointer' ,
-              opacity: isDisabled ? 0.5 : 1,
-            }}
-          >
-          <span style={{ marginTop: 4}}>{isDisabled ? ( <Ban size={14} style={{ marginRight: 8}} />) : ('')}</span>
-          <span>送信</span></button>
-          */}
+      {/* 取消確認ダイアログ */}
+      {showCancelDialog && (
+        <div style={overlayStyle}>
+          <div style={dialogStyle}>
+            <p style={dialogTextStyle}>この記録を記録一覧から取り消します。</p>
+            <div style={dialogBtnsStyle}>
+              <button
+                onClick={handleCancel}
+                disabled={isCancelling}
+                style={{ ...dialogOkBtnStyle, opacity: isCancelling ? 0.6 : 1 }}
+              >
+                {isCancelling ? '処理中...' : '取消する'}
+              </button>
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                style={dialogBackBtnStyle}
+              >
+                もどる
+              </button>
+            </div>
+          </div>
         </div>
-      </footer>
+      )}
 
     </div>
     </div>
   );
+}
+
+/* ── フィールドスタイル（LogEntryViewの配色に統一） ── */
+const fs = {
+  valBox: {
+    backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none',
+    padding: '8px 12px', fontSize: '13px', color: '#1e293b',
+    minHeight: '36px', display: 'flex', alignItems: 'center',
+  },
+  textAreaBox: {
+    backgroundColor: '#f3f4f6', borderRadius: '4px', border: 'none',
+    padding: '8px 12px', fontSize: '13px', color: '#1e293b',
+    minHeight: '60px', lineHeight: 1.6,
+  },
+  // react-select（customSelectStyles.multiValue）のバッジと同じ配色
+  chipRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '2px 0' },
+  chip: {
+    backgroundColor: '#e0e0e0', borderRadius: '9999px',
+    padding: '4px 10px', fontSize: '14px', color: '#1f2937',
+    border: '1px solid #e5e7eb', display: 'inline-flex', alignItems: 'center', gap: '4px',
+  },
+  chipX: { color: '#9ca3af', fontSize: '12px' },
+  placeholder: { fontSize: '13px', color: '#94a3b8' },
+  unitLabel: { fontSize: '11px', fontWeight: 'bold', color: '#64748b', flexShrink: 0 },
+  uploadGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  uploadItem: { width: '72px' },
+  uploadName: { fontSize: '10px', color: '#64748b', wordBreak: 'break-all', marginBottom: '4px' },
+  uploadThumb: { width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' },
+  // LogEntryViewのradioBtnStyleと同じ配色（未選択: 白地グレー枠 / 選択: 水色枠+淡青地）
+  btnRow: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+  btn: {
+    padding: '4px 10px', borderRadius: '8px', border: '1px solid #e2e8f0',
+    fontSize: '14px', fontWeight: '600', backgroundColor: '#fff', color: '#64748b',
+    textAlign: 'center', minWidth: '60px',
+  },
+  btnSel: { borderColor: '#38bdf8', backgroundColor: '#e0f2fe', color: '#0369a1' },
 };
 
+/* ── レイアウトスタイル（LogEntryViewと共通化） ── */
 const container = { maxWidth: '820px', margin: '0 auto', width: '100%', minHeight: '100dvh', position: 'relative', backgroundColor: '#f1f5f9',
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 };
 const headerTopStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '48px', margin: '0px 8px 0px 8px', backgroundColor: '#08172A' };
 const headerMiddleStyle = { display: 'flex', alignItems: 'center', height: '20px', margin: '0px 8px 0px 8px' };
 const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '30px', margin: '0px 8px 0px 8px' };
-const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
-    webkitTextFillColor: '#000000', opacity: '1'
-   };
-const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
-const radioFlexStyle = { display: 'flex', flexWrap: 'wrap', gap: '8px' };
-const radioBtnStyle = { padding: '4px 10px', borderRadius: '8px', border: '1px solid', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'center', minWidth: '60px', transition: 'all 0.2s ease' };
-const inputFlexStyle = { display: 'flex', flexWrap: 'noWrap', gap: '4px' };
 const logoTextStyle = { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' };
-const inputStyle = { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' };
-const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
-const inputNoteStyle = { padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '60px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
-const unitTextStyle = { fontSize: '11px', fontWeight: 'bold', paddingTop: '8px', color: '#64748b', width: '10%', };
-const unpatrolledBtnStyle = { padding: '4px 8px', backgroundColor: '#cccccc',  color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', width: '128px', height: '36px', marginLeft: '8px' };
-const sendBtnStyle = { padding: '4px 8px', backgroundColor: '#08172A', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', width: '128px', height: '36px', marginRight: '8px', textAlign: 'center' };
-const errorInput = { borderColor: '#ef4444', backgroundColor: '#fef2f2' };
 const labelBaseStyle = { fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'flex', alignItems: 'center' };
-const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textalign: 'left', width: '50%' };
+const labelLeftyStyle = { fontSize: '10px', fontWeight: 'bold', color: '#64748b', textAlign: 'left', width: '50%' };
+const messageStyle = { padding: '40px', textAlign: 'center', color: '#64748b' };
 
-const customSelectStyles = {
-  // 入力エリア全体（コントロール）のスタイル
-  control: (provided, state) => ({
-    ...provided,
-    backgroundColor: '#f3f4f6',
-    border: 'none',
-    boxShadow: 'none',
-    '&:hover': {
-      border: 'none',
-    },
-    borderRadius: '8px',
-    padding: '2px',
-  }),
-  // 選択されて中に並ぶ「バッジ（アイテム）」全体のスタイル
-  multiValue: (provided) => ({
-    ...provided,
-    backgroundColor: '#e0e0e0',
-    borderRadius: '9999px',
-    paddingLeft: '6px',
-    paddingRight: '2px',
-    border: '1px solid #e5e7eb',
-    fontSize: '14px',
-  }),
-  // バッジの中の「文字」のスタイル
-  multiValueLabel: (provided) => ({
-    ...provided,
-    color: '#1f2937',
-    paddingRight: '4px',
-  }),
-  // バッジの右側にある「×ボタン」のスタイル
-  multiValueRemove: (provided) => ({
-    ...provided,
-    borderRadius: '0 9999px 9999px 0',
-    color: '#9ca3af',
-    '&:hover': {
-      backgroundColor: '#fee2e2',
-      color: '#ef4444',
-    },
-  }),
-  // プレースホルダーのスタイル
-  placeholder: (provided) => ({
-    ...provided,
-    fontSize: '11px',
-    color: '#9ca3af',
-  }),
-  // 選択肢（オプション）のスタイル
-  option: (provided, state) => ({
-    ...provided,
-    fontSize: '14px',
-  }),
+// LogEntryView の saveBtnStyle と同じ角丸・サイズ感で「編集する／取消する」を再現
+const editBtnStyle = { padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', minWidth: '96px' };
+const cancelBtnStyle = { padding: '4px 8px', backgroundColor: '#fff', color: '#ef4444', border: '1.5px solid #ef4444', borderRadius: '8px', fontSize: '12px', height: '36px', minWidth: '96px' };
+
+const overlayStyle = {
+  position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
 };
-
-/* ── レイアウトスタイル ── */
-const ds = {
-  wrapper: {
-    backgroundColor: 'white', minHeight: '100dvh',
-    display: 'flex', flexDirection: 'column',
-    maxWidth: '820px', margin: '0 auto',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  },
-  header: {
-    backgroundColor: '#0f172a', padding: '12px 16px',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    flexShrink: 0,
-  },
-  backBtn:     { background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
-  headerTitle: { color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 },
-  main:        { flex: 1, paddingBottom: '96px' },
-  topSection:  { padding: '14px 16px 12px' },
-  areaText:    { fontSize: '13px', color: '#64748b', marginBottom: '2px' },
-  beachText:   { fontSize: '22px', fontWeight: 'bold', color: '#0f172a', marginBottom: '10px' },
-  dateRow:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' },
-  dateText:    { fontSize: '14px', color: '#334155' },
-  actionBtns:  { display: 'flex', gap: '8px' },
-  actionBtn: {
-    backgroundColor: '#e5e7eb', color: '#1a1a1a',
-    border: 'none', borderRadius: '9999px',
-    padding: '8px 20px', fontSize: '13px', cursor: 'pointer',
-  },
-  divider: { height: '1px', backgroundColor: '#e2e8f0', margin: '0 16px 4px' },
-  // ヘッダー〜エリア/ビーチ/日付/ボタンをまとめてスクロール上部に固定する
-  stickyTop: { position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' },
-  // 画面定義書の通り、背景はグレー・カード枠は使わず罫線区切りの表形式にする。
-  // 左右セルを同じgridの行として並べるので、内容量が違っても段ごとに罫線が揃う
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f2f2f2' },
-  message: { padding: '40px', textAlign: 'center', color: '#64748b' },
-  overlay: {
-    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-  },
-  // 画面本体のwrapperとは別階層（フラグメントの兄弟）に描画されるため、フォント指定を継承できず
-  // ブラウザ既定フォント（明朝系）になってしまう。ここで明示的に指定する
-  dialog: {
-    backgroundColor: 'white', borderRadius: '16px',
-    padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  },
-  dialogText: { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 },
-  dialogBtns: { display: 'flex', gap: '12px', justifyContent: 'center' },
-  dialogOkBtn: {
-    padding: '10px 24px', border: '1.5px solid #ef4444', borderRadius: '9999px',
-    backgroundColor: 'white', color: '#ef4444',
-    cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-  },
-  dialogBackBtn: {
-    padding: '10px 24px', border: '1.5px solid #cbd5e1', borderRadius: '9999px',
-    backgroundColor: '#f1f5f9', color: '#334155',
-    cursor: 'pointer', fontSize: '14px',
-  },
+const dialogStyle = {
+  backgroundColor: 'white', borderRadius: '16px',
+  padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+};
+const dialogTextStyle = { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 };
+const dialogBtnsStyle = { display: 'flex', gap: '12px', justifyContent: 'center' };
+const dialogOkBtnStyle = {
+  padding: '10px 24px', border: '1.5px solid #ef4444', borderRadius: '8px',
+  backgroundColor: 'white', color: '#ef4444',
+  cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+};
+const dialogBackBtnStyle = {
+  padding: '10px 24px', border: '1.5px solid #cbd5e1', borderRadius: '8px',
+  backgroundColor: '#f1f5f9', color: '#334155',
+  cursor: 'pointer', fontSize: '14px',
 };
 
 export default LogDetailView;
