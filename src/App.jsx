@@ -8,6 +8,7 @@ import HomeView from './views/HomeView';
 import BriefingView from './views/BriefingView';
 import RecordsListView from './views/RecordsListView';
 import RecordDetailView from './views/RecordDetailView';
+import LogDetailView from './views/LogDetailView';
 import { getAllRecords, saveRecord, getRecordsByDate, cleanupExpiredData } from './db';
 import { startOfDay, format, subDays } from 'date-fns';
 import { toast, Toaster } from 'sonner';
@@ -692,7 +693,7 @@ function App() {
 
     case 'recordDetail':
       return (
-        <RecordDetailView
+        <LogDetailView
           user={user}
           recordSummary={selectedRecord}
           onBack={() => setView('records')}

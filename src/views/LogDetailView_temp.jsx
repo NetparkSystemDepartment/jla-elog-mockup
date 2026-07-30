@@ -36,7 +36,9 @@ const initialFormData = {
 // ログ入力（新規登録）専用画面。issue27適用前（0ddd60e時点）のUI・ロジックを復元したもの。
 // パトロールメンバーの絞り込みだけは、useSafeMembers が返す形式（文字列配列）に合わせて
 // 防御的な比較 (member?.user_id ?? member) に変更している（EditView.jsx と同じ対応）。
-const LogEditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
+const LogDetailView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
+function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
+
   const [formData, setFormData] = useState({
   ...initialFormData,  // 既存のデータを展開
   startDate: existingData.startDate,
@@ -1029,4 +1031,4 @@ const customSelectStyles = {
   }),
 };
 
-export default LogEditView;
+export default LogDetailView;

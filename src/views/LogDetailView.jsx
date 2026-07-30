@@ -1,282 +1,418 @@
-import React, { useState, useEffect, forwardRef } from 'react';
-import { X, Save, Clock, Cloud, Wind, Users, Gauge, Waves, Droplets, User,
-  WavesArrowUp, WavesArrowDown, Compass, TrendingUpDown, Activity, WavesLadder, Megaphone,
-  NotebookPen, ChevronLeft, FileUp, Flag, HandHelping, Ban, Lock, Car, CircleAlert, TriangleAlert } from 'lucide-react';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
-registerLocale('ja', ja);
-import InputTile from '../components/InputTile';
-import { MultiSelectInput } from '../components/MultiSelectInput';
-import { format } from 'date-fns';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft } from 'lucide-react';
+import { format, isValid } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Construction, Calendar } from 'lucide-react';
-import { WEATHER_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS, PRIORITY_OPTIONS,
-  WARNING_OPTIONS, ALERT_OPTIONS, TIDE_OPTIONS, WIND_SPEED_OPTIONS, DIRECTIONS, FEATURE_OPTIONS } from '../constants';
-import { COAST_DATA , ONNA_BEACHES } from '../constantsPublic';
-// useNetworkState	ブラウザのネットワーク接続の状態を追跡する
-import { useNetworkState } from 'react-use';
-import Select from 'react-select';
-import { useConfirm } from '../components/ConfirmDialogContext';
-
-
-// パトロールメンバー
-import { useSafeMembers } from '../useSafeMembers';
-// 車種名
+import { getinfoApi, setinfoApi } from '../api/recordApi';
+import { useAuth } from '../contexts/authContext';
 import { useSafeCarInfo } from '../useSafeCarInfo';
+import {
+  WEATHER_OPTIONS, TIDE_OPTIONS, CURRENT_OPTIONS, WAVE_OPTIONS,
+  DIRECTIONS, WIND_SPEED_OPTIONS, PRIORITY_OPTIONS, FEATURE_OPTIONS, WIND_SHORE_OPTIONS,
+} from '../constants';
 
-const initialFormData = {
-  startDate: '', startTime: '', endTime: '', member: '', weather: '', windSpeed: '', windSpeedDetail: '', tide: '',
-  highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '',
-  wave: '', warn: '', alert: '', visitors: '', feature: '',
-  jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: '',
-  unpatrolled: false, area: '', beach: '', seq: 1
+/* ---------- マスター情報ヘルパー ---------- */
+const getMasterInfo = () => {
+  try {
+    return JSON.parse(localStorage.getItem('auth_data') || '{}')?.master_info || {};
+  } catch { return {}; }
+};
+const areaLabel = (areaId, areaList) => {
+  const found = areaList.find(a => String(a.no) === String(areaId));
+  return found?.area ?? String(areaId);
+};
+const beachLabel = (beachId, areaId, areaList) => {
+  const area = areaList.find(a => String(a.no) === String(areaId));
+  const beach = (area?.beach_info || []).find(b => String(b.no) === String(beachId));
+  return beach?.beach ?? String(beachId);
 };
 
-// ログ入力（新規登録）専用画面。issue27適用前（0ddd60e時点）のUI・ロジックを復元したもの。
-// パトロールメンバーの絞り込みだけは、useSafeMembers が返す形式（文字列配列）に合わせて
-// 防御的な比較 (member?.user_id ?? member) に変更している（EditView.jsx と同じ対応）。
-const LogEditView = ({ user, selectedCoast, selectedBeach, selectedDate, onSave, onSubmit, onBack, existingData}) => {
-  const [formData, setFormData] = useState({
-  ...initialFormData,  // 既存のデータを展開
-  startDate: existingData.startDate,
-  seq: existingData.seq,
-});
+/* ---------- 選択肢ラベル取得 ---------- */
+const labelOf = (options, id) => {
+  if (id === null || id === undefined || id === '') return null;
+  const found = options.find(o => String(o.id) === String(id));
+  return found?.label ?? null;
+};
 
-console.log('existingData', existingData);
+/* ---------- 表示パーツ ---------- */
+/* ログ入力画面(EditView)のボタン選択UIと同じ配色・形状で、非活性の選択済み表示として再現する */
 
-  // ネットワーク状態
-  const netState = useNetworkState();
+const justifyOf = (align) => align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
 
-  // アンパトロールモード
-  const [unpatrolled, setUnpatrolled] = useState(false);
+function ValBox({ value, align = 'left' }) {
+  const empty = value === null || value === undefined || value === '';
+  return (
+    <div style={{ ...fs.valBox, justifyContent: justifyOf(align) }}>
+      {empty ? <span style={fs.placeholder}>---</span> : value}
+    </div>
+  );
+}
 
-  // パトロールメンバー
-  const safeMembers = useSafeMembers();
-  // ログイン者を除く（member は文字列で返ってくるため item 自体と比較する）
-  const exceptLogin = safeMembers.filter(item => (item?.user_id ?? item) !== user.user_id);
-// react-selectで使えるように
-  // valueはuser_id文字列ではなく{id, user_id}オブジェクトそのものを保持する
-  // （setinfo送信・indexedDB保存までidを引き継ぐため。0ddd60e時点の実装踏襲）
-  const loginOptions = exceptLogin.map(item => ({
-    value: item,
-    label: item?.user_id ?? String(item),
-  }));
-  const warningOptions = WARNING_OPTIONS.map(item => ({
-    value: item,
-    label: item
-  }));
-  const alertOptions = ALERT_OPTIONS.map(item => ({
-    value: item,
-    label: item
-  }));
-  const featureOptions = FEATURE_OPTIONS.map(item => ({
-    value: item,
-    label: item
-  }));
+function TwoBox({ left, right, leftAlign = 'left', rightAlign = 'left' }) {
+  return (
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={left} align={leftAlign} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={right} align={rightAlign} /></div>
+    </div>
+  );
+}
 
+function TextAreaBox({ value }) {
+  return <div style={fs.textAreaBox}>{value || 'なし'}</div>;
+}
 
-  // 車両名
+function ChipList({ items, removable = true }) {
+  const filtered = (items || []).filter(Boolean);
+  if (filtered.length === 0) return <span style={fs.placeholder}>---</span>;
+  return (
+    <div style={fs.chipRow}>
+      {filtered.map((item, i) => (
+        <span key={i} style={fs.chip}>{item}{removable && <span style={fs.chipX}>×</span>}</span>
+      ))}
+    </div>
+  );
+}
+
+// EditView の radioBtnStyle（未選択/選択）と同じ配色のボタン群を、非活性表示として再現する
+function ButtonGroup({ options, value }) {
+  const strVal = String(value);
+  return (
+    <div style={fs.btnRow}>
+      {options.map(opt => {
+        const sel = String(opt.id) === strVal;
+        return (
+          <span key={opt.id} style={{ ...fs.btn, ...(sel ? fs.btnSel : {}) }}>
+            {opt.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// EditView の「input + 外側ラベル（例: 名）」の見た目に合わせ、単位を値の外側に表示する
+function UnitBox({ value, unit, align = 'left' }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}><ValBox value={value} align={align} /></div>
+      {unit && <span style={fs.unitLabel}>{unit}</span>}
+    </div>
+  );
+}
+
+function FourBox({ v1, v2, v3, v4, unit, align = 'left' }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      <UnitBox value={v1} unit={unit} align={align} /><UnitBox value={v2} unit={unit} align={align} />
+      <UnitBox value={v3} unit={unit} align={align} /><UnitBox value={v4} unit={unit} align={align} />
+    </div>
+  );
+}
+
+const hasValue = v => v !== null && v !== undefined && v !== '';
+
+// "HH:MM:SS" 形式で返ってくる場合があるため、他画面(input type="time")と合わせて秒を表示しない
+const formatTime = (t) => hasValue(t) ? String(t).slice(0, 5) : null;
+
+const normalizeDate = (dateStr) =>
+  String(dateStr || '').slice(0, 10).replace(/\//g, '-');
+
+const safeFormatDate = (dateStr, fmt, opts) => {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(normalizeDate(dateStr) + 'T00:00:00');
+    if (!isValid(d)) return null;
+    return format(d, fmt, opts);
+  } catch { return null; }
+};
+
+/* ================================================ */
+
+function HeaderBar({ onBack }) {
+  return (
+    <header style={ds.header}>
+      <button onClick={onBack} style={ds.backBtn}><ChevronLeft color="white" size={24} /></button>
+      <h1 style={ds.headerTitle}>ログ詳細</h1>
+      <div style={{ width: 40 }} />
+    </header>
+  );
+}
+
+function LogDetailView({ user, recordSummary, onBack, onEdit }) {
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling]         = useState(false);
+  const queryClient = useQueryClient();
+  const { logout }  = useAuth();
   const safeCarInfo = useSafeCarInfo();
 
-  //
-  const confirm = useConfirm();
-  const handleToggle = async() => {
+  const masterInfo  = useMemo(() => getMasterInfo(), []);
+  const allAreaList = useMemo(
+    () => (masterInfo.area_info || []).filter(a => Number(a.delete_flg) !== 1),
+    [masterInfo]
+  );
 
-    if (!unpatrolled) {
-      const ok = await confirm({
-        title: "確認",
-        message: "このビーチにおける未送信のパトロールログは削除されます。パトロール未実施ですか？",
-        okText: "パトロール未実施",
-        cancelText: "もどる",
-      });
+  const { data: apiData, isLoading, error } = useQuery({
+    queryKey: ['record-detail', recordSummary?.key, recordSummary?.detail_key],
+    queryFn: () => getinfoApi({
+      type: 3,
+      key: recordSummary.key,
+      detail_key: recordSummary.detail_key,
+    }),
+    enabled: !!recordSummary?.key,
+    staleTime: 30_000,
+  });
 
-      if (!ok) return;
-
-      formData.startTime = '';
-      formData.weather = '';
-      formData.current = '';
-      formData.waveOuter = '';
-      formData.wave = '';
-      formData.windDirDetail = '';
-      formData.windSpeedDetail = '';
-      formData.feature = '';
-      formData.jpWarning = '';
-      formData.forWarning = '';
-      formData.jpTourist = '';
-      formData.forTourist = '';
-      formData.visitors = '';
-      formData.handover = 'なし';
-      formData.priority = '';
-      formData.endTime = '';
+  // getinfo はエラー時もHTTP 200でresult:falseを返すため、axiosInstanceの強制ログアウトが
+  // 走る前にトーストで理由を表示する（これが無いと「突然ログアウトする」ように見えてしまう）
+  useEffect(() => {
+    if (apiData?.result !== false) return;
+    if (apiData.error_no === 1001) {
+      toast.warning(<div>ログイン情報が確認できません。<br />再ログインしてください。</div>);
+      logout();
+      return;
     }
-
-    setFormData(prev => ({
-      ...prev,
-      unpatrolled: !prev.unpatrolled
-    }));
-
-    setUnpatrolled(!unpatrolled);
-
-    if (!unpatrolled && formData.note === "なし") {
-      formData.note = "";
+    if (apiData.error_no === 1002) {
+      toast.warning(<div>ログイン情報が不正です。<br />再ログインしてください。</div>);
+      logout();
+      return;
     }
-    if (unpatrolled && formData.note === "") {
-      formData.note = "なし";
+    if (apiData.error_no === 1004) {
+      toast.warning(<div>ログインの有効期限が切れました。<br />再ログインしてください。</div>);
+      logout();
+      return;
     }
+    if (apiData.error_no === 1005) {
+      toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+      return;
+    }
+    toast.error(<div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>);
+  }, [apiData, logout]);
 
-    // エラーオブジェクトをクリア
-    setErrors({});
+  const rawData = apiData?.data ?? null;
+  const record = Array.isArray(rawData) ? (rawData[0] ?? null) : rawData;
 
+  const effectiveStartDate = normalizeDate(record?.startDate || recordSummary?.startDate);
+  const effectiveArea  = record?.area  ?? recordSummary?.area;
+  const effectiveBeach = record?.beach ?? recordSummary?.beach;
+  // ログインユーザー（記録担当者）はgetinfo type=2（一覧取得）のlogin_userフィールド
+  const effectiveLoginUser = recordSummary?.login_user ?? null;
+
+  // kind: 0=admin 1=パトロール 2=タワー 3=ゲストパトロール 4=ゲストタワー
+  // 編集する: adminは常に表示、パトロール/タワーは3日間のみ、ゲストは常に非表示
+  const canEdit = (() => {
+    if (!record) return false;
+    if (user?.kind === 0) return true;
+    if (user?.kind === 3 || user?.kind === 4) return false;
+    if (!effectiveStartDate) return false;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const diffMs = new Date(todayStr).getTime() - new Date(effectiveStartDate).getTime();
+    if (isNaN(diffMs)) return false;
+    const diffDays = Math.round(diffMs / 86400000);
+    return diffDays >= 0 && diffDays <= 2;
+  })();
+
+  // 取消する: adminのみ常に表示。パトロール/タワー/ゲストは常に非表示
+  const canCancel = !!record && user?.kind === 0;
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      // membersはgetinfoが返す{id, user_id}のオブジェクト配列のまま送る（文字列への変換はしない）
+      const { members: rawMembers, end_time, ...rest } = record;
+      const cancelPayload = {
+        ...rest,
+        ...(end_time !== undefined ? { endTime: end_time } : {}),
+        area: effectiveArea,
+        beach: effectiveBeach,
+        startDate: effectiveStartDate,
+        members: rawMembers || [],
+        delete_flg: true,
+      };
+      console.log('[cancel payload]', JSON.stringify(cancelPayload, null, 2));
+      const result = await setinfoApi({ type: 1, data: cancelPayload });
+      console.log('[cancel result]', JSON.stringify(result));
+
+      if (result?.result === false) {
+        if (result.error_no === 1001) {
+          toast.warning(<div>ログイン情報が確認できません。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1002) {
+          toast.warning(<div>ログイン情報が不正です。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1004) {
+          toast.warning(<div>ログインの有効期限が切れました。<br />再ログインして再度取消してください。</div>);
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(<div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>);
+          return;
+        }
+        throw new Error(result?.error_msg || '取消失敗');
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['records-list'] });
+      toast.success('取消が完了しました。');
+      onBack();
+    } catch (e) {
+      toast.error(e?.message || '取消に失敗しました');
+    } finally {
+      setIsCancelling(false);
+      setShowCancelDialog(false);
+    }
   };
 
-useEffect(() => {
-
-  if (existingData) {
-    // 1. まずは existingData をそのままコピーしたオブジェクトを作る
-    const updatedData = { ...existingData };
-    // 2. members が存在し、かつ配列の場合のみログイン者を削除する
-    if (Array.isArray(existingData.members)) {
-      updatedData.members = existingData.members.filter(item => (item?.user_id ?? item) !== user.user_id);
-    }
-
-    // 3. 加工したデータを State にセットする
-    setFormData(updatedData);
-
-    // 4. Unpatrollのステートをセットする
-    setUnpatrolled(updatedData.unpatrolled);
+  if (isLoading) {
+    return (
+      <div style={ds.wrapper}>
+        <HeaderBar onBack={onBack} />
+        <div style={ds.message}>読み込み中...</div>
+      </div>
+    );
   }
-}, [existingData]);
 
-  // 全ての入力を削除（モックアップのみ）
-  const handleClear = () => {
-    toast.warning('入力内容をすべて消去しますか？', {
-      duration: Infinity,
-      action: {
-        label: 'クリアする',
-        onClick: () => {
-          setFormData(initialFormData);
-          toast.success('クリアしました');
-        },
-      },
-      cancel: {
-        label: 'キャンセル',
-        onClick: () => toast.dismiss(),
+  if (error || !record) {
+    return (
+      <div style={ds.wrapper}>
+        <HeaderBar onBack={onBack} />
+        <div style={ds.message}>データの取得に失敗しました</div>
+      </div>
+    );
+  }
+
+  /* --- 表示用データ変換 --- */
+  const areaName  = areaLabel(effectiveArea, allAreaList);
+  const beachName = beachLabel(effectiveBeach, effectiveArea, allAreaList);
+
+  const _dateFormatted = safeFormatDate(effectiveStartDate, 'M月d日(E)', { locale: ja });
+  const dateLabel = _dateFormatted ? _dateFormatted + 'の記録' : '---';
+  const seqLabel = record.detail_key != null
+    ? `# ${String(record.detail_key).padStart(2, '0')}`
+    : '';
+
+  // ログイン者（記録担当者）は login_user フィールド、members は最初から「自分以外の
+  // パトロールメンバー」のみを持つ（membersの先頭がログイン者、という旧仕様の前提は誤りだった）
+  const recordOwner   = effectiveLoginUser;
+  const otherMembers  = (record.members || []).map(m => m?.user_id ?? String(m));
+
+  // record.carType は車種マスタのインデックス(order)で保存されているため、名称に変換して表示する
+  const carTypeLabel = safeCarInfo.find(d => String(d.order) === String(record.carType))?.carType
+    ?? record.carType;
+
+  const warnText  = (Array.isArray(record.warn)  ? record.warn  : []).map(String).join('、');
+  const alertText = (Array.isArray(record.alert) ? record.alert : []).map(String).join('、');
+  const featureItems = (Array.isArray(record.feature) ? record.feature : []).map(f =>
+    typeof f === 'number' ? (FEATURE_OPTIONS[f] ?? String(f)) : String(f)
+  );
+
+  // upload_file_info の項目名はAPI仕様書で未確定のため、想定されるキー名をフォールバックで拾う
+  const uploadedFiles = (Array.isArray(record.upload_file_info) ? record.upload_file_info : []).map(f => ({
+    name: f?.fileName ?? f?.file_name ?? f?.name ?? '',
+    url: f?.url ?? f?.thumbnail_url ?? f?.path ?? null,
+  }));
+
+  // 左右を同じCSS Gridの行として並べることで、内容量が違っても罫線が段ごとに揃うようにする
+  // （独立した2本のflex columnだと、行ごとの高さが左右でズレて罫線が噛み合わなくなるため）
+  const rows = [
+    {
+      left:  { label: 'ログインユーザー（記録担当者）', content: <ValBox value={recordOwner} /> },
+      right: { label: 'パトロール開始時刻', content: <ValBox value={formatTime(record.startTime)} align="center" /> },
+    },
+    {
+      left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} /> },
+      right: { label: '天候', content: <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} /> },
+    },
+    {
+      left:  { label: '潮汐', content: <ButtonGroup options={TIDE_OPTIONS} value={record.tide} /> },
+      right: { label: '潮流', content: <ButtonGroup options={CURRENT_OPTIONS} value={record.current} /> },
+    },
+    {
+      left:  { label: '満潮時刻・高さ[cm]', content: <TwoBox
+        left={formatTime(record.highTideTime)}
+        leftAlign="center"
+        right={hasValue(record.highTide) ? `${record.highTide} cm` : null}
+        rightAlign="right"
+      /> },
+      right: { label: '波高（アウターリーフ）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.waveOuter} /> },
+    },
+    {
+      left:  { label: '干潮時刻・高さ[cm]', content: <TwoBox
+        left={formatTime(record.lowTideTime)}
+        leftAlign="center"
+        right={hasValue(record.lowTide) ? `${record.lowTide} cm` : null}
+        rightAlign="right"
+      /> },
+      right: { label: '波高（ショアゾーン）', content: <ButtonGroup options={WAVE_OPTIONS} value={record.wave} /> },
+    },
+    {
+      left:  { label: '風速（天気予報）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeed} /> },
+      right: { label: '風速（現地）', content: <ButtonGroup options={WIND_SPEED_OPTIONS} value={record.windSpeedDetail} /> },
+    },
+    {
+      left:  { label: '風向（天気予報）', content: <ValBox value={labelOf(DIRECTIONS, record.windDir)} /> },
+      right: { label: '風向（現地）', content: <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} /> },
+    },
+    {
+      left:  { label: '注意報', content: <ValBox value={warnText || null} /> },
+      right: { label: 'ビーチに対しての風向', content: <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} /> },
+    },
+    {
+      left:  { label: '警報', content: <ValBox value={alertText || null} /> },
+      right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
+    },
+    {
+      left:  { label: '使用車両', content: <TwoBox left={carTypeLabel} right={record.carNo} /> },
+      right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
+    },
+    {
+      left:  { label: 'メモ', highlight: Boolean(record.unpatrolled), content: <TextAreaBox value={record.note} /> },
+      right: { label: '注意喚起人数', content: <FourBox
+        v1={hasValue(record.jpWarning)  ? record.jpWarning  : null}
+        v2={hasValue(record.forWarning) ? record.forWarning : null}
+        v3={hasValue(record.jpTourist)  ? record.jpTourist  : null}
+        v4={hasValue(record.forTourist) ? record.forTourist : null}
+        unit="名"
+        align="right"
+      /> },
+    },
+    {
+      left:  null,
+      right: { label: '申し送り事項（応急手当・救助・その他）', content: <TextAreaBox value={record.handover} /> },
+    },
+    {
+      left:  null,
+      right: { label: '優先度', content: <ButtonGroup options={PRIORITY_OPTIONS} value={record.priority} /> },
+    },
+    {
+      left:  null,
+      right: { label: 'パトロール終了時刻', content: <ValBox value={formatTime(record.endTime ?? record.end_time)} align="center" /> },
+    },
+  ];
+
+  // アップロードされた画像: アップロードがある記録のみ表示（ファイル名の下にサムネイル）
+  if (uploadedFiles.length > 0) {
+    rows.push({
+      left: null,
+      right: {
+        label: 'アップロードされた画像',
+        content: (
+          <div style={fs.uploadGrid}>
+            {uploadedFiles.map((file, i) => (
+              <div key={i} style={fs.uploadItem}>
+                <div style={fs.uploadName}>{file.name}</div>
+                {file.url && <img src={file.url} alt={file.name} style={fs.uploadThumb} />}
+              </div>
+            ))}
+          </div>
+        ),
       },
     });
-  };
-
-  // 必須項目入力チェック用
-  const [errors, setErrors] = useState({});
-
-  // 必須入力のチェック
-  const isFormValid = () => {
-    // メンバーは共通必須
-    const hasMembers = formData.members?.length > 0;
-
-    // Unpatroll時はメモのみ必須
-    if (unpatrolled === true) {
-      return (
-        !!formData.note?.trim()
-      );
-    }
-
-    // 数値フィールド（0 を有効値として許容）
-    const numericFields = [
-      formData.weather,
-      formData.current,
-      formData.waveOuter,
-      formData.wave,
-      formData.tide,
-      formData.windSpeed,
-      formData.windSpeedDetail,
-      formData.visitors,
-      formData.jpWarning,
-      formData.forWarning,
-      formData.jpTourist,
-      formData.forTourist,
-    ].every(v => v != null && v !== '');
-
-    // 文字列・時刻フィールド（空文字を弾く）
-    const textFields = [
-      formData.startTime,
-      formData.endTime,
-      formData.highTideTime,
-      formData.highTide,
-      formData.lowTideTime,
-      formData.lowTide,
-      formData.windDir,
-      formData.windDirDetail,
-      formData.warn,
-      formData.feature,
-      formData.alert,
-      formData.carType,
-      formData.carNo,
-      formData.handover,
-      formData.note,
-    ].every(v => !!v?.trim?.() || (v != null && typeof v !== 'string'));
-
-    return hasMembers && numericFields && textFields;
-  };
-
-  const isValid = isFormValid();
-
-  // 「保存して閉じる」ボタン
-  const handleSaveClick = () => {
-    formData.startDate = selectedDate;
-    formData.area = selectedCoast.no;
-    formData.beach = selectedBeach.no;
-    // 保存（indexedDB）処理
-    onSave(formData);
-  };
-
-    // 「送信」ボタン
-  const handleSendClick = () => {
-    formData.startDate = selectedDate;
-    formData.area = selectedCoast.no;
-    formData.beach = selectedBeach.no;
-    // 保存（indexedDB）処理
-    onSubmit(formData);
   }
-
-  // 複数選択のプルダウン
-  const [isOpen, setIsOpen] = useState(false);
-
-  const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
-    <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
-      <input
-        value={value}
-        onClick={onClick}
-        ref={ref}
-
-        style={{
-          padding: '8px 12px 8px 12px', // 右側にアイコン用の余白を空ける
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          fontSize: '12px',
-          cursor: 'pointer'
-        }}
-        readOnly // 文字入力を防ぎ、クリックでカレンダーを開くようにする
-      />
-      {/* アイコンを絶対配置 */}
-      <Calendar
-        size={20}
-        style={{
-          position: 'absolute',
-          right: '12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          color: '#888',
-          pointerEvents: 'none' // クリックイベントをinputに透過させる
-        }}
-      />
-    </div>
-  ));
-
-//  const formattedDate = format(selectedDate, 'M月d日 (eee)', { locale: ja });
-  const formattedDate = format(formData.startDate, 'M月d日 (eee)', { locale: ja });
-
-  const isDisabled = !Boolean(isValid) || !netState.online;
 
   return (
     <div style={container}>
@@ -1029,4 +1165,63 @@ const customSelectStyles = {
   }),
 };
 
-export default LogEditView;
+/* ── レイアウトスタイル ── */
+const ds = {
+  wrapper: {
+    backgroundColor: 'white', minHeight: '100dvh',
+    display: 'flex', flexDirection: 'column',
+    maxWidth: '820px', margin: '0 auto',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  header: {
+    backgroundColor: '#0f172a', padding: '12px 16px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    flexShrink: 0,
+  },
+  backBtn:     { background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
+  headerTitle: { color: 'white', fontSize: '18px', fontWeight: 'bold', margin: 0 },
+  main:        { flex: 1, paddingBottom: '96px' },
+  topSection:  { padding: '14px 16px 12px' },
+  areaText:    { fontSize: '13px', color: '#64748b', marginBottom: '2px' },
+  beachText:   { fontSize: '22px', fontWeight: 'bold', color: '#0f172a', marginBottom: '10px' },
+  dateRow:     { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' },
+  dateText:    { fontSize: '14px', color: '#334155' },
+  actionBtns:  { display: 'flex', gap: '8px' },
+  actionBtn: {
+    backgroundColor: '#e5e7eb', color: '#1a1a1a',
+    border: 'none', borderRadius: '9999px',
+    padding: '8px 20px', fontSize: '13px', cursor: 'pointer',
+  },
+  divider: { height: '1px', backgroundColor: '#e2e8f0', margin: '0 16px 4px' },
+  // ヘッダー〜エリア/ビーチ/日付/ボタンをまとめてスクロール上部に固定する
+  stickyTop: { position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'white' },
+  // 画面定義書の通り、背景はグレー・カード枠は使わず罫線区切りの表形式にする。
+  // 左右セルを同じgridの行として並べるので、内容量が違っても段ごとに罫線が揃う
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: '#f2f2f2' },
+  message: { padding: '40px', textAlign: 'center', color: '#64748b' },
+  overlay: {
+    position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+  },
+  // 画面本体のwrapperとは別階層（フラグメントの兄弟）に描画されるため、フォント指定を継承できず
+  // ブラウザ既定フォント（明朝系）になってしまう。ここで明示的に指定する
+  dialog: {
+    backgroundColor: 'white', borderRadius: '16px',
+    padding: '28px 24px', maxWidth: '320px', width: '90%', textAlign: 'center',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  dialogText: { marginBottom: '20px', fontSize: '15px', lineHeight: 1.6 },
+  dialogBtns: { display: 'flex', gap: '12px', justifyContent: 'center' },
+  dialogOkBtn: {
+    padding: '10px 24px', border: '1.5px solid #ef4444', borderRadius: '9999px',
+    backgroundColor: 'white', color: '#ef4444',
+    cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+  },
+  dialogBackBtn: {
+    padding: '10px 24px', border: '1.5px solid #cbd5e1', borderRadius: '9999px',
+    backgroundColor: '#f1f5f9', color: '#334155',
+    cursor: 'pointer', fontSize: '14px',
+  },
+};
+
+export default LogDetailView;
