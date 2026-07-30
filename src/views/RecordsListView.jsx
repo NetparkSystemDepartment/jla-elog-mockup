@@ -226,12 +226,13 @@ function RecordsListView({
     return sortDir === 'asc' ? ' ↑' : ' ↓';
   };
 
-  const isPageAllSelected = paged.length > 0 && paged.every(r => selectedKeys.has(rowKey(r)));
+  // 表示中のページだけでなく、絞り込み・ソート後の全件(sorted)を対象に全選択/解除する
+  const isAllSelected = sorted.length > 0 && sorted.every(r => selectedKeys.has(rowKey(r)));
 
   const handleSelectAll = (checked) => {
     setSelectedKeys(prev => {
       const next = new Set(prev);
-      paged.forEach(r => checked ? next.add(rowKey(r)) : next.delete(rowKey(r)));
+      sorted.forEach(r => checked ? next.add(rowKey(r)) : next.delete(rowKey(r)));
       return next;
     });
   };
@@ -441,7 +442,7 @@ function RecordsListView({
             <div style={s.checkCell}>
               <input
                 type="checkbox"
-                checked={isPageAllSelected}
+                checked={isAllSelected}
                 onChange={e => handleSelectAll(e.target.checked)}
               />
               <div style={s.checkAllLabel}>全選択</div>
