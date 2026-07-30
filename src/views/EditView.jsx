@@ -624,7 +624,7 @@ useEffect(() => {
       left: {
         label: 'メモ',
         fields: ['note'],
-        highlight: formData.unpatrolled,
+        highlightColor: formData.unpatrolled ? '#ECD283' : null,
         content: (
           <>
             <textarea
@@ -716,6 +716,10 @@ useEffect(() => {
       left: null,
       right: {
         label: '優先度',
+        // priorityはREQUIRED_FIELDS対象外（任意項目）のためcellFilledではグレーにならない。
+        // 他の必須項目セルと同じ「unpatrolled時は白のまま・通常時は入力済みでグレー」という
+        // 挙動に揃えるため、同条件をhighlightColorで個別に再現する
+        highlightColor: (!formData.unpatrolled && isValueFilled(formData.priority)) ? '#f2f2f2' : null,
         content: (
           <div style={radioFlexStyle}>
             {PRIORITY_OPTIONS.map(opt => (
@@ -791,14 +795,14 @@ useEffect(() => {
               <div style={{
                 ...cellStyle, ...cellLeftStyle, ...rowBorder,
                 backgroundColor: (row.left?.forceFilled || cellFilled(row.left?.fields)) ? '#f2f2f2' : '#fff',
-                ...(row.left?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                ...(row.left?.highlightColor ? { backgroundColor: row.left.highlightColor } : {}),
               }}>
                 {row.left && (<><div style={cellLabelStyle}>{row.left.label}</div>{row.left.content}</>)}
               </div>
               <div style={{
                 ...cellStyle, ...rowBorder,
                 backgroundColor: (row.right?.forceFilled || cellFilled(row.right?.fields)) ? '#f2f2f2' : '#fff',
-                ...(row.right?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                ...(row.right?.highlightColor ? { backgroundColor: row.right.highlightColor } : {}),
               }}>
                 {row.right && (<><div style={cellLabelStyle}>{row.right.label}</div>{row.right.content}</>)}
               </div>
