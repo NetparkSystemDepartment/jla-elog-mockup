@@ -486,7 +486,11 @@ function App() {
   const handleUpdate = async (formData) => {
     const toastId = toast.loading('更新中...');
     try {
-      const { date, id, timestamp, isSynced, startDate, area, beach, members, ...rest } = formData;
+      // area/beach は EditView の confirmSave で既に selectedCoast.no / selectedBeach.no
+      // （マスタのエリア番号）がセット済みのため、ここでは破棄・再計算せずそのまま使う
+      // （handleSubmit と同じ理由。editingRecord.area/beach は getinfo が返すエリア名の
+      // 文字列であり、エリア番号ではないため、これで上書きすると area/beach が不正な値になる）
+      const { date, id, timestamp, isSynced, startDate, members, ...rest } = formData;
       // membersは自分以外のパトロールメンバーのみを送る（handleSubmitと同様。setinfoの仕様に
       // login_userは無く、記録担当者をmembersに混ぜて送ってはいけない）。
       // {id, user_id}のオブジェクト配列のまま送るため、文字列への変換はしない
@@ -497,8 +501,6 @@ function App() {
           members: members || [],
           key: editingRecord.key,
           detail_key: editingRecord.detail_key,
-          area: editingRecord.area,
-          beach: editingRecord.beach,
           startDate: editingRecord.startDate,
           delete_flg: false,
         },

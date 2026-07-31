@@ -324,7 +324,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
       right: { label: 'パトロール開始時刻', content: <ValBox value={formatTime(record.startTime)} align="center" /> },
     },
     {
-      left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} /> },
+      left:  { label: '自分以外のパトロールメンバー', content: <ChipList items={otherMembers} removable={false} /> },
       right: { label: '天候', content: <ButtonGroup options={WEATHER_OPTIONS} value={record.weather} /> },
     },
     {
@@ -358,11 +358,11 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
       right: { label: '風向（現地）', content: <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} /> },
     },
     {
-      left:  { label: '注意報', content: <ValBox value={warnText || null} /> },
+      left:  { label: '注意報', content: <ChipList items={(record.warn || []).map(String)} removable={false} /> },
       right: { label: 'ビーチに対しての風向', content: <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} /> },
     },
     {
-      left:  { label: '警報', content: <ValBox value={alertText || null} /> },
+      left:  { label: '警報', content: <ChipList items={(record.alert || []).map(String)} removable={false} /> },
       right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
     },
     {

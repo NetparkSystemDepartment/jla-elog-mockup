@@ -143,12 +143,13 @@ useEffect(() => {
 
   // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidをベースに、
   // windShoreDetail（ビーチに対しての風向）を追加。priority（優先度）のみ任意項目のため対象外）
+  // 7月末版では、ログ入力画面との同期がとれないので、windShoreDetail（ビーチに対しての風向）は外すように変更。
   const REQUIRED_FIELDS = [
     'startTime', 'endTime', 'members',
     'weather', 'current', 'tide',
     'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
     'waveOuter', 'wave',
-    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail',
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail',
     'warn', 'alert', 'feature',
     'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
     'carType', 'carNo', 'handover', 'note',
@@ -514,7 +515,10 @@ useEffect(() => {
       },
       right: {
         label: 'ビーチに対しての風向',
-        fields: ['windShoreDetail'],
+       // windShoreDetailは7月末版では必須項目対象外とすることになった
+        // 優先度と同じく、unpatrolled時は白のまま・通常時は入力済みでグレーという挙動を
+        // highlightColorで個別に再現する
+        highlightColor: (!formData.unpatrolled && isValueFilled(formData.windShoreDetail)) ? '#f2f2f2' : null,
         content: (
           <select
             value={formData.windShoreDetail ?? ''}
@@ -529,7 +533,7 @@ useEffect(() => {
             {WIND_SHORE_OPTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
           </select>
         ),
-      },
+       },
     },
     {
       left: {
@@ -610,8 +614,16 @@ useEffect(() => {
             options={featureOptions}
             value={(formData.feature || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
+              const currentValues = (selectedOptions || []).map(option => option.value);
+              let updatedValues = currentValues;
+              const prevValues = formData.feature || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+              if (addedValue === '利用なし') {
+                updatedValues = ['利用なし'];
+              } else if (currentValues.includes('利用なし') && currentValues.length > 1) {
+                updatedValues = currentValues.filter(val => val !== '利用なし');
+              }
+              setFormData({ ...formData, feature: updatedValues });
             }}
             placeholder=""
             noOptionsMessage={() => "見つかりません"}

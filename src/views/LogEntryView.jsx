@@ -674,8 +674,23 @@ useEffect(() => {
             options={featureOptions}
             value={(formData.feature || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
+              const currentValues = (selectedOptions || []).map(option => option.value);
+
+              let updatedValues = currentValues;
+
+              // 直前の状態（data.feature）と現在の状態を比較して、何が「新しく追加されたか」を判定
+              const prevValues = formData.feature || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+
+              if (addedValue === '利用なし') {
+                // 「利用なし」が新しく選ばれたら、他の選択をすべてクリアして「利用なし」だけにする
+                updatedValues = ['利用なし'];
+              } else if (currentValues.includes('利用なし') && currentValues.length > 1) {
+                // 「利用なし」以外の項目が新しく選ばれたら、リストから「利用なし」を削除する
+                updatedValues = currentValues.filter(val => val !== '利用なし');
+              }
+
+              setFormData({ ...formData, feature: updatedValues });
             }}
             placeholder=""
             noOptionsMessage={() => "見つかりません"}
