@@ -358,16 +358,16 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
       right: { label: '風向（現地）', content: <ValBox value={labelOf(DIRECTIONS, record.windDirDetail)} /> },
     },
     {
-      left:  { label: '注意報', content: <ChipList items={(record.warn || []).map(String)} removable={false} /> },
+      left:  { label: '注意報', content: <ValBox value={warnText || null} /> },
       right: { label: 'ビーチに対しての風向', content: <ValBox value={labelOf(WIND_SHORE_OPTIONS, record.windShoreDetail)} /> },
     },
     {
-      left:  { label: '警報', content: <ChipList items={(record.alert || []).map(String)} removable={false} /> },
+      left:  { label: '警報', content: <ValBox value={alertText || null} /> },
       right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
     },
     {
       left:  { label: '使用車両', content: <TwoBox left={carTypeLabel} right={record.carNo} /> },
-      right: { label: 'ビーチ利用の特徴', content: <ChipList items={featureItems} removable={false} /> },
+      right:  { label: 'ビーチ利用の特徴', content: <ValBox value={featureItems || null} /> },
     },
     {
       left:  { label: 'メモ', highlight: Boolean(record.unpatrolled), content: <TextAreaBox value={record.note} /> },

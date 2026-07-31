@@ -65,7 +65,7 @@ const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, be
   const safeCarInfo = useSafeCarInfo();
 
 useEffect(() => {
-console.log("EditView In:", existingData);
+//console.log("EditView In:", existingData);
 
   if (existingData) {
     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
