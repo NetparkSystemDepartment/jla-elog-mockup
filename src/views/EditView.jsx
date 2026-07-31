@@ -143,12 +143,13 @@ useEffect(() => {
 
   // 必須項目の定義（ログ入力(LogEntryView.jsx)のisFormValidをベースに、
   // windShoreDetail（ビーチに対しての風向）を追加。priority（優先度）のみ任意項目のため対象外）
+  // 7月末版では、ログ入力画面との同期がとれないので、windShoreDetail（ビーチに対しての風向）は外すように変更。
   const REQUIRED_FIELDS = [
     'startTime', 'endTime', 'members',
     'weather', 'current', 'tide',
     'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
     'waveOuter', 'wave',
-    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail',
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail',
     'warn', 'alert', 'feature',
     'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
     'carType', 'carNo', 'handover', 'note',
@@ -514,7 +515,10 @@ useEffect(() => {
       },
       right: {
         label: 'ビーチに対しての風向',
-        fields: ['windShoreDetail'],
+       // windShoreDetailは7月末版では必須項目対象外とすることになった
+        // 優先度と同じく、unpatrolled時は白のまま・通常時は入力済みでグレーという挙動を
+        // highlightColorで個別に再現する
+        highlightColor: (!formData.unpatrolled && isValueFilled(formData.windShoreDetail)) ? '#f2f2f2' : null,
         content: (
           <select
             value={formData.windShoreDetail ?? ''}
@@ -529,7 +533,7 @@ useEffect(() => {
             {WIND_SHORE_OPTIONS.map(d => (<option key={d.id} value={d.id}>{d.label}</option>))}
           </select>
         ),
-      },
+       },
     },
     {
       left: {
@@ -610,8 +614,16 @@ useEffect(() => {
             options={featureOptions}
             value={(formData.feature || []).map(item => ({ value: item, label: item }))}
             onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
+              const currentValues = (selectedOptions || []).map(option => option.value);
+              let updatedValues = currentValues;
+              const prevValues = formData.feature || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+              if (addedValue === '利用なし') {
+                updatedValues = ['利用なし'];
+              } else if (currentValues.includes('利用なし') && currentValues.length > 1) {
+                updatedValues = currentValues.filter(val => val !== '利用なし');
+              }
+              setFormData({ ...formData, feature: updatedValues });
             }}
             placeholder=""
             noOptionsMessage={() => "見つかりません"}
@@ -624,7 +636,7 @@ useEffect(() => {
       left: {
         label: 'メモ',
         fields: ['note'],
-        highlight: formData.unpatrolled,
+        highlightColor: formData.unpatrolled ? '#ECD283' : null,
         content: (
           <>
             <textarea
@@ -716,6 +728,10 @@ useEffect(() => {
       left: null,
       right: {
         label: '優先度',
+        // priorityはREQUIRED_FIELDS対象外（任意項目）のためcellFilledではグレーにならない。
+        // 他の必須項目セルと同じ「unpatrolled時は白のまま・通常時は入力済みでグレー」という
+        // 挙動に揃えるため、同条件をhighlightColorで個別に再現する
+        highlightColor: (!formData.unpatrolled && isValueFilled(formData.priority)) ? '#f2f2f2' : null,
         content: (
           <div style={radioFlexStyle}>
             {PRIORITY_OPTIONS.map(opt => (
@@ -791,14 +807,14 @@ useEffect(() => {
               <div style={{
                 ...cellStyle, ...cellLeftStyle, ...rowBorder,
                 backgroundColor: (row.left?.forceFilled || cellFilled(row.left?.fields)) ? '#f2f2f2' : '#fff',
-                ...(row.left?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                ...(row.left?.highlightColor ? { backgroundColor: row.left.highlightColor } : {}),
               }}>
                 {row.left && (<><div style={cellLabelStyle}>{row.left.label}</div>{row.left.content}</>)}
               </div>
               <div style={{
                 ...cellStyle, ...rowBorder,
                 backgroundColor: (row.right?.forceFilled || cellFilled(row.right?.fields)) ? '#f2f2f2' : '#fff',
-                ...(row.right?.highlight ? { backgroundColor: '#ECD283' } : {}),
+                ...(row.right?.highlightColor ? { backgroundColor: row.right.highlightColor } : {}),
               }}>
                 {row.right && (<><div style={cellLabelStyle}>{row.right.label}</div>{row.right.content}</>)}
               </div>
@@ -837,7 +853,7 @@ const headerBottomStyle = { display: 'flex', alignItems: 'center', justifyConten
 const inputNarrowStyle = { width: '100%', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', backgroundColor: '#f3f4f6', textAlign: 'right' };
 const inputNoteStyle = { width: '100%', boxSizing: 'border-box', padding: '4px', borderRadius: '4px', border: 'none', fontSize: '12px', minHeight: '60px', backgroundColor: '#f3f4f6', resize: 'none', fieldSizing: 'content' };
 const disabledInput = { width: '50%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
-    webkitTextFillColor: '#000000', opacity: '1'
+    WebkitTextFillColor: '#000000', opacity: '1'
    };
 const saveBtnStyle = { margintop: '8px', padding: '4px 8px', backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', height: '36px', width: '128px'};
 // ログ詳細画面のButtonGroupと同じく、選択肢の文字数に関わらずflex:1で等幅にする

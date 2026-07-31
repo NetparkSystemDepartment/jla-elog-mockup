@@ -906,7 +906,7 @@ const briefingStyles = {
   inputWithIcon: { width: '100%', boxSizing: 'border-box', padding: '10px 10px 10px 30px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   inputMultiSelect: { width: '100%', boxSizing: 'border-box', padding: '5px 5px 5px 5px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px' },
   disabledInput: { width: '100%', boxSizing: 'border-box', padding: '8px 12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'not-allowed', color: '#000000',
-    webkitTextFillColor: '#000000', opacity: '1'
+    WebkitTextFillColor: '#000000', opacity: '1'
    },
   textarea: { width: '100%', boxSizing: 'border-box', padding: '12px', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '12px', fontSize: '14px', minHeight: '64px', resize: 'none', marginTop: '8px' },
   startButton: { width: '100%', padding: '16px', backgroundColor: '#08172A', color: '#ffffff', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer' },
