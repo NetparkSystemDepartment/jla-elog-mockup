@@ -351,9 +351,16 @@ function LogDetailView({ user, recordSummary, onBack, onEdit }) {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
        }}>
 
-        {/* ログインユーザー（記録担当者） */}
-        <InputTile label="ログイン者（記録担当者）" icon={User} hasValue={hasValue(recordOwner)}>
-          <ValBox value={recordOwner} />
+        {/* ログイン者（記録担当者）*/}
+        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true} hasValue={true}>
+          <div>
+            <input
+              type="text"
+              value={recordOwner} 
+              disabled
+              style={disabledInput}
+            />
+          </div>
         </InputTile>
 
         {/* パトロール開始時刻 */}

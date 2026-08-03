@@ -30,7 +30,7 @@ const initialFormData = {
   highTideTime: '', highTide: '', lowTideTime: '', lowTide: '', current: '', windDir: '', windDirDetail: '',
   wave: '', warn: '', alert: '', visitors: '', feature: '',
   jpWarning: '', forWarning: '', note: '', handover: '', jpTourist: '', forTourist: '', carType: '', carNo: '',
-  unpatrolled: false, area: '', beach: '', seq: 1
+  unpatrolled: false, area: '', beach: '', seq: 1, windShoreDetail: '',
 };
 
 // ログ入力（新規登録）専用画面。issue27適用前（0ddd60e時点）のUI・ロジックを復元したもの。
@@ -309,9 +309,8 @@ useEffect(() => {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
        }}>
 
-        {/* パトロールメンバー */}
-        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true} hasValue={Boolean(formData.members && formData.members.length > 0)}>
-          {/* ログイン者（記録担当者）を追加 */}
+        {/* ログイン者（記録担当者）*/}
+        <InputTile label="ログイン者（記録担当者）" icon={User} isExpandable={true} hasValue={false}>
           <div>
             <input
               type="text"
@@ -320,9 +319,21 @@ useEffect(() => {
               style={disabledInput}
             />
           </div>
-          <div style={labelBaseStyle}>
-            <Users size={12} style={{ marginRight: 4 }} /><label>自分以外のパトロールメンバー</label>
+        </InputTile>
+
+        {/* パトロール開始時刻 */}
+        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}
+          hasValue={(formData.startTime !== '' && formData.startTime !== null && formData.startTime !== undefined)
+          }
+        >
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
+              value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
           </div>
+        </InputTile>
+
+        {/* パトロールメンバー */}
+        <InputTile label="自分以外のパトロールメンバー" icon={User} isExpandable={true} hasValue={Boolean(formData.members && formData.members.length > 0)}>
           <Select
             isMulti       // 複数選択可能（マルチセレクト）
             isSearchable  // サジェスト検索有効
@@ -352,19 +363,10 @@ useEffect(() => {
 
         </InputTile>
 
-        {/* パトロール開始時刻、終了時刻、天候　→　終了時刻は画面最下部へ移動 */}
-        <InputTile label="パトロール開始時刻"  icon={Clock} isExpandable={true}
-          hasValue={(formData.startTime !== '' && formData.startTime !== null && formData.startTime !== undefined)
-            && (formData.weather !== '' && formData.weather !== null && formData.weather !== undefined) 
-          }
+        {/* 天候 */}
+        <InputTile label="天候"  icon={Clock} isExpandable={true}
+          hasValue={(formData.weather !== '' && formData.weather !== null && formData.weather !== undefined)}
         >
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <input type="time" style={{...inputStyle, width: '40%', ...(errors.startTime ? errorInput : {})}}
-              value={formData.startTime} onChange={e => {setFormData({...formData, startTime: e.target.value}); if (errors.startTime) setErrors({ ...errors, startTime: null });}} />
-          </div>
-          <div style={labelBaseStyle}>
-            <Cloud size={12} style={{ marginRight: 4 }} /><label>天候</label>
-          </div>
           <div style={radioFlexStyle}>
             {WEATHER_OPTIONS.map(opt => (
               <button
@@ -532,50 +534,6 @@ useEffect(() => {
            </div>
         </InputTile>
 
-        {/* 風向（天気予報） */}
-        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}
-          hasValue={formData.windDir !== '' && formData.windDir !== null && formData.windDir !== undefined}>
-          <select
-            value={formData.windDir || ''}
-            onChange={e => {
-              const val = e.target.value;
-              // 選択されたIDを数値に変換して保存（未選択時は空文字）
-              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
-              if (errors.windDir) setErrors({ ...errors, windDir: null });
-            }}
-            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
-           >
-            <option value="">ー選択ー</option>
-              {DIRECTIONS.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-          </select>
-        </InputTile>
-
-        {/* 風向（現地） */}
-        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}
-          hasValue={formData.windDirDetail !== '' && formData.windDirDetail !== null && formData.windDirDetail !== undefined}>
-          <select
-            value={formData.windDirDetail || ''}
-            onChange={e => {
-              const val = e.target.value;
-              // 選択されたIDを数値に変換して保存（未選択時は空文字）
-              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
-              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
-            }}
-            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
-          >
-            <option value="">ー選択ー</option>
-              {DIRECTIONS.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.label}
-                </option>
-              ))}
-          </select>
-        </InputTile>
-
         {/* 風速（天気予報） */}
         <InputTile label="風速（天気予報）" icon={Gauge}
           hasValue={formData.windSpeed !== '' && formData.windSpeed !== null && formData.windSpeed !== undefined}>
@@ -632,6 +590,50 @@ useEffect(() => {
           </div>
         </InputTile>
 
+        {/* 風向（天気予報） */}
+        <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}
+          hasValue={formData.windDir !== '' && formData.windDir !== null && formData.windDir !== undefined}>
+          <select
+            value={formData.windDir || ''}
+            onChange={e => {
+              const val = e.target.value;
+              // 選択されたIDを数値に変換して保存（未選択時は空文字）
+              setFormData({ ...formData, windDir: val !== '' ? Number(val) : '' });
+              if (errors.windDir) setErrors({ ...errors, windDir: null });
+            }}
+            style={{...inputStyle, ...(errors.windDir ? errorInput : {})}}
+           >
+            <option value="">ー選択ー</option>
+              {DIRECTIONS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+          </select>
+        </InputTile>
+
+        {/* 風向（現地） */}
+        <InputTile label="風向（現地）" icon={Compass} isExpandable={true}
+          hasValue={formData.windDirDetail !== '' && formData.windDirDetail !== null && formData.windDirDetail !== undefined}>
+          <select
+            value={formData.windDirDetail || ''}
+            onChange={e => {
+              const val = e.target.value;
+              // 選択されたIDを数値に変換して保存（未選択時は空文字）
+              setFormData({ ...formData, windDirDetail: val !== '' ? Number(val) : '' });
+              if (errors.windDirDetail) setErrors({ ...errors, windDirDetail: null });
+            }}
+            style={{...inputStyle, ...(errors.windDirDetail ? errorInput : {})}}
+          >
+            <option value="">ー選択ー</option>
+              {DIRECTIONS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+          </select>
+        </InputTile>
+
         {/* 注意報 */}
         <InputTile label="注意報" icon={TriangleAlert} isExpandable={true}
           hasValue={Boolean(formData.warn && formData.warn.length > 0)}
@@ -668,23 +670,26 @@ useEffect(() => {
 
         </InputTile>
 
-        {/* ビーチ利用の特徴 */}
-        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}
-          hasValue={Boolean(formData.feature && formData.feature.length > 0)}
-        >
-          <Select
-            isMulti       // 複数選択可能（マルチセレクト）
-            isSearchable={false}   // サジェスト検索有効
-            options={featureOptions}
-            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              const nextMembers = (selectedOptions || []).map(option => option.value);
-              setFormData({ ...formData, feature: nextMembers });
+        {/* ビーチに対しての風向 */}
+        <InputTile label="ビーチに対しての風向" icon={Compass} isExpandable={true}
+          hasValue={formData.windShoreDetail !== '' && formData.windShoreDetail !== null && formData.windShoreDetail !== undefined}>
+          <select
+            value={formData.windShoreDetail || ''}
+            onChange={e => {
+              const val = e.target.value;
+              // 選択されたIDを数値に変換して保存（未選択時は空文字）
+              setFormData({ ...formData, windShoreDetail: val !== '' ? Number(val) : '' });
+              if (errors.windShoreDetail) setErrors({ ...errors, windShoreDetail: null });
             }}
-            placeholder=""
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
+            style={{...inputStyle, ...(errors.windShoreDetail ? errorInput : {})}}
+          >
+            <option value="">ー選択ー</option>
+              {DIRECTIONS.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+          </select>
         </InputTile>
 
         {/* 警報 */}
@@ -720,6 +725,99 @@ useEffect(() => {
             noOptionsMessage={() => "見つかりません"}
             styles={customSelectStyles}
           />
+        </InputTile>
+
+        {/* 利用者数 */}
+        <InputTile label="利用者数" icon={Users}
+          hasValue={formData.visitors !== '' && formData.visitors !== null && formData.visitors !== undefined}
+        >
+          <div style={inputFlexStyle}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors}
+              onChange={e => {
+                              const val = e.target.value;
+                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
+              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
+            <label style={unitTextStyle}>名</label>
+          </div>
+        </InputTile>
+
+        {/* 車両情報、申し送り事項　→　使用車両に変更 */}
+        <InputTile label="使用車両" icon={Car} isExpandable={true}
+          hasValue={formData.carType !== '' && formData.carType !== null && formData.carType !== undefined
+            && formData.carNo !== '' && formData.carNo !== null && formData.carNo !== undefined}
+        >
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <select
+                style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
+                 value={formData.carType || ''}
+                 onChange={e => {
+                   // 選択されたIDを数値に変換して保存（未選択時は空文字）
+                   const val = e.target.value;
+                   setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
+                    if (errors.carType) {
+                      setErrors({ ...errors, carType: null });
+                    }
+                 }}
+             >
+               <option value="">車種名</option>
+               {safeCarInfo.map(d => (
+                 <option key={d.order} value={d.order}>
+                 {d.carType}
+                 </option>
+                ))}
+             </select>
+             <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
+              value={formData.carNo}
+              onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
+                if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
+          </div>
+        </InputTile>
+
+        {/* ビーチ利用の特徴 */}
+        <InputTile label="ビーチ利用の特徴" icon={WavesLadder} isExpandable={true}
+          hasValue={Boolean(formData.feature && formData.feature.length > 0)}
+        >
+          <Select
+            isMulti       // 複数選択可能（マルチセレクト）
+            isSearchable={false}   // サジェスト検索有効
+            options={featureOptions}
+            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const nextMembers = (selectedOptions || []).map(option => option.value);
+              setFormData({ ...formData, feature: nextMembers });
+            }}
+            placeholder=""
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
+        </InputTile>
+
+        {/* メモ */}
+          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'}
+            hasValue={!formData.unpatrolled && formData.note !== '' && formData.note !== null && formData.note !== undefined}
+          >
+          <textarea
+            value={formData.note}
+            maxLength={100}
+            onChange={(e) => {
+              setFormData({...formData, note: e.target.value});
+              if (errors.note) {
+                setErrors({ ...errors, note: null });
+              }
+            }}
+            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
+            <div style={{
+              right: '12px',
+              bottom: '8px',
+              fontSize: '10px',
+              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
+              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
+              userSelect: 'none',
+              textAlign: 'right'
+              }}>
+              {formData.note.length} / 100
+            </div>
         </InputTile>
 
         {/* 注意喚起人数 */}
@@ -771,80 +869,11 @@ useEffect(() => {
           </div>
         </InputTile>
 
-        {/* 車両情報、申し送り事項　→　使用車両に変更 */}
-        <InputTile label="使用車両" icon={Car} isExpandable={true}
-          hasValue={formData.carType !== '' && formData.carType !== null && formData.carType !== undefined
-            && formData.carNo !== '' && formData.carNo !== null && formData.carNo !== undefined}
-        >
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select
-                style={{...inputStyle, ...(errors.carType ? errorInput : {})}}
-                 value={formData.carType || ''}
-                 onChange={e => {
-                   // 選択されたIDを数値に変換して保存（未選択時は空文字）
-                   const val = e.target.value;
-                   setFormData({ ...formData, carType: val !== '' ? Number(val) : '' });
-                    if (errors.carType) {
-                      setErrors({ ...errors, carType: null });
-                    }
-                 }}
-             >
-               <option value="">車種名</option>
-               {safeCarInfo.map(d => (
-                 <option key={d.order} value={d.order}>
-                 {d.carType}
-                 </option>
-                ))}
-             </select>
-             <input type="text" placeholder="No." inputMode="numeric" maxLength={4} style={{...inputStyle, ...(errors.carNo ? errorInput : {})}}
-              value={formData.carNo}
-              onChange={e => {setFormData({...formData, carNo: e.target.value = e.target.value.replace(/[^0-9]/g, "")});
-                if (errors.carNo) setErrors({ ...errors, carNo: null });}} />
-          </div>
+        {/* 空欄（位置合わせ） */}
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
         </InputTile>
 
-        {/* 利用者数 */}
-        <InputTile label="利用者数" icon={Users}
-          hasValue={formData.visitors !== '' && formData.visitors !== null && formData.visitors !== undefined}
-        >
-          <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors}
-              onChange={e => {
-                              const val = e.target.value;
-                              setFormData({...formData, visitors: val === '' ? '' : Number(val)});
-              if (errors.visitors) setErrors({ ...errors, visitors: null });}} />
-            <label style={unitTextStyle}>名</label>
-          </div>
-        </InputTile>
-
-        {/* 特記事項（応急手当・救助・その他）　→　メモに変更 */}
-          <InputTile label="メモ" icon={NotebookPen} isExpandable={true} backgroundColor={formData.unpatrolled ? '#ECD283' : '#fff'}
-            hasValue={!formData.unpatrolled && formData.note !== '' && formData.note !== null && formData.note !== undefined}
-          >
-          <textarea
-            value={formData.note}
-            maxLength={100}
-            onChange={(e) => {
-              setFormData({...formData, note: e.target.value});
-              if (errors.note) {
-                setErrors({ ...errors, note: null });
-              }
-            }}
-            style={{...inputNoteStyle, ...(errors.note ? errorInput : {})}} />
-            <div style={{
-              right: '12px',
-              bottom: '8px',
-              fontSize: '10px',
-              color: formData.note.length >= 100 ? '#ef4444' : '#64748b', // 100文字に達したら赤くする
-              fontWeight: formData.note.length >= 100 ? 'bold' : 'normal',
-              userSelect: 'none',
-              textAlign: 'right'
-              }}>
-              {formData.note.length} / 100
-            </div>
-        </InputTile>
-
+        {/* 申し送り事項（応急手当・救助・その他） */}
         <InputTile label="申し送り事項（応急手当・救助・その他）" icon={HandHelping} isExpandable={true}
           hasValue={(formData.handover !== '' && formData.handover !== null && formData.handover !== undefined)
           }
@@ -870,10 +899,16 @@ useEffect(() => {
               }}>
               {formData.handover.length} / 100
             </div>
+        </InputTile>
 
-          <div style={labelBaseStyle}>
-            <Flag size={12} style={{ marginRight: 4 }} /><label>優先度</label>
-          </div>
+        {/* 空欄（位置合わせ） */}
+        <InputTile isExpandable={true} backgroundColor={'#f1f5f9'} border={'none'}>
+        </InputTile>
+
+        <InputTile label="優先度" icon={HandHelping} isExpandable={false}
+          hasValue={(formData.priority !== '' && formData.priority !== null && formData.priority !== undefined)
+          }
+        >
           <div style={radioFlexStyle}>
             {PRIORITY_OPTIONS.map(opt => (
               <button
