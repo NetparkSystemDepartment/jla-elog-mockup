@@ -590,7 +590,7 @@ useEffect(() => {
         <InputTile label="風向（天気予報）" icon={Compass} isExpandable={true}
           hasValue={formData.windDir !== '' && formData.windDir !== null && formData.windDir !== undefined}>
           <select
-            value={formData.windDir || ''}
+            value={formData.windDir ?? ''}
             onChange={e => {
               const val = e.target.value;
               // 選択されたIDを数値に変換して保存（未選択時は空文字）
@@ -612,7 +612,7 @@ useEffect(() => {
         <InputTile label="風向（現地）" icon={Compass} isExpandable={true}
           hasValue={formData.windDirDetail !== '' && formData.windDirDetail !== null && formData.windDirDetail !== undefined}>
           <select
-            value={formData.windDirDetail || ''}
+            value={formData.windDirDetail ?? ''}
             onChange={e => {
               const val = e.target.value;
               // 選択されたIDを数値に変換して保存（未選択時は空文字）

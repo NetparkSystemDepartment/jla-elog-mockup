@@ -559,7 +559,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                   
                   <select 
                     style={briefingStyles.input} 
-                      value={data.windDir || ''} 
+                      value={data.windDir ?? ''} 
                       onChange={e => {
                         // 選択されたIDを数値に変換して保存（未選択時は空文字）
                         const val = e.target.value;
