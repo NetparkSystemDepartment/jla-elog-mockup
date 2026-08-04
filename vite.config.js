@@ -20,7 +20,7 @@ export default defineConfig({
       '/api': {
         target: 'https://d-elog.ripcurrent.org',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/v2')
+        rewrite: (path) => path.replace(/^\/api/, '/v3')
       }
     }
     // proxy: {

@@ -20,7 +20,7 @@ import okinawaLogo from '../assets/okinawa.png';
 // for phase1
 //const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [] }) {
+function BriefingView({ user, onComplete, recentHandovers = [], onSelectHandover }) {
 
   const { logout } = useAuth();
   
@@ -795,11 +795,20 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                       const memberNamesArray = [item.login_user, ...baseMemberNames];
 //                      const memberNamesArray = [currentHandovers.login_user, ...displayMembers.map(m => m.user_id)];
                       return (
-                        <div key={idx} style={briefingStyles.tableRow}>
+                        <div 
+                          key={idx} 
+                          style={{ ...briefingStyles.tableRow, cursor: 'pointer' }}
+                          onClick={() => onSelectHandover && onSelectHandover(item)}
+                        >
 
                           {/* 【アドミン】各行の左端チェックボックス */}
+                          {/* チェックボックスのクリックは行選択（一括操作用）のためのものなので、
+                              ログ詳細画面への遷移（行クリック）とは独立させる */}
                           {user?.kind === 0 && (
-                            <div style={{ flex: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div 
+                              style={{ flex: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <input 
                                 type="checkbox" 
                                 checked={selectedRows.includes(item.key || item.detail_key || item.id)}

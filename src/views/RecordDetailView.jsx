@@ -139,7 +139,7 @@ function HeaderBar({ onBack }) {
   );
 }
 
-function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
+function RecordDetailView({ user, recordSummary, onBack, onEdit, hideActions = false }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling]         = useState(false);
   const queryClient = useQueryClient();
@@ -200,8 +200,11 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
 
   // kind: 0=admin 1=パトロール 2=タワー 3=ゲストパトロール 4=ゲストタワー
   // 編集する: adminは常に表示、パトロール/タワーは3日間のみ、ゲストは常に非表示
+  // ブリーフィング画面（申し送り一覧）からの遷移では、hideActionsにより
+  // 編集する／取消するボタンを常に非表示にする（仕様）
   const canEdit = (() => {
     if (!record) return false;
+    if (hideActions) return false;
     if (user?.kind === 0) return true;
     if (user?.kind === 3 || user?.kind === 4) return false;
     if (!effectiveStartDate) return false;
@@ -213,7 +216,7 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   })();
 
   // 取消する: adminのみ常に表示。パトロール/タワー/ゲストは常に非表示
-  const canCancel = !!record && user?.kind === 0;
+  const canCancel = !!record && user?.kind === 0 && !hideActions;
 
   const handleCancel = async () => {
     setIsCancelling(true);
