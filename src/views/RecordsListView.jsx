@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Filter, Download, Menu } from 'lucide-react';
 import { format, getDay } from 'date-fns';
@@ -21,8 +21,6 @@ const getMasterInfo = () => {
     return {};
   }
 };
-
-const rowKey = (r) => `${r.key}-${r.detail_key}`;
 
 // startDateは "yyyy/mm/dd" 形式で返ってくるため、<input type="date"> の "yyyy-mm-dd" と
 // 区切り文字が異なる。区切り文字違いのまま文字列比較すると常に真/偽に倒れてしまうため、
@@ -71,7 +69,7 @@ const makeDefaultCompare = (areaList) => (a, b) => {
 // 検索条件はApp.jsx側で保持する（ログ詳細画面との行き来で条件を保持し、
 // フッターの「ログデータ」メニューから入った時だけ初期化するため、このコンポーネント内には持たない）
 function RecordsListView({
-  user, onBack, onSelectRecord, selectedKeys, setSelectedKeys,
+  user, onBack, onSelectRecord,
   filterAreas, setFilterAreas,
   filterDateFrom, setFilterDateFrom,
   filterDateTo, setFilterDateTo,
@@ -111,6 +109,37 @@ function RecordsListView({
     () => areaOptions.map(a => ({ value: a.area, label: a.area })),
     [areaOptions]
   );
+
+  // ビーチ絞り込みはエリアが1つだけ選択されている時だけ有効。
+  // 検索条件はApp.jsx側で保持している他の絞り込み(draftAreas等)と違い、ビーチはこの画面内だけで
+  // 完結する補助的な絞り込みのためローカルstateで持つ（画面遷移をまたいだ保持はしない）
+  const [draftBeaches, setDraftBeaches] = useState([]);
+  const [filterBeaches, setFilterBeaches] = useState([]);
+
+  const singleSelectedArea = draftAreas.length === 1
+    ? areaOptions.find(a => a.area === draftAreas[0])
+    : null;
+
+  const beachSelectOptions = useMemo(() => {
+    if (!singleSelectedArea) return [];
+    return (singleSelectedArea.beach_info || [])
+      .filter(b => Number(b.delete_flg) !== 1)
+      .map(b => ({ value: b.beach, label: b.beach }));
+  }, [singleSelectedArea]);
+
+  // エリアの選択が「1つだけ」でなくなった場合や、選択エリアが変わってビーチの選択肢自体が
+  // 変わった場合に、もう選べないビーチが選択されたままにならないようdraftBeachesを追従させる
+  useEffect(() => {
+    if (beachSelectOptions.length === 0) {
+      setDraftBeaches(prev => (prev.length === 0 ? prev : []));
+      return;
+    }
+    const validValues = beachSelectOptions.map(o => o.value);
+    setDraftBeaches(prev => {
+      const next = prev.filter(v => validValues.includes(v));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [beachSelectOptions]);
 
   // ログイン者自身の絞り込みはrequestPayload.membersで常に効いており選択解除できないため、
   // 選べても意味のないログイン者自身は選択肢から外す
@@ -196,10 +225,11 @@ function RecordsListView({
     return allRecords
       .filter(r => Boolean(r.delete_flg) === showCancelled)
       .filter(r => filterAreas.length === 0 || filterAreas.includes(String(r.area)))
+      .filter(r => filterBeaches.length === 0 || filterBeaches.includes(String(r.beach)))
       .filter(r => !filterDateFrom || startDateKey(r) >= filterDateFrom)
       .filter(r => !filterDateTo   || (startDateKey(r) && startDateKey(r) <= filterDateTo))
       .filter(r => !filterDow || String(getDay(new Date(r.startDate))) === filterDow);
-  }, [allRecords, showCancelled, filterAreas, filterDateFrom, filterDateTo, filterDow]);
+  }, [allRecords, showCancelled, filterAreas, filterBeaches, filterDateFrom, filterDateTo, filterDow]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return [...filtered].sort(makeDefaultCompare(allAreaList));
@@ -226,44 +256,18 @@ function RecordsListView({
     return sortDir === 'asc' ? ' ↑' : ' ↓';
   };
 
-  // 表示中のページだけでなく、絞り込み・ソート後の全件(sorted)を対象に全選択/解除する
-  const isAllSelected = sorted.length > 0 && sorted.every(r => selectedKeys.has(rowKey(r)));
-
-  const handleSelectAll = (checked) => {
-    setSelectedKeys(prev => {
-      const next = new Set(prev);
-      sorted.forEach(r => checked ? next.add(rowKey(r)) : next.delete(rowKey(r)));
-      return next;
-    });
-  };
-
-  const handleSelectRow = (key, checked) => {
-    setSelectedKeys(prev => {
-      const next = new Set(prev);
-      checked ? next.add(key) : next.delete(key);
-      return next;
-    });
-  };
-
   const handleCsvDownload = async () => {
-    if (selectedKeys.size === 0) {
-      alert('CSV出力する記録にチェックを入れてください');
+    // 絞り込み・ソート後に一覧表示されている件数が0件なら、そもそもAPIを呼ばない
+    if (sorted.length === 0) {
+      alert('CSV出力するデータがありません');
       return;
     }
 
     try {
-      // selectedKeysは検索条件を変えてもクリアされないため、絞り込み後の一覧に
-      // 存在しない古い選択が残っている場合がある。その場合targetsが空になるので、
-      // 空データをサーバーに送らずエラーにする
-      const targets = sorted.filter(r => selectedKeys.has(rowKey(r)));
-      if (targets.length === 0) {
-        alert('CSV出力する記録にチェックを入れてください');
-        return;
-      }
-      const data = targets.map(r => ({ key: r.key, detail_key: r.detail_key }));
-      // ファイル名はサーバーがContent-Dispositionヘッダーで決定するため、そちらを使う
-      // （取得できなかった場合のみ、フォールバックとして今日の日付のファイル名にする）
-      const { blob, filename } = await getCsvApi({ type: 4, data });
+      // CSV出力もgetinfoApi(一覧取得)と同じ絞り込み条件をそのままAPIへ送る。
+      // レコードを個別に列挙する方式ではなく、typeだけ2→4に差し替える
+      // （CSV出力APIの仕様自体はまだfixしていないため、現状はこの暫定対応とする）
+      const { blob, filename } = await getCsvApi({ ...requestPayload, type: 4 });
 
       // aタグのdownload属性でその場でダウンロードさせる。
       // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
@@ -300,14 +304,13 @@ function RecordsListView({
   // 「絞り込み」ボタン押下時にのみ、入力中の条件を実際のフィルターへ反映する
   const handleSearch = () => {
     setFilterAreas(draftAreas);
+    // ビーチはエリアが1つだけ選択されている時のみ有効なので、それ以外の状態で確定しない
+    setFilterBeaches(draftAreas.length === 1 ? draftBeaches : []);
     setFilterDateFrom(draftDateFrom);
     setFilterDateTo(draftDateTo);
     setFilterDow(draftDow);
     setFilterMembers(draftMembers);
     resetPage();
-    // 検索条件が変わると一覧の内容が変わり、チェック済みの記録が結果から消えることがあるため、
-    // CSV選択状態は毎回リセットする
-    setSelectedKeys(new Set());
   };
 
   return (
@@ -317,7 +320,7 @@ function RecordsListView({
       <header style={s.header}>
         {showCancelled ? (
           <button
-            onClick={() => { setShowCancelled(false); resetPage(); setSelectedKeys(new Set()); }}
+            onClick={() => { setShowCancelled(false); resetPage(); }}
             style={s.backBtn}
           >
             <ChevronLeft color="white" size={24} />
@@ -345,13 +348,35 @@ function RecordsListView({
                   onChange={(selected) => {
                     setDraftAreas((selected || []).map(o => o.value));
                   }}
-                  placeholder="全エリア"
+                  placeholder="エリア"
                   noOptionsMessage={() => "見つかりません"}
                   styles={customSelectStyles}
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                 />
               </div>
+              <div style={s.inputBeach}>
+                <Select
+                  isMulti
+                  isSearchable
+                  isDisabled={draftAreas.length !== 1}
+                  options={beachSelectOptions}
+                  value={beachSelectOptions.filter(o => draftBeaches.includes(o.value))}
+                  onChange={(selected) => {
+                    setDraftBeaches((selected || []).map(o => o.value));
+                  }}
+                  placeholder={draftAreas.length === 1 ? 'ビーチ' : 'ビーチ（エリア選択必須）'}
+                  noOptionsMessage={() => "見つかりません"}
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
+              </div>
+            </div>
+            <button onClick={handleSearch} style={s.searchBtn}>絞り込み</button>
+
+            <div />
+            <div style={s.dateGroup}>
               <div style={s.inputMember}>
                 <Select
                   isMulti
@@ -368,11 +393,6 @@ function RecordsListView({
                   menuPosition="fixed"
                 />
               </div>
-            </div>
-            <button onClick={handleSearch} style={s.searchBtn}>絞り込み</button>
-
-            <div />
-            <div style={s.dateGroup}>
               <div style={s.dateInputWrap}>
                 <input
                   type="date"
@@ -438,16 +458,6 @@ function RecordsListView({
 
         {/* テーブルヘッダー */}
         <div style={s.tableHeader}>
-          {canCsvSelect && (
-            <div style={s.checkCell}>
-              <input
-                type="checkbox"
-                checked={isAllSelected}
-                onChange={e => handleSelectAll(e.target.checked)}
-              />
-              <div style={s.checkAllLabel}>全選択</div>
-            </div>
-          )}
           <div style={{ ...s.col, cursor: 'pointer' }} onClick={() => handleSortClick('area')}>
             エリア{sortIcon('area')}
           </div>
@@ -471,15 +481,6 @@ function RecordsListView({
             style={s.tableRow}
             onClick={() => onSelectRecord(record)}
           >
-            {canCsvSelect && (
-              <div style={s.checkCell} onClick={e => e.stopPropagation()}>
-                <input
-                  type="checkbox"
-                  checked={selectedKeys.has(rowKey(record))}
-                  onChange={e => handleSelectRow(rowKey(record), e.target.checked)}
-                />
-              </div>
-            )}
             <div style={s.col}>{areaLabel(record.area, allAreaList)}</div>
             <div style={s.col}>{beachLabel(record.beach, record.area, allAreaList)}</div>
             <div style={s.col}>
@@ -527,7 +528,7 @@ function RecordsListView({
             <button
               onClick={() => {
                 if (!CANCEL_HISTORY_RELEASED) return;
-                setShowCancelled(v => !v); resetPage(); setSelectedKeys(new Set());
+                setShowCancelled(v => !v); resetPage();
               }}
               style={s.historyBtn}
             >
@@ -566,24 +567,25 @@ const s = {
     display: 'grid', gridTemplateColumns: '16px 1fr auto',
     columnGap: '8px', rowGap: '8px', alignItems: 'center',
   },
-  dateGroup: { display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 },
+  dateGroup: { display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 },
   selectSm: {
-    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
-    fontSize: '13px', backgroundColor: '#f8fafc', minWidth: '60px',
+    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 6px',
+    fontSize: '12px', backgroundColor: '#f8fafc', minWidth: '52px', flexShrink: 0,
   },
-  inputArea: { flex: 1, minWidth: '160px' },
-  inputMember: { flex: 1, minWidth: '160px' },
+  inputArea: { flex: 1, minWidth: '140px' },
+  inputBeach: { flex: 1, minWidth: '140px' },
+  inputMember: { flex: 1, minWidth: '110px' },
   searchBtn: {
     backgroundColor: '#0f172a', color: 'white', border: 'none',
     borderRadius: '20px', padding: '6px 16px', fontSize: '13px',
     fontWeight: 'bold', cursor: 'pointer',
   },
   dateInput: {
-    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 8px',
-    fontSize: '13px', backgroundColor: '#f1f5f9', flex: 1, minWidth: 0,
+    border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px 6px',
+    fontSize: '12px', backgroundColor: '#f1f5f9', width: '118px', flexShrink: 0,
   },
   // iPadOS Safariのdate inputにはネイティブのクリア(×)が無いため、隣に独自のクリアボタンを置く
-  dateInputWrap: { display: 'flex', alignItems: 'center', gap: '2px', flex: 1, minWidth: 0 },
+  dateInputWrap: { display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 },
   dateClearBtn: {
     background: 'none', border: 'none', color: '#94a3b8', fontSize: '16px',
     lineHeight: 1, cursor: 'pointer', padding: '2px 4px', flexShrink: 0,
@@ -603,9 +605,7 @@ const s = {
     borderBottom: '1px solid #f1f5f9', fontSize: '14px', alignItems: 'center',
     cursor: 'pointer',
   },
-  checkCell: { width: '40px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  checkAllLabel: { fontSize: '9px', color: '#64748b', marginTop: '2px' },
-  col: { flex: 1, userSelect: 'none' },
+  col: { flex: 1, userSelect: 'none', textAlign: 'center' },
   colWide: { flex: 1.5, fontSize: '12px', color: '#334155' },
   message: { padding: '32px', textAlign: 'center', color: '#64748b' },
   // 常時グローバルフッター(高さ80px)の直上にフロート表示するページングバー
