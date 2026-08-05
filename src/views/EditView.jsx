@@ -564,15 +564,46 @@ useEffect(() => {
         ),
       },
       right: {
-        label: '利用者数',
-        fields: ['visitors'],
+        label: 'ビーチ利用の特徴',
+        fields: ['feature'],
         content: (
-          <div style={inputFlexStyle}>
-            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
-              value={formData.visitors}
-              onChange={e => { const val = e.target.value; setFormData({...formData, visitors: val === '' ? '' : Number(val)}); if (errors.visitors) setErrors({ ...errors, visitors: null }); }} />
-            <label style={unitTextStyle}>名</label>
-          </div>
+          <Select
+            isMulti
+            isSearchable={false}
+            options={featureOptions}
+            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
+            onChange={(selectedOptions) => {
+              const currentValues = (selectedOptions || []).map(option => option.value);
+              let updatedValues = currentValues;
+              const prevValues = formData.feature || [];
+              const addedValue = currentValues.find(val => !prevValues.includes(val));
+              if (addedValue === '利用なし') {
+                updatedValues = ['利用なし'];
+              } else if (currentValues.includes('利用なし') && currentValues.length > 1) {
+                updatedValues = currentValues.filter(val => val !== '利用なし');
+              }
+              // 「利用なし」選択時は利用者数・注意喚起人数（4項目）を自動的に0にする
+              if (updatedValues.includes('利用なし')) {
+                setFormData({
+                  ...formData,
+                  feature: updatedValues,
+                  visitors: 0,
+                  jpWarning: 0,
+                  forWarning: 0,
+                  jpTourist: 0,
+                  forTourist: 0,
+                });
+                if (errors.visitors || errors.jpWarning || errors.forWarning || errors.jpTourist || errors.forTourist) {
+                  setErrors({ ...errors, visitors: null, jpWarning: null, forWarning: null, jpTourist: null, forTourist: null });
+                }
+                return;
+              }
+              setFormData({ ...formData, feature: updatedValues });
+            }}
+            placeholder=""
+            noOptionsMessage={() => "見つかりません"}
+            styles={customSelectStyles}
+          />
         ),
       },
     },
@@ -605,30 +636,15 @@ useEffect(() => {
         ),
       },
       right: {
-        label: 'ビーチ利用の特徴',
-        fields: ['feature'],
+        label: '利用者数',
+        fields: ['visitors'],
         content: (
-          <Select
-            isMulti
-            isSearchable={false}
-            options={featureOptions}
-            value={(formData.feature || []).map(item => ({ value: item, label: item }))}
-            onChange={(selectedOptions) => {
-              const currentValues = (selectedOptions || []).map(option => option.value);
-              let updatedValues = currentValues;
-              const prevValues = formData.feature || [];
-              const addedValue = currentValues.find(val => !prevValues.includes(val));
-              if (addedValue === '利用なし') {
-                updatedValues = ['利用なし'];
-              } else if (currentValues.includes('利用なし') && currentValues.length > 1) {
-                updatedValues = currentValues.filter(val => val !== '利用なし');
-              }
-              setFormData({ ...formData, feature: updatedValues });
-            }}
-            placeholder=""
-            noOptionsMessage={() => "見つかりません"}
-            styles={customSelectStyles}
-          />
+          <div style={inputFlexStyle}>
+            <input type="number" inputMode="numeric" style={{...inputNarrowStyle, ...(errors.visitors ? errorInput : {})}}
+              value={formData.visitors}
+              onChange={e => { const val = e.target.value; setFormData({...formData, visitors: val === '' ? '' : Number(val)}); if (errors.visitors) setErrors({ ...errors, visitors: null }); }} />
+            <label style={unitTextStyle}>名</label>
+          </div>
         ),
       },
     },
@@ -766,10 +782,6 @@ useEffect(() => {
         ),
       },
     },
-    {
-      left: null,
-      right: { label: '画像のアップロード', content: null },
-    },
   ];
 
   return (
@@ -790,7 +802,7 @@ useEffect(() => {
             onClick={handleSaveClick}
             disabled={!isFormValid}
             style={{ ...saveBtnStyle, opacity: isFormValid ? 1 : 0.5, cursor: isFormValid ? 'pointer' : 'not-allowed' }}
-          >保存して閉じる</button>
+          >送信して閉じる</button>
         </div>
         <div style={headerBottomStyle}>
           <span>{formattedDate}の記録 #{String(formData.seq).padStart(2, '0')}</span>
@@ -830,9 +842,9 @@ useEffect(() => {
     {showSaveDialog && (
       <div style={dialogStyles.overlay}>
         <div style={dialogStyles.dialog}>
-          <p style={dialogStyles.dialogText}>この内容で保存します。</p>
+          <p style={dialogStyles.dialogText}>この内容で送信します。</p>
           <div style={dialogStyles.dialogBtns}>
-            <button onClick={confirmSave} style={dialogStyles.dialogOkBtn}>保存する</button>
+            <button onClick={confirmSave} style={dialogStyles.dialogOkBtn}>送信する</button>
             <button onClick={() => setShowSaveDialog(false)} style={dialogStyles.dialogBackBtn}>もどる</button>
           </div>
         </div>
