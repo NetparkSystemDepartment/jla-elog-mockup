@@ -20,7 +20,14 @@ import okinawaLogo from '../assets/okinawa.png';
 // for phase1
 //const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [], onSelectHandover }) {
+function BriefingView({
+  user, onComplete, recentHandovers = [], onSelectHandover,
+  // 申し送り一覧のエリア選択・ページ・ソート状態は、ブリーフィング画面を離れて
+  // 戻ってきた際にも復元できるよう、App.jsx側でstateを保持してもらう（controlled）
+  selectedArea, setSelectedArea,
+  currentPage, setCurrentPage,
+  sortConfig, setSortConfig,
+}) {
 
   const { logout } = useAuth();
   
@@ -76,8 +83,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], onSelectHandover
 
   const [noticeList, setNoticeList] = useState([]);
   const [isInfoLoading, setIsInfoLoading] = useState(true);
-  // 申し送り一覧のエリア
-  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
+  // 申し送り一覧のエリアは props（selectedArea/setSelectedArea）で制御される
 
   // サーバーのBody部に渡すパラメーター（Payload）
 //   const requestBody = {
@@ -248,9 +254,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], onSelectHandover
   // チェックされた行のインデックスを保持
   const [selectedRows, setSelectedRows] = useState([]); 
 
-  // ページネーター用
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  // ページネーター・ソート状態も props（currentPage/sortConfig）で制御される
 
   // ソートロジックの追加
   const sortedNotices = React.useMemo(() => {
@@ -559,7 +563,7 @@ function BriefingView({ user, onComplete, recentHandovers = [], onSelectHandover
                   
                   <select 
                     style={briefingStyles.input} 
-                      value={data.windDir ?? ''} 
+                      value={data.windDir || ''} 
                       onChange={e => {
                         // 選択されたIDを数値に変換して保存（未選択時は空文字）
                         const val = e.target.value;

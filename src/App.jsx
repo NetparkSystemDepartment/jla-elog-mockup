@@ -125,6 +125,10 @@ function App() {
       // 必要に応じて localStorage もクリア
 //      localStorage.removeItem('briefing_data');
       setView('briefing');
+      // 申し送り一覧の選択状態もリセット
+      setBriefingSelectedArea('');
+      setBriefingCurrentPage(1);
+      setBriefingSortConfig({ key: null, direction: 'asc' });
     }
   }, [user]);
 
@@ -136,6 +140,12 @@ function App() {
   const [savedRecords, setSavedRecords] = useState([]);
   const [targetRecords, setTargetRecords] = useState(null);
   const [recentHandovers, setRecentHandovers] = useState([]);
+  // ブリーフィング画面の申し送り一覧（エリア選択・ページ・ソート）の状態。
+  // 画面遷移で BriefingView がアンマウントされても、戻ってきた時に直前の状態を復元するため
+  // App.jsx側で保持する（BriefingView からは controlled props として利用）
+  const [briefingSelectedArea, setBriefingSelectedArea] = useState('');
+  const [briefingCurrentPage, setBriefingCurrentPage] = useState(1);
+  const [briefingSortConfig, setBriefingSortConfig] = useState({ key: null, direction: 'asc' });
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -652,6 +662,9 @@ function App() {
             setRecordDetailSource('briefing');
             setView('recordDetail');
           }}
+          selectedArea={briefingSelectedArea} setSelectedArea={setBriefingSelectedArea}
+          currentPage={briefingCurrentPage} setCurrentPage={setBriefingCurrentPage}
+          sortConfig={briefingSortConfig} setSortConfig={setBriefingSortConfig}
         />
       );
 
