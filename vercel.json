@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://d-elog.ripcurrent.org/v2/:match*"
+      "destination": "https://d-elog.ripcurrent.org/v3/:match*"
     }
   ]
 }

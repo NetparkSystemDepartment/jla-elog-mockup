@@ -366,11 +366,11 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit, hideActions = f
     },
     {
       left:  { label: '警報', content: <ValBox value={alertText || null} /> },
-      right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
+      right:  { label: 'ビーチ利用の特徴', content: <ValBox value={featureItems || null} /> },
     },
     {
       left:  { label: '使用車両', content: <TwoBox left={carTypeLabel} right={record.carNo} /> },
-      right:  { label: 'ビーチ利用の特徴', content: <ValBox value={featureItems || null} /> },
+      right: { label: '利用者数', content: <UnitBox value={hasValue(record.visitors) ? record.visitors : null} unit="名" align="right" /> },
     },
     {
       left:  { label: 'メモ', highlight: Boolean(record.unpatrolled), content: <TextAreaBox value={record.note} /> },

@@ -139,6 +139,9 @@ function App() {
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  // ログ詳細画面(recordDetail)の遷移元。戻るボタンの遷移先と、
+  // 編集・取消ボタンの表示可否（ブリーフィング経由では非表示）の判定に使う
+  const [recordDetailSource, setRecordDetailSource] = useState('records');
   const [editingRecord, setEditingRecord] = useState(null);
   const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
 
@@ -644,6 +647,11 @@ function App() {
           user={user} 
           onComplete={handleBriefingComplete} 
           recentHandovers={recentHandovers}
+          onSelectHandover={(item) => {
+            setSelectedRecord(item);
+            setRecordDetailSource('briefing');
+            setView('recordDetail');
+          }}
         />
       );
 
@@ -672,7 +680,7 @@ function App() {
         <RecordsListView
           user={user}
           onBack={() => setView('home')}
-          onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
+          onSelectRecord={(rec) => { setSelectedRecord(rec); setRecordDetailSource('records'); setView('recordDetail'); }}
           selectedKeys={recordsCsvSelectedKeys}
           setSelectedKeys={setRecordsCsvSelectedKeys}
           filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}
@@ -697,8 +705,9 @@ function App() {
         <RecordDetailView
           user={user}
           recordSummary={selectedRecord}
-          onBack={() => setView('records')}
+          onBack={() => setView(recordDetailSource)}
           onEdit={handleEditRecord}
+          hideActions={recordDetailSource === 'briefing'}
         />
       );
 
