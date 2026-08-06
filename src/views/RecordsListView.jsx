@@ -267,7 +267,7 @@ function RecordsListView({
       // CSV出力もgetinfoApi(一覧取得)と同じ絞り込み条件をそのままAPIへ送る。
       // レコードを個別に列挙する方式ではなく、typeだけ2→4に差し替える
       // （CSV出力APIの仕様自体はまだfixしていないため、現状はこの暫定対応とする）
-      const { blob, filename } = await getCsvApi({ ...requestPayload, type: 4 });
+      const { blob, filename } = await getCsvApi({ ...requestPayload, type: 4, all_download_flg: true });
 
       // aタグのdownload属性でその場でダウンロードさせる。
       // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
