@@ -172,7 +172,7 @@ useEffect(() => {
     'weather', 'current', 'tide',
     'highTideTime', 'highTide', 'lowTideTime', 'lowTide',
     'waveOuter', 'wave',
-    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail', 
+    'windSpeed', 'windSpeedDetail', 'windDir', 'windDirDetail', 'windShoreDetail',
     'warn', 'alert', 'feature',
     'visitors', 'jpWarning', 'forWarning', 'jpTourist', 'forTourist',
     'carType', 'carNo', 'handover', 'note',
