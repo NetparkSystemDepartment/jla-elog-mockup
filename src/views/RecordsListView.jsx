@@ -154,11 +154,13 @@ function RecordsListView({
   // members は「絞り込みパネルで選ばれている条件」を{id, user_id}形式で列挙する。
   // ログインAPIのmembersは元から{id, user_id}のオブジェクト配列で返るため、
   // 選択中のuser_id文字列と突き合わせてidを引ければ、自分以外のメンバーも列挙できる。
-  const requestPayload = useMemo(() => {
-    const payload = { type: 2 };
+  // getinfo(一覧取得)/CSV出力どちらでも使う、絞り込み条件からAPIペイロードを組み立てる処理。
+  // 引数で受け取るので、確定済みのfilter*値でも入力中のdraft*値でも同じロジックを使い回せる
+  const buildRequestPayload = ({ type, members, areas, beaches, dateFrom, dateTo, dow, cancelled }) => {
+    const payload = { type };
 
-    if (filterMembers.length > 0) {
-      const memberObjs = filterMembers
+    if (members.length > 0) {
+      const memberObjs = members
         .map(uid => {
           if (uid === user.user_id) return { id: user.id, user_id: uid };
           const found = safeMembers.find(m => (m?.user_id ?? String(m)) === uid);
@@ -168,25 +170,55 @@ function RecordsListView({
       if (memberObjs.length > 0) payload.members = memberObjs;
     }
 
-    if (filterAreas.length > 0) {
-      const areaNos = filterAreas
+    // ビーチが絞り込まれている場合(=エリアが1つだけ選択されビーチも選ばれている場合)は、
+    // areasではなくbeaches(ビーチ番号の配列)を送る。beaches設定時はareasの設定は不要な仕様のため、
+    // 両方を同時にpayloadへ入れないようにする
+    if (beaches.length > 0 && areas.length === 1) {
+      const areaObj = allAreaList.find(a => a.area === areas[0]);
+      const beachNos = beaches
+        .map(name => areaObj?.beach_info?.find(b => b.beach === name)?.no)
+        .filter(no => no !== undefined && no !== null);
+      if (beachNos.length > 0) payload.beaches = beachNos;
+    } else if (areas.length > 0) {
+      const areaNos = areas
         .map(name => allAreaList.find(a => a.area === name)?.no)
         .filter(no => no !== undefined && no !== null);
       if (areaNos.length > 0) payload.areas = areaNos;
     }
-    if (filterDateFrom) payload.start_date = filterDateFrom;
-    if (filterDateTo) payload.end_date = filterDateTo;
-    if (filterDow !== '') {
-      // filterDow は JS の getDay 準拠（日=0～土=6）、API 側は月=0～日=6 のため変換する
-      payload.weekday = (Number(filterDow) + 6) % 7;
+    if (dateFrom) payload.start_date = dateFrom;
+    if (dateTo) payload.end_date = dateTo;
+    if (dow !== '') {
+      // dow は JS の getDay 準拠（日=0～土=6）、API 側は月=0～日=6 のため変換する
+      payload.weekday = (Number(dow) + 6) % 7;
     }
-    if (showCancelled) payload.delete_flg = true;
+    if (cancelled) payload.delete_flg = true;
 
     return payload;
-  }, [filterMembers, filterAreas, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, safeMembers, user.id, user.user_id]);
+  };
+
+  // 一覧取得(getinfoApi)用は、「絞り込み」ボタンで確定させた条件(filter*)を使う
+  const requestPayload = useMemo(
+    () => buildRequestPayload({
+      type: 2,
+      members: filterMembers,
+      areas: filterAreas,
+      beaches: filterBeaches,
+      dateFrom: filterDateFrom,
+      dateTo: filterDateTo,
+      dow: filterDow,
+      cancelled: showCancelled,
+    }),
+    [filterMembers, filterAreas, filterBeaches, filterDateFrom, filterDateTo, filterDow, showCancelled, allAreaList, safeMembers, user.id, user.user_id]
+  );
+
+  // 「絞り込み」ボタンを押すたびに必ずAPIを呼ぶためのカウンター。
+  // requestPayloadだけをqueryKeyにすると、以前と全く同じ絞り込み条件に戻した場合に
+  // staleTime内のキャッシュがヒットしてAPIが呼ばれないことがあるため、
+  // ボタン押下ごとにこの値をインクリメントしてqueryKeyを必ず変化させる
+  const [searchNonce, setSearchNonce] = useState(0);
 
   const { data: apiData, isLoading, error } = useQuery({
-    queryKey: ['records-list', requestPayload],
+    queryKey: ['records-list', requestPayload, searchNonce],
     queryFn: () => getinfoApi(requestPayload),
     staleTime: 60_000,
   });
@@ -257,17 +289,27 @@ function RecordsListView({
   };
 
   const handleCsvDownload = async () => {
-    // 絞り込み・ソート後に一覧表示されている件数が0件なら、そもそもAPIを呼ばない
-    if (sorted.length === 0) {
-      alert('CSV出力するデータがありません');
-      return;
-    }
-
     try {
+      // CSV出力は「絞り込み」ボタンを押していなくても、その時点でドロップダウンに
+      // 入力されている条件(draft*)をそのまま使う。filter*(確定済み条件)を使うと、
+      // メンバー等を変更した直後に絞り込みを押さずCSVボタンを押した場合、
+      // 変更前の古い条件でエクスポートされてしまうため
+      const csvPayload = buildRequestPayload({
+        type: 4,
+        members: draftMembers,
+        areas: draftAreas,
+        beaches: draftAreas.length === 1 ? draftBeaches : [],
+        dateFrom: draftDateFrom,
+        dateTo: draftDateTo,
+        dow: draftDow,
+        cancelled: showCancelled,
+      });
+      csvPayload.all_download_flg = true;
+
       // CSV出力もgetinfoApi(一覧取得)と同じ絞り込み条件をそのままAPIへ送る。
       // レコードを個別に列挙する方式ではなく、typeだけ2→4に差し替える
       // （CSV出力APIの仕様自体はまだfixしていないため、現状はこの暫定対応とする）
-      const { blob, filename } = await getCsvApi({ ...requestPayload, type: 4, all_download_flg: true });
+      const { blob, filename } = await getCsvApi(csvPayload);
 
       // aタグのdownload属性でその場でダウンロードさせる。
       // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
@@ -311,6 +353,7 @@ function RecordsListView({
     setFilterDow(draftDow);
     setFilterMembers(draftMembers);
     resetPage();
+    setSearchNonce(n => n + 1);
   };
 
   return (
@@ -348,7 +391,7 @@ function RecordsListView({
                   onChange={(selected) => {
                     setDraftAreas((selected || []).map(o => o.value));
                   }}
-                  placeholder="エリア"
+                  placeholder="全エリア"
                   noOptionsMessage={() => "見つかりません"}
                   styles={customSelectStyles}
                   menuPortalTarget={document.body}
@@ -365,7 +408,7 @@ function RecordsListView({
                   onChange={(selected) => {
                     setDraftBeaches((selected || []).map(o => o.value));
                   }}
-                  placeholder={draftAreas.length === 1 ? 'ビーチ' : 'ビーチ（エリア選択必須）'}
+                  placeholder={draftAreas.length === 1 ? '全ビーチ' : 'エリアを1つ選択'}
                   noOptionsMessage={() => "見つかりません"}
                   styles={customSelectStyles}
                   menuPortalTarget={document.body}
