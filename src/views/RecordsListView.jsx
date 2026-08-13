@@ -141,8 +141,7 @@ function RecordsListView({
     });
   }, [beachSelectOptions]);
 
-  // ログイン者自身の絞り込みはrequestPayload.membersで常に効いており選択解除できないため、
-  // 選べても意味のないログイン者自身は選択肢から外す
+  // パトロールメンバー
   const safeMembers = useSafeMembers();
   const memberOptions = useMemo(() => safeMembers.map(item => {
     const uid = item?.user_id ?? String(item);
@@ -308,11 +307,10 @@ function RecordsListView({
 
       // CSV出力もgetinfoApi(一覧取得)と同じ絞り込み条件をそのままAPIへ送る。
       // レコードを個別に列挙する方式ではなく、typeだけ2→4に差し替える
-      // （CSV出力APIの仕様自体はまだfixしていないため、現状はこの暫定対応とする）
       const { blob, filename } = await getCsvApi(csvPayload);
 
       // aタグのdownload属性でその場でダウンロードさせる。
-      // 新規タブを開くと閉じ忘れが残るため、タブは開かない。
+      // タブは開かない。
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
