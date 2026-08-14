@@ -406,7 +406,7 @@ function RecordsListView({
                   onChange={(selected) => {
                     setDraftBeaches((selected || []).map(o => o.value));
                   }}
-                  placeholder={draftAreas.length === 1 ? '全ビーチ' : 'エリアを1つ選択'}
+                  placeholder={draftAreas.length === 1 ? '全ビーチ' : 'エリア選択必須'}
                   noOptionsMessage={() => "見つかりません"}
                   styles={customSelectStyles}
                   menuPortalTarget={document.body}
