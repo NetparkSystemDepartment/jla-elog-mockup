@@ -153,7 +153,6 @@ function App() {
   // 編集・取消ボタンの表示可否（ブリーフィング経由では非表示）の判定に使う
   const [recordDetailSource, setRecordDetailSource] = useState('records');
   const [editingRecord, setEditingRecord] = useState(null);
-  const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
 
   // ログデータ一覧の検索条件。ログ詳細画面との行き来（records ⇄ recordDetail）では保持し、
   // フッターの「ログデータ」メニューから入り直した時だけ resetRecordsFilters() で初期化する
@@ -191,7 +190,6 @@ function App() {
     setRecordsSortDir('desc');
     setRecordsCurrentPage(1);
     setRecordsShowCancelled(false);
-    setRecordsCsvSelectedKeys(new Set());
   };
 
   // idからビーチ名を返す
@@ -694,8 +692,6 @@ function App() {
           user={user}
           onBack={() => setView('home')}
           onSelectRecord={(rec) => { setSelectedRecord(rec); setRecordDetailSource('records'); setView('recordDetail'); }}
-          selectedKeys={recordsCsvSelectedKeys}
-          setSelectedKeys={setRecordsCsvSelectedKeys}
           filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}
           filterDateFrom={recordsFilterDateFrom} setFilterDateFrom={setRecordsFilterDateFrom}
           filterDateTo={recordsFilterDateTo} setFilterDateTo={setRecordsFilterDateTo}
