@@ -520,10 +520,8 @@ function RecordsListView({
           <div
             key={`${record.key}-${record.detail_key}`}
             style={s.tableRow}
-            //次バージョンまで保留
-            //onClick={() => onSelectRecord(record)}
-
-            >
+            onClick={() => onSelectRecord(record)}
+          >
             <div style={s.col}>{areaLabel(record.area, allAreaList)}</div>
             <div style={s.col}>{beachLabel(record.beach, record.area, allAreaList)}</div>
             <div style={s.col}>
@@ -646,8 +644,7 @@ const s = {
   tableRow: {
     display: 'flex', padding: '14px 16px', backgroundColor: 'white',
     borderBottom: '1px solid #f1f5f9', fontSize: '14px', alignItems: 'center',
-    //次バージョンまで保留
-    //cursor: 'pointer',
+    cursor: 'pointer',
   },
   col: { flex: 1, userSelect: 'none', textAlign: 'center' },
   colWide: { flex: 1.5, fontSize: '12px', color: '#334155' },
@@ -667,9 +664,8 @@ const s = {
   },
   historyBtn: {
     background: 'none', border: 'none', color: '#475569',
-    fontSize: '12px', textDecoration: 'underline',
-    // 次バージョンまで保留
-    // cursor: 'pointer',
+    fontSize: '12px', textDecoration: 'underline', 
+    //cursor: 'pointer',
   },
 };
 
