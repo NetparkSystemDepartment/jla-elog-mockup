@@ -568,7 +568,7 @@ function RecordsListView({
           {isAdmin && (
             <button
               onClick={() => {
-                if (!CANCEL_HISTORY_RELEASED) return;
+                //if (!CANCEL_HISTORY_RELEASED) return;
                 setShowCancelled(v => !v); resetPage();
               }}
               style={s.historyBtn}
