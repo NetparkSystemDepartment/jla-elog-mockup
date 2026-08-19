@@ -145,9 +145,10 @@ function BriefingView({
 
       if (resData && resData.data) {
         
+        // delete_flgが1（取消）のデータを除外
         // 申し送りが null, undefined, または "なし" のデータを除外
         const filteredData = resData.data.filter(item => {
-          if (item.handover === null || item.handover === undefined) {
+          if (item.delete_flg === 1 || item.handover === null || item.handover === undefined) {
             return false;
           }
 
@@ -223,9 +224,13 @@ function BriefingView({
   // パトロールメンバー
   const safeMembers = useSafeMembers();
   // ログイン者を除く（members は { id, user_id } オブジェクトの配列）
-  const exceptLogin = safeMembers.filter(member =>
-    (member?.user_id ?? member) !== user.id
-  );
+  // safeMembers 側の user_id は "id + name" を連結した文字列（例: '0805kikuchi'）で
+  // 保持されているため、比較する側も同じ形に組み立てて一致判定する
+  const loginUserId = String(user.id) + String(user.name);
+  const exceptLogin = safeMembers.filter(member => {
+    const memberUserId = member?.user_id ?? member;
+    return String(memberUserId) !== loginUserId;
+  });
   // valueはuser_id文字列ではなく{id, user_id}オブジェクトそのものを保持する
   // （setinfo送信・indexedDB保存までidを引き継ぐため。LogEntryView.jsxと同じ実装に統一）
   const loginOptions = exceptLogin.map(item => ({
