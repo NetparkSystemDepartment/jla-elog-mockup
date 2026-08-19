@@ -96,9 +96,11 @@ function BriefingView({
   const fetchNoticeData = React.useCallback(async (areaNo) => {
     if (!areaNo) return;
 
+    // 非表示データは取得しないので、visible_flg:trueを設定する
     const requestBody = {
       type: 1,
       areaNo: Number(areaNo),
+      visible_flg : true,
     };
     try {
       setIsInfoLoading(true);
