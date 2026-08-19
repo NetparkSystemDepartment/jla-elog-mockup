@@ -149,11 +149,13 @@ function App() {
   const recordsInitialMembers  = () => (user?.user_id ? [user.user_id] : []);
 
   const [recordsFilterAreas, setRecordsFilterAreas]       = useState([]);
+  const [recordsFilterBeaches, setRecordsFilterBeaches]   = useState([]);
   const [recordsFilterDateFrom, setRecordsFilterDateFrom] = useState(recordsInitialDateFrom);
   const [recordsFilterDateTo, setRecordsFilterDateTo]     = useState(recordsInitialDateTo);
   const [recordsFilterDow, setRecordsFilterDow]           = useState('');
   const [recordsFilterMembers, setRecordsFilterMembers]   = useState(recordsInitialMembers);
   const [recordsDraftAreas, setRecordsDraftAreas]         = useState([]);
+  const [recordsDraftBeaches, setRecordsDraftBeaches]     = useState([]);
   const [recordsDraftDateFrom, setRecordsDraftDateFrom]   = useState(recordsInitialDateFrom);
   const [recordsDraftDateTo, setRecordsDraftDateTo]       = useState(recordsInitialDateTo);
   const [recordsDraftDow, setRecordsDraftDow]             = useState('');
@@ -165,11 +167,13 @@ function App() {
 
   const resetRecordsFilters = () => {
     setRecordsFilterAreas([]);
+    setRecordsFilterBeaches([]);
     setRecordsFilterDateFrom(recordsInitialDateFrom());
     setRecordsFilterDateTo(recordsInitialDateTo());
     setRecordsFilterDow('');
     setRecordsFilterMembers(recordsInitialMembers());
     setRecordsDraftAreas([]);
+    setRecordsDraftBeaches([]);
     setRecordsDraftDateFrom(recordsInitialDateFrom());
     setRecordsDraftDateTo(recordsInitialDateTo());
     setRecordsDraftDow('');
@@ -676,11 +680,13 @@ function App() {
           selectedKeys={recordsCsvSelectedKeys}
           setSelectedKeys={setRecordsCsvSelectedKeys}
           filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}
+          filterBeaches={recordsFilterBeaches} setFilterBeaches={setRecordsFilterBeaches}
           filterDateFrom={recordsFilterDateFrom} setFilterDateFrom={setRecordsFilterDateFrom}
           filterDateTo={recordsFilterDateTo} setFilterDateTo={setRecordsFilterDateTo}
           filterDow={recordsFilterDow} setFilterDow={setRecordsFilterDow}
           filterMembers={recordsFilterMembers} setFilterMembers={setRecordsFilterMembers}
           draftAreas={recordsDraftAreas} setDraftAreas={setRecordsDraftAreas}
+          draftBeaches={recordsDraftBeaches} setDraftBeaches={setRecordsDraftBeaches}
           draftDateFrom={recordsDraftDateFrom} setDraftDateFrom={setRecordsDraftDateFrom}
           draftDateTo={recordsDraftDateTo} setDraftDateTo={setRecordsDraftDateTo}
           draftDow={recordsDraftDow} setDraftDow={setRecordsDraftDow}

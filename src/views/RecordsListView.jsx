@@ -71,11 +71,13 @@ const makeDefaultCompare = (areaList) => (a, b) => {
 function RecordsListView({
   user, onBack, onSelectRecord,
   filterAreas, setFilterAreas,
+  filterBeaches, setFilterBeaches,
   filterDateFrom, setFilterDateFrom,
   filterDateTo, setFilterDateTo,
   filterDow, setFilterDow,
   filterMembers, setFilterMembers,
   draftAreas, setDraftAreas,
+  draftBeaches, setDraftBeaches,
   draftDateFrom, setDraftDateFrom,
   draftDateTo, setDraftDateTo,
   draftDow, setDraftDow,
@@ -111,11 +113,8 @@ function RecordsListView({
   );
 
   // ビーチ絞り込みはエリアが1つだけ選択されている時だけ有効。
-  // 検索条件はApp.jsx側で保持している他の絞り込み(draftAreas等)と違い、ビーチはこの画面内だけで
-  // 完結する補助的な絞り込みのためローカルstateで持つ（画面遷移をまたいだ保持はしない）
-  const [draftBeaches, setDraftBeaches] = useState([]);
-  const [filterBeaches, setFilterBeaches] = useState([]);
-
+  // 他の絞り込み(draftAreas等)と同様、ログ詳細画面との行き来で条件を保持するため
+  // App.jsx側のstateをpropsで受け取る（このコンポーネント内にはローカルstateを持たない）
   const singleSelectedArea = draftAreas.length === 1
     ? areaOptions.find(a => a.area === draftAreas[0])
     : null;
@@ -406,7 +405,7 @@ function RecordsListView({
                   onChange={(selected) => {
                     setDraftBeaches((selected || []).map(o => o.value));
                   }}
-                  placeholder={draftAreas.length === 1 ? '全ビーチ' : 'エリア選択必須'}
+                  placeholder={draftAreas.length === 1 ? '全ビーチ' : 'エリア１ヶ所選択時のみ選択可能'}
                   noOptionsMessage={() => "見つかりません"}
                   styles={customSelectStyles}
                   menuPortalTarget={document.body}
