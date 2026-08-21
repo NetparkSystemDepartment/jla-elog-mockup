@@ -71,11 +71,13 @@ const makeDefaultCompare = (areaList) => (a, b) => {
 function RecordsListView({
   user, onBack, onSelectRecord,
   filterAreas, setFilterAreas,
+  filterBeaches, setFilterBeaches,
   filterDateFrom, setFilterDateFrom,
   filterDateTo, setFilterDateTo,
   filterDow, setFilterDow,
   filterMembers, setFilterMembers,
   draftAreas, setDraftAreas,
+  draftBeaches, setDraftBeaches,
   draftDateFrom, setDraftDateFrom,
   draftDateTo, setDraftDateTo,
   draftDow, setDraftDow,
@@ -111,11 +113,8 @@ function RecordsListView({
   );
 
   // ビーチ絞り込みはエリアが1つだけ選択されている時だけ有効。
-  // 検索条件はApp.jsx側で保持している他の絞り込み(draftAreas等)と違い、ビーチはこの画面内だけで
-  // 完結する補助的な絞り込みのためローカルstateで持つ（画面遷移をまたいだ保持はしない）
-  const [draftBeaches, setDraftBeaches] = useState([]);
-  const [filterBeaches, setFilterBeaches] = useState([]);
-
+  // 他の絞り込み(draftAreas等)と同様、ログ詳細画面との行き来で条件を保持するため
+  // App.jsx側のstateをpropsで受け取る（このコンポーネント内にはローカルstateを持たない）
   const singleSelectedArea = draftAreas.length === 1
     ? areaOptions.find(a => a.area === draftAreas[0])
     : null;
@@ -369,7 +368,7 @@ function RecordsListView({
         ) : (
           <div style={s.menuBtn}><Menu color="white" size={22} /></div>
         )}
-        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴' : 'ログデータ'}</h1>
+        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴一覧' : 'ログデータ'}</h1>
         <div style={{ width: 40 }} />
       </header>
 
@@ -573,7 +572,7 @@ function RecordsListView({
               }}
               style={s.historyBtn}
             >
-              {showCancelled ? '通常一覧に戻る' : '取消履歴を確認する'}
+              {showCancelled ? 'ログデータを確認する' : '取消履歴を確認する'}
             </button>
           )}
         </div>

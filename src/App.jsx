@@ -153,6 +153,7 @@ function App() {
   // 編集・取消ボタンの表示可否（ブリーフィング経由では非表示）の判定に使う
   const [recordDetailSource, setRecordDetailSource] = useState('records');
   const [editingRecord, setEditingRecord] = useState(null);
+  const [recordsCsvSelectedKeys, setRecordsCsvSelectedKeys] = useState(new Set());
 
   // ログデータ一覧の検索条件。ログ詳細画面との行き来（records ⇄ recordDetail）では保持し、
   // フッターの「ログデータ」メニューから入り直した時だけ resetRecordsFilters() で初期化する
@@ -161,11 +162,13 @@ function App() {
   const recordsInitialMembers  = () => (user?.user_id ? [user.user_id] : []);
 
   const [recordsFilterAreas, setRecordsFilterAreas]       = useState([]);
+  const [recordsFilterBeaches, setRecordsFilterBeaches]   = useState([]);
   const [recordsFilterDateFrom, setRecordsFilterDateFrom] = useState(recordsInitialDateFrom);
   const [recordsFilterDateTo, setRecordsFilterDateTo]     = useState(recordsInitialDateTo);
   const [recordsFilterDow, setRecordsFilterDow]           = useState('');
   const [recordsFilterMembers, setRecordsFilterMembers]   = useState(recordsInitialMembers);
   const [recordsDraftAreas, setRecordsDraftAreas]         = useState([]);
+  const [recordsDraftBeaches, setRecordsDraftBeaches]     = useState([]);
   const [recordsDraftDateFrom, setRecordsDraftDateFrom]   = useState(recordsInitialDateFrom);
   const [recordsDraftDateTo, setRecordsDraftDateTo]       = useState(recordsInitialDateTo);
   const [recordsDraftDow, setRecordsDraftDow]             = useState('');
@@ -177,11 +180,13 @@ function App() {
 
   const resetRecordsFilters = () => {
     setRecordsFilterAreas([]);
+    setRecordsFilterBeaches([]);
     setRecordsFilterDateFrom(recordsInitialDateFrom());
     setRecordsFilterDateTo(recordsInitialDateTo());
     setRecordsFilterDow('');
     setRecordsFilterMembers(recordsInitialMembers());
     setRecordsDraftAreas([]);
+    setRecordsDraftBeaches([]);
     setRecordsDraftDateFrom(recordsInitialDateFrom());
     setRecordsDraftDateTo(recordsInitialDateTo());
     setRecordsDraftDow('');
@@ -190,6 +195,7 @@ function App() {
     setRecordsSortDir('desc');
     setRecordsCurrentPage(1);
     setRecordsShowCancelled(false);
+    setRecordsCsvSelectedKeys(new Set());
   };
 
   // idからビーチ名を返す
@@ -691,13 +697,17 @@ function App() {
         <RecordsListView
           user={user}
           onBack={() => setView('home')}
-          onSelectRecord={(rec) => { setSelectedRecord(rec); setRecordDetailSource('records'); setView('recordDetail'); }}
+          onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
+          selectedKeys={recordsCsvSelectedKeys}
+          setSelectedKeys={setRecordsCsvSelectedKeys}
           filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}
+          filterBeaches={recordsFilterBeaches} setFilterBeaches={setRecordsFilterBeaches}
           filterDateFrom={recordsFilterDateFrom} setFilterDateFrom={setRecordsFilterDateFrom}
           filterDateTo={recordsFilterDateTo} setFilterDateTo={setRecordsFilterDateTo}
           filterDow={recordsFilterDow} setFilterDow={setRecordsFilterDow}
           filterMembers={recordsFilterMembers} setFilterMembers={setRecordsFilterMembers}
           draftAreas={recordsDraftAreas} setDraftAreas={setRecordsDraftAreas}
+          draftBeaches={recordsDraftBeaches} setDraftBeaches={setRecordsDraftBeaches}
           draftDateFrom={recordsDraftDateFrom} setDraftDateFrom={setRecordsDraftDateFrom}
           draftDateTo={recordsDraftDateTo} setDraftDateTo={setRecordsDraftDateTo}
           draftDow={recordsDraftDow} setDraftDow={setRecordsDraftDow}

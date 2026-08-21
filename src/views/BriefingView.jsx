@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, ArrowDownUp, ArrowUp, ArrowDown
 import { TIDE_OPTIONS, DIRECTIONS, WARNING_OPTIONS, ALERT_OPTIONS, WIND_SPEED_OPTIONS } from '../constants';
 import { MultiSelectInput } from '../components/MultiSelectInput';
 import { useAuth } from '../contexts/authContext';
+import { useConfirm } from '../components/ConfirmDialogContext';
 import { getinfoApi, setinfoApi } from '../api/recordApi';
 // パトロールメンバー
 import { useSafeMembers } from '../useSafeMembers';
@@ -30,6 +31,7 @@ function BriefingView({
 }) {
 
   const { logout } = useAuth();
+  const confirm = useConfirm();
   
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
@@ -386,6 +388,15 @@ function BriefingView({
       toast.warning('非表示にする申し送りを選択してください。');
       return;
     }
+
+    // APIを呼び出す前に確認ダイアログを表示する
+    const isConfirmed = await confirm({
+      title: '確認',
+      message: `選択した${selectedRows.length}件の申し送りを、全監視員に非表示にします。よろしいですか？`,
+      okText: '非表示にする',
+      cancelText: 'キャンセル',
+    });
+    if (!isConfirmed) return;
 
     const payload = isAllHandoversSelected
       ? {
