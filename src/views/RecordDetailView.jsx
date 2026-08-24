@@ -27,6 +27,16 @@ const beachLabel = (beachId, areaId, areaList) => {
   const beach = (area?.beach_info || []).find(b => String(b.no) === String(beachId));
   return beach?.beach ?? String(beachId);
 };
+// getinfo(type:2/3) は area/beach を「番号」ではなく「名称の文字列」で返してくるため、
+// setinfo(type:1)に送る際は名称→noへ逆引きする必要がある
+// （RecordsListView.jsxのareaNoOf/beachNoOfと同じ考え方）
+const areaNoOf = (areaName, areaList) =>
+  areaList.find(a => a.area === areaName)?.no;
+
+const beachNoOf = (areaName, beachName, areaList) => {
+  const area = areaList.find(a => a.area === areaName);
+  return (area?.beach_info || []).find(b => b.beach === beachName)?.no;
+};
 
 /* ---------- 選択肢ラベル取得 ---------- */
 const labelOf = (options, id) => {
@@ -139,7 +149,7 @@ function HeaderBar({ onBack }) {
   );
 }
 
-function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
+function RecordDetailView({ user, recordSummary, onBack, onEdit, hideActions = false }) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling]         = useState(false);
   const queryClient = useQueryClient();
@@ -200,8 +210,14 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
 
   // kind: 0=admin 1=パトロール 2=タワー 3=ゲストパトロール 4=ゲストタワー
   // 編集する: adminは常に表示、パトロール/タワーは3日間のみ、ゲストは常に非表示
+  // ブリーフィング画面（申し送り一覧）からの遷移では、hideActionsにより
+  // 編集する／取消するボタンを常に非表示にする（仕様）
+  // canEdit
+
   const canEdit = (() => {
     if (!record) return false;
+    if (record.delete_flg) return false;   // 追加
+    if (hideActions) return false;
     if (user?.kind === 0) return true;
     if (user?.kind === 3 || user?.kind === 4) return false;
     if (!effectiveStartDate) return false;
@@ -213,22 +229,33 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit }) {
   })();
 
   // 取消する: adminのみ常に表示。パトロール/タワー/ゲストは常に非表示
-  const canCancel = !!record && user?.kind === 0;
+  //const canCancel = !!record && user?.kind === 0 && !hideActions;
+  const canCancel = !!record && user?.kind === 0 && !hideActions && !record.delete_flg;  // 追加
 
-  const handleCancel = async () => {
-    setIsCancelling(true);
-    try {
-      // membersはgetinfoが返す{id, user_id}のオブジェクト配列のまま送る（文字列への変換はしない）
-      const { members: rawMembers, end_time, ...rest } = record;
-      const cancelPayload = {
-        ...rest,
-        ...(end_time !== undefined ? { endTime: end_time } : {}),
-        area: effectiveArea,
-        beach: effectiveBeach,
-        startDate: effectiveStartDate,
-        members: rawMembers || [],
-        delete_flg: true,
-      };
+const handleCancel = async () => {
+  setIsCancelling(true);
+  try {
+    const { members: rawMembers, end_time, ...rest } = record;
+
+    // effectiveArea/effectiveBeach は名称文字列なので、setinfo用に番号へ変換する
+    const areaNo  = areaNoOf(effectiveArea, allAreaList);
+    const beachNo = beachNoOf(effectiveArea, effectiveBeach, allAreaList);
+
+    // 変換できなかった場合は不正なデータを送信してしまうため、ここで止める
+    if (areaNo === undefined || beachNo === undefined) {
+      toast.error('エリア・ビーチ情報の取得に失敗しました。画面を開き直してください。');
+      return;
+    }
+
+    const cancelPayload = {
+      ...rest,
+      ...(end_time !== undefined ? { endTime: end_time } : {}),
+      area: areaNo,
+      beach: beachNo,
+      startDate: effectiveStartDate,
+      members: rawMembers || [],
+      delete_flg: true,
+    };
       console.log('[cancel payload]', JSON.stringify(cancelPayload, null, 2));
       const result = await setinfoApi({ type: 1, data: cancelPayload });
       console.log('[cancel result]', JSON.stringify(result));

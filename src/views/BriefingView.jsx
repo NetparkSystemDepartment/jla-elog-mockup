@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight, ChevronDown, ArrowDownUp, ArrowUp, ArrowDown
 import { TIDE_OPTIONS, DIRECTIONS, WARNING_OPTIONS, ALERT_OPTIONS, WIND_SPEED_OPTIONS } from '../constants';
 import { MultiSelectInput } from '../components/MultiSelectInput';
 import { useAuth } from '../contexts/authContext';
-import { getinfoApi } from '../api/recordApi';
+import { useConfirm } from '../components/ConfirmDialogContext';
+import { getinfoApi, setinfoApi } from '../api/recordApi';
 // パトロールメンバー
 import { useSafeMembers } from '../useSafeMembers';
 // 車種名
@@ -20,9 +21,17 @@ import okinawaLogo from '../assets/okinawa.png';
 // for phase1
 //const HANDOVERAREA = ['恩納村'];
 
-function BriefingView({ user, onComplete, recentHandovers = [] }) {
+function BriefingView({
+  user, onComplete, recentHandovers = [], onSelectHandover,
+  // 申し送り一覧のエリア選択・ページ・ソート状態は、ブリーフィング画面を離れて
+  // 戻ってきた際にも復元できるよう、App.jsx側でstateを保持してもらう（controlled）
+  selectedArea, setSelectedArea,
+  currentPage, setCurrentPage,
+  sortConfig, setSortConfig,
+}) {
 
   const { logout } = useAuth();
+  const confirm = useConfirm();
   
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
@@ -76,8 +85,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
 
   const [noticeList, setNoticeList] = useState([]);
   const [isInfoLoading, setIsInfoLoading] = useState(true);
-  // 申し送り一覧のエリア
-  const [selectedArea, setSelectedArea] = useState(''); // 初期値は空（未選択）
+  // 申し送り一覧のエリアは props（selectedArea/setSelectedArea）で制御される
 
   // サーバーのBody部に渡すパラメーター（Payload）
 //   const requestBody = {
@@ -86,134 +94,136 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
 // // key: 59,
 //   };
 
-  // 申し送りデータの取得
-  useEffect(() => {
-//console.log('申し送りデータの取得', selectedArea);
-    if (!selectedArea) return;
+  // 申し送りデータの取得（非表示処理後の再取得でも使うため useCallback で切り出す）
+  const fetchNoticeData = React.useCallback(async (areaNo) => {
+    if (!areaNo) return;
 
+    // 非表示データは取得しないので、visible_flg:trueを設定する
     const requestBody = {
       type: 1,
-      areaNo: Number(selectedArea),
+      areaNo: Number(areaNo),
+      visible_flg : true,
     };
-    const fetchNoticeData = async () => {
-      try {
-        setIsInfoLoading(true);
-        
-        // 共通関数を呼び出し
-        const resData = await getinfoApi(requestBody);
+    try {
+      setIsInfoLoading(true);
 
-        // トークンの有効期限切れ、利用時間外、再ログイン
-        if (resData.result === false) {
-          if (resData.error_no === 1001) {
-            toast.warning(
-              <div>ログイン情報が確認できません。<br />再ログインしてください。</div>
-            );
-            logout();
-            return;
-          }
-          if (resData.error_no === 1002) {
-            toast.warning(
-              <div>ログイン情報が不正です。<br />再ログインしてください。</div>
-            );
-            logout();
-            return;
-          }
-          if (resData.error_no === 1004) {
-            toast.warning(
-              <div>ログインの有効期限が切れました。<br />再ログインしてください。</div>
-            );  
-            logout();
-            return;
-          }
-          if (resData.error_no === 1005) {
-            toast.warning(
-              <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
-            );  
-            return;
-          }
-          else {
-            toast.error(
-              <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
-            );  
-            return;
-          }
+      // 共通関数を呼び出し
+      const resData = await getinfoApi(requestBody);
+
+      // トークンの有効期限切れ、利用時間外、再ログイン
+      if (resData.result === false) {
+        if (resData.error_no === 1001) {
+          toast.warning(
+            <div>ログイン情報が確認できません。<br />再ログインしてください。</div>
+          );
+          logout();
+          return;
         }
+        if (resData.error_no === 1002) {
+          toast.warning(
+            <div>ログイン情報が不正です。<br />再ログインしてください。</div>
+          );
+          logout();
+          return;
+        }
+        if (resData.error_no === 1004) {
+          toast.warning(
+            <div>ログインの有効期限が切れました。<br />再ログインしてください。</div>
+          );  
+          logout();
+          return;
+        }
+        if (resData.error_no === 1005) {
+          toast.warning(
+            <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+          );  
+          return;
+        }
+        else {
+          toast.error(
+            <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+          );  
+          return;
+        }
+      }
 
-        if (resData && resData.data) {
-          
-          // 申し送りが null, undefined, または "なし" のデータを除外
-          const filteredData = resData.data.filter(item => {
-            if (item.handover === null || item.handover === undefined) {
-              return false;
-            }
+      if (resData && resData.data) {
+        
+        // delete_flgが1（取消）のデータを除外
+        // 申し送りが null, undefined, または "なし" のデータを除外
+        const filteredData = resData.data.filter(item => {
+          if (item.delete_flg === 1 || item.handover === null || item.handover === undefined) {
+            return false;
+          }
 
-            // 除外したいキーワードのリスト
-            // 画面定義書_20250618で「特になし」はキーワードから削除
-            //const excludeKeywords = ["なし", "特になし"];
-            const excludeKeywords = ["なし"];
+          // 除外したいキーワードのリスト
+          // 画面定義書_20250618で「特になし」はキーワードから削除
+          //const excludeKeywords = ["なし", "特になし"];
+          const excludeKeywords = ["なし"];
 
-            // 前後の空白を削除した上で、リストに含まれていれば除外
-            if (excludeKeywords.includes(String(item.handover).trim())) {
-              return false;
-            }
+          // 前後の空白を削除した上で、リストに含まれていれば除外
+          if (excludeKeywords.includes(String(item.handover).trim())) {
+            return false;
+          }
 
-            return true;
-          });
+          return true;
+        });
 
 //console.log('filteredData:', filteredData);
 
-          // 最優先: priority(昇順) ➔ key(降順) ➔ detail_key(降順)
-          const initialSortedData = filteredData.sort((a, b) => {
-            
-            // --- 第1キー: priority の昇順 (a - b) ---
-            const aPriority = a.priority !== undefined && a.priority !== null ? Number(a.priority) : 999;
-            const bPriority = b.priority !== undefined && b.priority !== null ? Number(b.priority) : 999;
-            
-            if (aPriority !== bPriority) {
-              return aPriority - bPriority; // 0(高) ➔ 1(中) ➔ 2(低) の昇順
-            }
-
-            // --- 第2キー: startDate の降順 (新しい順) ---
-            // null や undefined 対策として安全に空文字にします
-            const aDate = a.startDate !== undefined && a.startDate !== null ? String(a.startDate) : '';
-            const bDate = b.startDate !== undefined && b.startDate !== null ? String(b.startDate) : '';
-            
-            if (aDate !== bDate) {
-              // 通常は a.localeCompare(b) で昇順（古い順）になりますが、
-              // 降順（新しい順）にしたいので、b と a の位置を入れ替えて比較します
-              return bDate.localeCompare(aDate, 'ja', { numeric: true });
-            }            
-            // --- 第3キー: key の降順 (b - a) ---
-            const aKey = Number(a.key) || 0;
-            const bKey = Number(b.key) || 0;
-            
-            if (bKey !== aKey) {
-              return bKey - aKey; // 値が大きい方を先にする
-            }
-
-            // --- 第4キー: detail_key の降順 (b - a) ---
-            const aDetailKey = Number(a.detail_key) || 0;
-            const bDetailKey = Number(b.detail_key) || 0;
-            
-            return bDetailKey - aDetailKey; // 値が大きい方を先にする
-          });
-
-          // 加工・ソートが完了したデータをStateにセット
-          setNoticeList(initialSortedData);
-
-          // 1週間分のデータを取り込み直す
-          await loadWeeklyRecords();
+        // 最優先: priority(昇順) ➔ key(降順) ➔ detail_key(降順)
+        const initialSortedData = filteredData.sort((a, b) => {
           
-        }
-      } catch (err) {
-        console.error('申し送り一覧の取得に失敗:', err);
-      } finally {
-        setIsInfoLoading(false);
-      }
-    };
+          // --- 第1キー: priority の昇順 (a - b) ---
+          const aPriority = a.priority !== undefined && a.priority !== null ? Number(a.priority) : 999;
+          const bPriority = b.priority !== undefined && b.priority !== null ? Number(b.priority) : 999;
+          
+          if (aPriority !== bPriority) {
+            return aPriority - bPriority; // 0(高) ➔ 1(中) ➔ 2(低) の昇順
+          }
 
-    fetchNoticeData();
-  }, [selectedArea]);
+          // --- 第2キー: startDate の降順 (新しい順) ---
+          // null や undefined 対策として安全に空文字にします
+          const aDate = a.startDate !== undefined && a.startDate !== null ? String(a.startDate) : '';
+          const bDate = b.startDate !== undefined && b.startDate !== null ? String(b.startDate) : '';
+          
+          if (aDate !== bDate) {
+            // 通常は a.localeCompare(b) で昇順（古い順）になりますが、
+            // 降順（新しい順）にしたいので、b と a の位置を入れ替えて比較します
+            return bDate.localeCompare(aDate, 'ja', { numeric: true });
+          }            
+          // --- 第3キー: key の降順 (b - a) ---
+          const aKey = Number(a.key) || 0;
+          const bKey = Number(b.key) || 0;
+          
+          if (bKey !== aKey) {
+            return bKey - aKey; // 値が大きい方を先にする
+          }
+
+          // --- 第4キー: detail_key の降順 (b - a) ---
+          const aDetailKey = Number(a.detail_key) || 0;
+          const bDetailKey = Number(b.detail_key) || 0;
+          
+          return bDetailKey - aDetailKey; // 値が大きい方を先にする
+        });
+
+        // 加工・ソートが完了したデータをStateにセット
+        setNoticeList(initialSortedData);
+
+        // 1週間分のデータを取り込み直す
+        await loadWeeklyRecords();
+        
+      }
+    } catch (err) {
+      console.error('申し送り一覧の取得に失敗:', err);
+    } finally {
+      setIsInfoLoading(false);
+    }
+  }, [logout]);
+
+  useEffect(() => {
+    fetchNoticeData(selectedArea);
+  }, [selectedArea, fetchNoticeData]);
 
   // パトロールメンバー
   const safeMembers = useSafeMembers();
@@ -254,9 +264,7 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
   // チェックされた行のインデックスを保持
   const [selectedRows, setSelectedRows] = useState([]); 
 
-  // ページネーター用
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  // ページネーター・ソート状態も props（currentPage/sortConfig）で制御される
 
   // ソートロジックの追加
   const sortedNotices = React.useMemo(() => {
@@ -358,6 +366,103 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
         return [...prev, rowKey]; // なければ追加する
       }
     });
+  };
+
+  // 【アドミン】「全監視員に非表示」ボタンの送信中フラグ
+  const [isHiding, setIsHiding] = useState(false);
+
+  // 全選択（＝一覧の全件が選択されている）かどうかの判定
+  // handleSelectAllは表示ページに関わらずsortedNotices全体を選択対象にしているため、
+  // ここでもsortedNotices全体を基準に判定する
+  const isAllHandoversSelected =
+    sortedNotices.length > 0 &&
+    sortedNotices.every(item => selectedRows.includes(item.key || item.detail_key || item.id));
+
+  // 【アドミン】「全監視員に非表示」ボタンのハンドラー
+  const handleHideForAllPatrols = async () => {
+    if (!selectedArea) {
+      toast.warning('表示するエリアを選択してください。');
+      return;
+    }
+    if (selectedRows.length === 0) {
+      toast.warning('非表示にする申し送りを選択してください。');
+      return;
+    }
+
+    // APIを呼び出す前に確認ダイアログを表示する
+    const isConfirmed = await confirm({
+      title: '確認',
+      message: `選択した${selectedRows.length}件の申し送りを、全監視員に非表示にします。よろしいですか？`,
+      okText: '非表示にする',
+      cancelText: 'キャンセル',
+    });
+    if (!isConfirmed) return;
+
+    const payload = isAllHandoversSelected
+      ? {
+          type: 2,
+          areaNo: Number(selectedArea),
+          all_invisible_flg: true,
+        }
+      : {
+          type: 2,
+          areaNo: Number(selectedArea),
+          data: sortedNotices
+            .filter(item => selectedRows.includes(item.key || item.detail_key || item.id))
+            .map(item => ({ key: item.key, detail_key: item.detail_key })),
+        };
+
+    setIsHiding(true);
+    try {
+      const result = await setinfoApi(payload);
+
+      // トークンの有効期限切れ、利用時間外、再ログイン
+      if (result?.result === false) {
+        if (result.error_no === 1001) {
+          toast.warning(
+            <div>ログイン情報が確認できません。<br />再ログインして再度実行してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1002) {
+          toast.warning(
+            <div>ログイン情報が不正です。<br />再ログインして再度実行してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1004) {
+          toast.warning(
+            <div>ログインの有効期限が切れました。<br />再ログインして再度実行してください。</div>
+          );
+          logout();
+          return;
+        }
+        if (result.error_no === 1005) {
+          toast.warning(
+            <div>時間外アクセスエラー。<br />現在の時間帯はシステムをご利用いただけません。</div>
+          );
+          return;
+        }
+        toast.error(
+          <div>データの処理中にエラーが発生しました。<br />問題が解決しない場合は、管理者へお問い合わせください。</div>
+        );
+        return;
+      }
+
+      toast.success('選択した申し送りを全監視員に非表示にしました。');
+
+      // 選択状態をクリアして、一覧を再取得（非表示にした申し送りが一覧から消えるのを反映）
+      setSelectedRows([]);
+      await fetchNoticeData(selectedArea);
+
+    } catch (err) {
+      console.error('全監視員に非表示の実行に失敗:', err);
+      toast.error('通信エラーが発生しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsHiding(false);
+    }
   };
 
   return (
@@ -690,21 +795,22 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
             {user?.kind === 0 && (
               <button
                 type="button"
-                disabled
+                onClick={handleHideForAllPatrols}
+                disabled={isHiding || !selectedArea || selectedRows.length === 0}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#cbd5e1',
-                  color: '#64748b',
+                  backgroundColor: (isHiding || !selectedArea || selectedRows.length === 0) ? '#cbd5e1' : '#dc2626',
+                  color: (isHiding || !selectedArea || selectedRows.length === 0) ? '#64748b' : '#ffffff',
                   border: '1px solid #94a3b8',
                   borderRadius: '6px',
                   fontSize: '13px',
                   fontWeight: 'bold',
-                  cursor: 'not-allowed',
-                  opacity: 0.8,
+                  cursor: (isHiding || !selectedArea || selectedRows.length === 0) ? 'not-allowed' : 'pointer',
+                  opacity: (isHiding || !selectedArea || selectedRows.length === 0) ? 0.8 : 1,
                   marginLeft: '288px',
                 }}
               >
-                全監視員に非表示
+                {isHiding ? '処理中...' : '全監視員に非表示'}
               </button>
             )}
           </div>
@@ -810,11 +916,20 @@ function BriefingView({ user, onComplete, recentHandovers = [] }) {
                       const memberNamesArray = [item.login_user, ...baseMemberNames];
 //                      const memberNamesArray = [currentHandovers.login_user, ...displayMembers.map(m => m.user_id)];
                       return (
-                        <div key={idx} style={briefingStyles.tableRow}>
+                        <div 
+                          key={idx} 
+                          style={{ ...briefingStyles.tableRow, cursor: 'pointer' }}
+                          onClick={() => onSelectHandover && onSelectHandover(item)}
+                        >
 
                           {/* 【アドミン】各行の左端チェックボックス */}
+                          {/* チェックボックスのクリックは行選択（一括操作用）のためのものなので、
+                              ログ詳細画面への遷移（行クリック）とは独立させる */}
                           {user?.kind === 0 && (
-                            <div style={{ flex: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <div 
+                              style={{ flex: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <input 
                                 type="checkbox" 
                                 checked={selectedRows.includes(item.key || item.detail_key || item.id)}

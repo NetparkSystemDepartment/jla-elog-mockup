@@ -368,7 +368,7 @@ function RecordsListView({
         ) : (
           <div style={s.menuBtn}><Menu color="white" size={22} /></div>
         )}
-        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴' : 'ログデータ'}</h1>
+        <h1 style={s.headerTitle}>{showCancelled ? '取消履歴一覧' : 'ログデータ'}</h1>
         <div style={{ width: 40 }} />
       </header>
 
@@ -567,12 +567,12 @@ function RecordsListView({
           {isAdmin && (
             <button
               onClick={() => {
-                if (!CANCEL_HISTORY_RELEASED) return;
+                //if (!CANCEL_HISTORY_RELEASED) return;
                 setShowCancelled(v => !v); resetPage();
               }}
               style={s.historyBtn}
             >
-              {showCancelled ? '通常一覧に戻る' : '取消履歴を確認する'}
+              {showCancelled ? 'ログデータを確認する' : '取消履歴を確認する'}
             </button>
           )}
         </div>
