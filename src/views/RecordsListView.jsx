@@ -663,7 +663,8 @@ const s = {
   },
   historyBtn: {
     background: 'none', border: 'none', color: '#475569',
-    fontSize: '12px', textDecoration: 'underline', cursor: 'pointer',
+    fontSize: '12px', textDecoration: 'underline', 
+    //cursor: 'pointer',
   },
 };
 
