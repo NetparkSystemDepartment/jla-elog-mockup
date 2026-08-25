@@ -146,6 +146,48 @@ function App() {
   const [briefingSelectedArea, setBriefingSelectedArea] = useState('');
   const [briefingCurrentPage, setBriefingCurrentPage] = useState(1);
   const [briefingSortConfig, setBriefingSortConfig] = useState({ key: null, direction: 'asc' });
+  const [briefingFormData, setBriefingFormData] = useState(() => {
+    const savedData = localStorage.getItem('briefing_data');
+
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+
+        // 今日の日付かどうか判断
+        const isExist = Boolean(parsed.timestamp);
+        let isToday = false;
+        if (isExist) {
+          const savedTimestamp = Number(parsed.timestamp);
+          const savedDate = new Date(savedTimestamp);
+          const today = new Date();
+
+          isToday =
+            savedDate.getFullYear() === today.getFullYear() &&
+            savedDate.getMonth() === today.getMonth() &&
+            savedDate.getDate() === today.getDate();
+        }
+        if (isExist) {
+          if (!isToday) {
+            // Local Strageを削除
+            localStorage.removeItem('briefing_data');
+            console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
+          } else {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.error('ローカルストレージのデータ解析に失敗:', e);
+      }
+    }
+    // データがない場合のデフォルト値
+    return {
+      members: '',
+      carType: '', carNo: '',
+      tide: '', highTideTime: '', highTide: '', lowTideTime: '', lowTide: '',
+      warn: '', alert: '', windDir: '', windSpeed: '',
+      handoverMemo: '', noteMemo: ''
+    };
+  });
   const [profileList, setProfileList] = useState([]);
   const [syncedRecords, setSyncedRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -669,7 +711,21 @@ function App() {
           selectedArea={briefingSelectedArea} setSelectedArea={setBriefingSelectedArea}
           currentPage={briefingCurrentPage} setCurrentPage={setBriefingCurrentPage}
           sortConfig={briefingSortConfig} setSortConfig={setBriefingSortConfig}
-        />
+          data={briefingFormData} setData={setBriefingFormData}
+        />        
+//        <BriefingView
+//          user={user} 
+//          onComplete={handleBriefingComplete} 
+//          recentHandovers={recentHandovers}
+//          onSelectHandover={(item) => {
+//            setSelectedRecord(item);
+//            setRecordDetailSource('briefing');
+//            setView('recordDetail');
+//          }}
+//          selectedArea={briefingSelectedArea} setSelectedArea={setBriefingSelectedArea}
+//          currentPage={briefingCurrentPage} setCurrentPage={setBriefingCurrentPage}
+//          sortConfig={briefingSortConfig} setSortConfig={setBriefingSortConfig}
+//        />
       );
 
     // ---- 新規登録画面 ---- 
@@ -697,7 +753,7 @@ function App() {
         <RecordsListView
           user={user}
           onBack={() => setView('home')}
-          onSelectRecord={(rec) => { setSelectedRecord(rec); setView('recordDetail'); }}
+          onSelectRecord={(rec) => { setSelectedRecord(rec); setRecordDetailSource('records'); setView('recordDetail'); }}
           selectedKeys={recordsCsvSelectedKeys}
           setSelectedKeys={setRecordsCsvSelectedKeys}
           filterAreas={recordsFilterAreas} setFilterAreas={setRecordsFilterAreas}

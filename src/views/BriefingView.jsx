@@ -28,6 +28,7 @@ function BriefingView({
   selectedArea, setSelectedArea,
   currentPage, setCurrentPage,
   sortConfig, setSortConfig,
+  data, setData,
 }) {
 
   const { logout } = useAuth();
@@ -36,52 +37,52 @@ function BriefingView({
   // エリアを取得
   const filteredCoasts = useAreaInfo(user.kind);
 
-  // ローカルストレージから既存データを読み込む初期化関数
-  const [data, setData] = useState(() => {
-    const savedData = localStorage.getItem('briefing_data');
+  // // ローカルストレージから既存データを読み込む初期化関数
+  // const [data, setData] = useState(() => {
+  //   const savedData = localStorage.getItem('briefing_data');
 
-    if (savedData) {
-      try {
-        //return JSON.parse(savedData);
+  //   if (savedData) {
+  //     try {
+  //       //return JSON.parse(savedData);
 
-          const parsed = JSON.parse(savedData);
+  //         const parsed = JSON.parse(savedData);
 
-          // 今日の日付かどうか判断
-          const isExist = Boolean(parsed.timestamp);
-          let isToday = false;
-          if (isExist) {
-            const savedTimestamp = Number(parsed.timestamp);
-            const savedDate = new Date(savedTimestamp);
-            const today = new Date();
+  //         // 今日の日付かどうか判断
+  //         const isExist = Boolean(parsed.timestamp);
+  //         let isToday = false;
+  //         if (isExist) {
+  //           const savedTimestamp = Number(parsed.timestamp);
+  //           const savedDate = new Date(savedTimestamp);
+  //           const today = new Date();
 
-            isToday = 
-              savedDate.getFullYear() === today.getFullYear() &&
-              savedDate.getMonth() === today.getMonth() &&
-              savedDate.getDate() === today.getDate();
-          }
-          if (isExist) {
-            if (!isToday) {
-              // Local Strageを削除
-              localStorage.removeItem('briefing_data');
-              console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
-            }
-            else {
-                return parsed;
-            }
-          }
-      } catch (e) {
-        console.error('ローカルストレージのデータ解析に失敗:', e);
-      }
-    }
-    // データがない場合のデフォルト値
-    return {
-      members: '',
-      carType: '', carNo: '',
-      tide: '', highTideTime: '', highTide: '', lowTideTime: '', lowTide: '',
-      warn: '', alert: '', windDir: '', windSpeed: '',
-      handoverMemo: '', noteMemo: ''
-    };
-  });
+  //           isToday = 
+  //             savedDate.getFullYear() === today.getFullYear() &&
+  //             savedDate.getMonth() === today.getMonth() &&
+  //             savedDate.getDate() === today.getDate();
+  //         }
+  //         if (isExist) {
+  //           if (!isToday) {
+  //             // Local Strageを削除
+  //             localStorage.removeItem('briefing_data');
+  //             console.log('Local Strageのbriefing_dataを削除しました（昨日以前データ）');
+  //           }
+  //           else {
+  //               return parsed;
+  //           }
+  //         }
+  //     } catch (e) {
+  //       console.error('ローカルストレージのデータ解析に失敗:', e);
+  //     }
+  //   }
+  //   // データがない場合のデフォルト値
+  //   return {
+  //     members: '',
+  //     carType: '', carNo: '',
+  //     tide: '', highTideTime: '', highTide: '', lowTideTime: '', lowTide: '',
+  //     warn: '', alert: '', windDir: '', windSpeed: '',
+  //     handoverMemo: '', noteMemo: ''
+  //   };
+  // });
 
   const [noticeList, setNoticeList] = useState([]);
   const [isInfoLoading, setIsInfoLoading] = useState(true);
