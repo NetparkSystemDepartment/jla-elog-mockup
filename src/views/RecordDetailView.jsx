@@ -218,8 +218,11 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit, hideActions = f
     if (!record) return false;
     if (record.delete_flg) return false;   // 追加
     if (hideActions) return false;
-    if (user?.kind === 0) return true;
-    if (user?.kind === 3 || user?.kind === 4) return false;
+  // access_typeでの判断に変更
+  //  if (user?.kind === 0) return true;
+  //  if (user?.kind === 3 || user?.kind === 4) return false;
+    if (user?.access_type < 2) return true;
+    if (user?.access_type === 3 || user?.access_type === 4) return false;
     if (!effectiveStartDate) return false;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const diffMs = new Date(todayStr).getTime() - new Date(effectiveStartDate).getTime();
@@ -229,8 +232,10 @@ function RecordDetailView({ user, recordSummary, onBack, onEdit, hideActions = f
   })();
 
   // 取消する: adminのみ常に表示。パトロール/タワー/ゲストは常に非表示
+  // access_typeでの判断に変更
   //const canCancel = !!record && user?.kind === 0 && !hideActions;
-  const canCancel = !!record && user?.kind === 0 && !hideActions && !record.delete_flg;  // 追加
+  //const canCancel = !!record && user?.kind === 0 && !hideActions && !record.delete_flg;  // 追加
+  const canCancel = !!record && user?.access_type === 0 && !hideActions && !record.delete_flg;  // 追加
 
 const handleCancel = async () => {
   setIsCancelling(true);

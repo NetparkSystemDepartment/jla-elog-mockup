@@ -793,7 +793,9 @@ function BriefingView({
               </div>
 
             {/* 【アドミン】「全監視員に非表示」ボタン */}
-            {user?.kind === 0 && (
+            {/* access_typeでの判断に変更 */}
+            {/* {user?.kind === 0 && ( */}
+            {user?.access_type === 0 && (
               <button
                 type="button"
                 onClick={handleHideForAllPatrols}
@@ -821,7 +823,9 @@ function BriefingView({
                 <div style={briefingStyles.tableHeader}>
 
                   {/* 【アドミン】一番左の全選択チェックボックス */}
-                  {user?.kind === 0 && (
+                  {/* access_typeでの判断に変更 */}
+                  {/* {user?.kind === 0 && ( */}
+                  {user?.access_type === 0 && (
                     <div style={{ 
                       flex: 0.5, 
                       display: 'flex', 
@@ -926,7 +930,7 @@ function BriefingView({
                           {/* 【アドミン】各行の左端チェックボックス */}
                           {/* チェックボックスのクリックは行選択（一括操作用）のためのものなので、
                               ログ詳細画面への遷移（行クリック）とは独立させる */}
-                          {user?.kind === 0 && (
+                          {user?.access_type === 0 && (
                             <div 
                               style={{ flex: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                               onClick={(e) => e.stopPropagation()}

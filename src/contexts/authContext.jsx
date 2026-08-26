@@ -43,6 +43,7 @@ export function AuthProvider({ children }) {
             token: authData.token,
             name: authData.login_name,
             user_id: authData.id + authData.login_name,
+            access_type: authData.access_type,
           });
 
           setMembers(authData.members || []);
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
           token: data.token,
           name: data.login_name,
           user_id: credentials.id + data.login_name,
+          access_type: data.access_type,
         });
 
 //        // tokenをindexedDBに書き込む
