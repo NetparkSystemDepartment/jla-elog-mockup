@@ -1,12 +1,33 @@
 // sw.js (ServiceWorkerのコード)
 import { getUnsentRecordsFromIndexedDB, saveRecordToIndexedDB } from './db-config.js';
 
+// キャッシュキーの定義（環境ごとに別名になるようprefixを付与）
+const CACHE_NAME = `d-elog-ripcurrent-org-v3`;
+
 self.addEventListener('install', () => {
   self.skipWaiting(); // 新しいSWをすぐにactivateさせる
 });
 
+//self.addEventListener('activate', (event) => {
+//  event.waitUntil(clients.claim()); // 既存タブの制御もすぐ奪う
+//});
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim()); // 既存タブの制御もすぐ奪う
+  event.waitUntil(
+    // 1. 不要・他環境のキャッシュを自動削除
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[SW] 過去/他環境のキャッシュを削除:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => {
+      // 2. 既存タブの制御権を獲得
+      return self.clients.claim();
+    })
+  );
 });
 
 self.addEventListener('sync', (event) => {
@@ -34,7 +55,7 @@ async function syncUnsentReports() {
       };
 
 //console.log('embededToken:', embededToken);  
-      const response = await fetch('https://d-elog.ripcurrent.org/v2', {
+      const response = await fetch('https://d-elog.ripcurrent.org/v3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json',
           'Authorization': `Bearer ${embededToken}`
