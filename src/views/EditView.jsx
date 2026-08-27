@@ -38,11 +38,14 @@ const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, be
   const safeMembers = useSafeMembers();
   // ログイン者を除く（member.user_id は「ID+姓」の合成形式なので、同じ形式の user.user_id と比較する。
   // user.id は姓を含まない生IDのため、これと比較すると常に不一致になり誰も除外できていなかった）
-  const exceptLogin = safeMembers.filter(member =>
-    (member?.user_id ?? member) !== user.user_id
-  );
+  // const exceptLogin = safeMembers.filter(member =>
+  //   (member?.user_id ?? member) !== user.user_id
+  // );
   // valueはuser_id文字列ではなく{id, user_id}オブジェクトそのものを保持する
   // （setinfo送信・indexedDB保存までidを引き継ぐため。0ddd60e時点の実装踏襲）
+  const exceptLogin = safeMembers.filter(member =>
+    (member?.user_id ?? member) !== existingData.login_user
+  );
   const loginOptions = exceptLogin.map(item => ({
     value: item,
     label: item?.user_id ?? String(item),
@@ -64,22 +67,27 @@ const EditView = ({ user, selectedCoast, selectedBeach, onBack, existingData, be
   // 車両名
   const safeCarInfo = useSafeCarInfo();
 
-useEffect(() => {
+//useEffect(() => {
 //console.log("EditView In:", existingData);
 
-  if (existingData) {
-    // 1. まずは existingData をそのままコピーしたオブジェクトを作る
-    const updatedData = { ...existingData };
-    // 2. members が存在し、かつ配列の場合のみログイン者を削除する
-    // （members は文字列配列で返ってくるため、item.user_id ではなく item 自体と比較する）
-    if (Array.isArray(existingData.members)) {
-      updatedData.members = existingData.members.filter(item => (item?.user_id ?? item) !== user.user_id);
-    }
+//   if (existingData) {
+//     // 1. まずは existingData をそのままコピーしたオブジェクトを作る
+//     const updatedData = { ...existingData };
+//     // 2. members が存在し、かつ配列の場合のみログイン者を削除する
+//     // （members は文字列配列で返ってくるため、item.user_id ではなく item 自体と比較する）
+//     if (Array.isArray(existingData.members)) {
+//       updatedData.members = existingData.members.filter(item => (item?.user_id ?? item) !== user.user_id);
+//     }
 
-    // 3. 加工したデータを State にセットする
-    setFormData(updatedData);
-  }
-}, [existingData]);
+//     // 3. 加工したデータを State にセットする
+//     setFormData(updatedData);
+//   }
+// }, [existingData]);
+  useEffect(() => {
+    if (existingData) {
+      setFormData({ ...existingData });
+    }
+  }, [existingData]);
 
   // 必須項目入力チェック用
   const [errors, setErrors] = useState({});
@@ -179,7 +187,8 @@ useEffect(() => {
         content: (
           <input
             type="text"
-            value={(user.id + user.name) || ''}
+            //value={(user.id + user.name) || ''}
+            value={existingData.login_user?.user_id ?? existingData.login_user ?? ''}
             disabled
             style={disabledInput}
           />
