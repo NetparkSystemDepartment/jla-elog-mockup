@@ -90,7 +90,7 @@ function RecordsListView({
   const isAdmin      = user.kind === 0;
   // kindではなくaccess_type（API側で追加）で判断するよう変更
   //const canCsvSelect = user.kind <= 2; // admin / patrol / tower
-  console.log("access_type:", user.access_type);
+  //console.log("access_type:", user.access_type);
   const canCsvSelect = user.access_type <= 2; // admin / patrol / tower
   const { logout }   = useAuth();
 
